@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,23 +13,25 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
-
-	"github.com/jfrog/jfrog-cli-security/utils/xsc"
-
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -39,6 +40,10 @@ import (
 )
 
 const rootTestDir = "scanrepository"
+
+func floatPtr(f float64) *float64 {
+	return &f
+}
 
 var emptyConfigProfile = services2.ConfigProfile{
 	ProfileName:   "test-profile",
@@ -463,6 +468,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	testCases := []struct {
 		name        string
+		sbomFile    string // Optional: path to SBOM JSON file to load
 		scanResults *results.SecurityCommandResults
 		expectedMap map[string]*utils.VulnerabilityDetails
 	}{
@@ -474,7 +480,8 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			expectedMap: map[string]*utils.VulnerabilityDetails{},
 		},
 		{
-			name: "Scan results with vulnerabilities and no violations",
+			name:     "Scan results with vulnerabilities and no violations",
+			sbomFile: filepath.Join("..", "testdata", "scanrepository", "sbom_with_vulnerabilities.json"),
 			scanResults: &results.SecurityCommandResults{
 				ResultsMetaData: results.ResultsMetaData{
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
@@ -484,15 +491,14 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 					JasResults: &results.JasScansResults{},
 				}},
 			},
+			// axios@1.2.0 has 4 CVEs with fix versions: 1.6.0, 1.7.8, 1.12.0, 1.8.2
+			// Max fix version is 1.12.0
+			// First CVE processed is CVE-2024-57965 (Critical severity - converter sorts by severity)
 			expectedMap: map[string]*utils.VulnerabilityDetails{
-				"vuln1": {
-					SuggestedFixedVersion: "1.9.1",
+				"axios": {
+					SuggestedFixedVersion: "1.12.0",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
-				},
-				"vuln2": {
-					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+					Cves:                  []string{"CVE-2024-57965"},
 				},
 			},
 		},
@@ -500,22 +506,163 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &results.SecurityCommandResults{
 				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"watch1"}}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					JasResults: &results.JasScansResults{},
+				}},
+				Violations: &violationutils.Violations{
+					Sca: []violationutils.CveViolation{
+						{
+							ScaViolation: violationutils.ScaViolation{
+								Violation: violationutils.Violation{
+									ViolationId:   "XRAY-1",
+									ViolationType: violationutils.CveViolationType,
+									Severity:      severityutils.Critical,
+									Watch:         "watch1",
+								},
+								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol1"),
+								DirectComponents:  []formats.ComponentRow{{Name: "viol1", Version: "1.0.0"}},
+								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}}},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{
+								BOMRef: "CVE-2023-1234",
+								ID:     "XRAY-1",
+								Ratings: &[]cyclonedx.VulnerabilityRating{
+									{Score: floatPtr(9.1), Method: cyclonedx.ScoringMethodCVSSv3},
+								},
+							},
+							FixedVersions: &[]cyclonedx.AffectedVersions{
+								{Version: "1.9.1", Status: cyclonedx.VulnerabilityStatusNotAffected},
+							},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								Violation: violationutils.Violation{
+									ViolationId:   "XRAY-1",
+									ViolationType: violationutils.CveViolationType,
+									Severity:      severityutils.Critical,
+									Watch:         "watch1",
+								},
+								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol1"),
+								DirectComponents:  []formats.ComponentRow{{Name: "viol1", Version: "1.0.0"}},
+								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}}},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{
+								BOMRef: "CVE-2023-4321",
+								ID:     "XRAY-1",
+								Ratings: &[]cyclonedx.VulnerabilityRating{
+									{Score: floatPtr(8.9), Method: cyclonedx.ScoringMethodCVSSv3},
+								},
+							},
+							FixedVersions: &[]cyclonedx.AffectedVersions{
+								{Version: "1.9.1", Status: cyclonedx.VulnerabilityStatusNotAffected},
+							},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								Violation: violationutils.Violation{
+									ViolationId:   "XRAY-2",
+									ViolationType: violationutils.CveViolationType,
+									Severity:      severityutils.High,
+									Watch:         "watch1",
+								},
+								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol2"),
+								DirectComponents:  []formats.ComponentRow{{Name: "viol2", Version: "2.0.0"}},
+								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}, {Name: "viol2", Version: "2.0.0"}}},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{
+								BOMRef: "CVE-2022-1234",
+								ID:     "XRAY-2",
+								Ratings: &[]cyclonedx.VulnerabilityRating{
+									{Score: floatPtr(7.1), Method: cyclonedx.ScoringMethodCVSSv3},
+								},
+							},
+							FixedVersions: &[]cyclonedx.AffectedVersions{
+								{Version: "2.4.1", Status: cyclonedx.VulnerabilityStatusNotAffected},
+							},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								Violation: violationutils.Violation{
+									ViolationId:   "XRAY-2",
+									ViolationType: violationutils.CveViolationType,
+									Severity:      severityutils.High,
+									Watch:         "watch1",
+								},
+								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol2"),
+								DirectComponents:  []formats.ComponentRow{{Name: "viol2", Version: "2.0.0"}},
+								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}, {Name: "viol2", Version: "2.0.0"}}},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{
+								BOMRef: "CVE-2022-4321",
+								ID:     "XRAY-2",
+								Ratings: &[]cyclonedx.VulnerabilityRating{
+									{Score: floatPtr(7.9), Method: cyclonedx.ScoringMethodCVSSv3},
+								},
+							},
+							FixedVersions: &[]cyclonedx.AffectedVersions{
+								{Version: "2.4.1", Status: cyclonedx.VulnerabilityStatusNotAffected},
+							},
+						},
+					},
+				},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"viol1": {
+					SuggestedFixedVersion: "1.9.1",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-1234"},
+				},
+				"viol2": {
+					SuggestedFixedVersion: "2.4.1",
+					IsDirectDependency:    false,
+					Cves:                  []string{"CVE-2022-1234"},
+				},
+			},
+		},
+		{
+			name:     "Multiple vulnerabilities on same package selects max fix version",
+			sbomFile: filepath.Join("..", "testdata", "scanrepository", "sbom_multiple_vulns_same_pkg.json"),
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
 					ScaResults: &results.ScaScanResults{},
 					JasResults: &results.JasScansResults{},
 				}},
 			},
+			// shared-pkg@1.0.0 has 3 CVEs with fix versions: 1.5.0, 1.8.0, 1.6.0
+			// Max fix version is 1.8.0
+			// First CVE processed is CVE-2023-2222 (High severity - converter sorts by severity)
 			expectedMap: map[string]*utils.VulnerabilityDetails{
-				"viol1": {
-					SuggestedFixedVersion: "1.9.1",
+				"shared-pkg": {
+					SuggestedFixedVersion: "1.8.0",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
+					Cves:                  []string{"CVE-2023-2222"},
 				},
-				"viol2": {
-					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+			},
+		},
+		{
+			name:     "Vulnerability with no fixed version is not added to map",
+			sbomFile: filepath.Join("..", "testdata", "scanrepository", "sbom_no_fix_version.json"),
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{},
+					JasResults: &results.JasScansResults{},
+				}},
+			},
+			// no-fix-pkg has CVE-2023-9999 with NO fix version - should not be in map
+			// has-fix-pkg has CVE-2023-8888 with fix version 2.5.0 - should be in map
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"has-fix-pkg": {
+					SuggestedFixedVersion: "2.5.0",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-8888"},
 				},
 			},
 		},
@@ -523,11 +670,25 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
+			// Load SBOM from file if specified
+			if testCase.sbomFile != "" {
+				sbomData, err := os.ReadFile(testCase.sbomFile)
+				require.NoError(t, err, "Failed to read SBOM file")
+				var sbom cyclonedx.BOM
+				err = json.Unmarshal(sbomData, &sbom)
+				require.NoError(t, err, "Failed to unmarshal SBOM")
+				// Set the SBOM in the first target's ScaResults
+				if len(testCase.scanResults.Targets) > 0 && testCase.scanResults.Targets[0].ScaResults != nil {
+					testCase.scanResults.Targets[0].ScaResults.Sbom = &sbom
+				}
+			}
+
 			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
+			assert.Equal(t, len(testCase.expectedMap), len(fixVersionsMap), "Map size mismatch")
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
-				require.True(t, exists)
+				require.True(t, exists, "Expected key %q not found in map", name)
 				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
 				assert.Equal(t, expectedVuln.SuggestedFixedVersion, actualVuln.SuggestedFixedVersion)
 				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
