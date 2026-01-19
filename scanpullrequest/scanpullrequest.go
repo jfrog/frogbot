@@ -175,7 +175,7 @@ func scanPullRequestBranches(repoConfig *utils.Repository, scanDetails *utils.Sc
 	var scanResults *results.SecurityCommandResults
 	var err error
 
-	if parallelEnabled, _ := utils.GetBoolEnv(utils.ParallelPrScanEnv, true); parallelEnabled {
+	if !repoConfig.Params.DisableParallelPrScan {
 		scanResults, err = auditBranchesInParallel(scanDetails, sourceBranchWd, targetBranchWd)
 	} else {
 		scanResults, err = auditBranchesSequentially(scanDetails, sourceBranchWd, targetBranchWd)
