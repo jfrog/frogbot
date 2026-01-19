@@ -137,11 +137,17 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 // Note: All supplied arguments are converted to lowercase. Hence, when utilizing this function, the file in which we search for the patterns must also be converted to lowercase.
 // Note: This function may not support all package manager dependency formats. It is designed for package managers where the dependency's name consists of a single component.
 // For example, in Gradle descriptors, a dependency line may consist of two components for the dependency's name (e.g., implementation group: 'junit', name: 'junit', version: '4.7'), therefore this func cannot be utilized in this case.
-func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
+func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
 	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
 	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
+}
+
+func BuildPackageRegex(packageName, dependencyLineFormat string) *regexp.Regexp {
+	escapedName := strings.ToLower(regexp.QuoteMeta(packageName))
+	pattern := fmt.Sprintf(dependencyLineFormat, escapedName)
+	return regexp.MustCompile(pattern)
 }
 
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
@@ -149,7 +155,6 @@ func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFil
 	for _, component := range vulnDetails.Components {
 		if component.Location != nil && component.Location.File != "" {
 			if len(namesFilters) > 0 {
-				// Compare basename of the file path against the filter
 				if slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
 					pathsSet.Add(component.Location.File)
 				}

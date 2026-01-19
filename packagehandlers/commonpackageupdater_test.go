@@ -795,7 +795,7 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 	testedDescriptorFile := descriptorFiles[0]
 
 	for _, testcase := range testcases {
-		vulnRegexpCompiler := GetVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
+		vulnRegexpCompiler := BuildPackageWithVersionRegex(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 		var isFileChanged bool
 		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedDescriptorFile, tmpDir, vulnRegexpCompiler)
 		assert.NoError(t, err)
@@ -1025,7 +1025,7 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 	descriptorFileToTest := descriptorFiles[0]
 
-	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
+	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
 	var isFileChanged bool
 	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
 	assert.NoError(t, err)
@@ -1556,7 +1556,7 @@ func TestGetVulnerabilityRegexCompiler(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			regex := GetVulnerabilityRegexCompiler(tc.packageName, tc.packageVer, tc.formatPattern)
+			regex := BuildPackageWithVersionRegex(tc.packageName, tc.packageVer, tc.formatPattern)
 			matches := regex.MatchString(strings.ToLower(tc.testContent))
 			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
 		})
