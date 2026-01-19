@@ -1,0 +1,16 @@
+{
+  "name": "npm-rollback-test",
+  "version": "1.0.0",
+  "description": "Test project for rollback functionality",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "minimist": "1.2.5",
+    "this-package-does-not-exist-frogbot-test": "1.0.0"
+  }
+}
+

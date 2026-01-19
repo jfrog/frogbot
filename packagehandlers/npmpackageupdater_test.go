@@ -20,49 +20,49 @@ func TestNpmBuildPackageRegex(t *testing.T) {
 		shouldMatch bool
 	}{
 		{
-			name:        "exact version match",
+			name:        "matches package with exact version format",
 			packageName: "minimist",
 			testContent: `"minimist": "1.2.5"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "version with caret prefix",
+			name:        "matches package with caret version format",
 			packageName: "lodash",
 			testContent: `"lodash": "^4.17.0"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "version with tilde prefix",
+			name:        "matches package with tilde version format",
 			packageName: "express",
 			testContent: `"express": "~4.18.0"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "scoped package",
+			name:        "matches scoped package",
 			packageName: "@types/node",
 			testContent: `"@types/node": "18.0.0"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "matches any version (different from scanner version)",
+			name:        "matches package regardless of version value",
 			packageName: "minimist",
 			testContent: `"minimist": "1.2.6"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "package name mismatch",
+			name:        "does not match similar package name",
 			packageName: "minimist",
 			testContent: `"minimatch": "1.2.5"`,
 			shouldMatch: false,
 		},
 		{
-			name:        "case insensitive package name",
+			name:        "matches package case insensitively",
 			packageName: "Minimist",
 			testContent: `"minimist": "1.2.5"`,
 			shouldMatch: true,
 		},
 		{
-			name:        "version with plus sign (build metadata)",
+			name:        "matches package with build metadata in version",
 			packageName: "somepackage",
 			testContent: `"somepackage": "1.0.0+build.123"`,
 			shouldMatch: true,
@@ -135,6 +135,14 @@ func TestUpdateVersionInDescriptor(t *testing.T) {
 			packageName:     "minimist",
 			newVersion:      "1.2.6",
 			expectedContent: `{"devDependencies": {"minimist": "1.2.6"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "update in optionalDependencies",
+			originalContent: `{"optionalDependencies": {"minimist": "1.2.5"}}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: `{"optionalDependencies": {"minimist": "1.2.6"}}`,
 			expectError:     false,
 		},
 		{
