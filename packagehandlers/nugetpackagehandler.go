@@ -46,7 +46,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return
 	}
 
-	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
+	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 	var isAnyFileChanged bool
 
 	for _, descriptorFilePath := range descriptorFilesFullPaths {
