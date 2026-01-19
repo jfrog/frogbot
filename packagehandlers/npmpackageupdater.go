@@ -137,7 +137,8 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		return fmt.Errorf("dependency '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, descriptorPath)
 	}
 
-	backupContent := descriptorContent
+	backupContent := make([]byte, len(descriptorContent))
+	copy(backupContent, descriptorContent)
 	updatedContent, err := npm.updateVersionInDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, descriptorPath)
 	if err != nil {
 		return fmt.Errorf("failed to update version in descriptor: %w", err)

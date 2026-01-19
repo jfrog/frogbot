@@ -29,6 +29,8 @@ type dependencyFixTest struct {
 	testcaseInfo        string
 	// For this param give the relative path from the test project root
 	lockFileToVerifyItsChange string
+	// Verifies descriptor content is unchanged after error (for rollback testing)
+	descriptorToVerifyNoChange string
 }
 
 const (
@@ -178,193 +180,202 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported:  true,
 				errorExpected: true,
 			},
+			{
+				testcaseInfo:               "rollback-on-npm-install-failure",
+				vulnDetails:                createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				scanDetails:                scanDetails,
+				testDirName:                "npm-rollback",
+				fixSupported:               true,
+				errorExpected:              true,
+				descriptorToVerifyNoChange: "package.json",
+			},
 		},
 		/*
 
 			// Yarn test cases
-			{
 				{
-					// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.2.6",
-						IsDirectDependency:          false,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+					{
+						// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.2.6",
+							IsDirectDependency:          false,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.2.6",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.2.6",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+						},
+						scanDetails:         scanDetails,
+						fixSupported:        true,
+						specificTechVersion: "1",
+						descriptorsToCheck:  []string{"package.json"},
 					},
-					scanDetails:         scanDetails,
-					fixSupported:        true,
-					specificTechVersion: "1",
-					descriptorsToCheck:  []string{"package.json"},
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.2.6",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.2.6",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
+						},
+						scanDetails:         scanDetails,
+						fixSupported:        true,
+						specificTechVersion: "2",
+						descriptorsToCheck:  []string{"package.json"},
 					},
-					scanDetails:         scanDetails,
-					fixSupported:        true,
-					specificTechVersion: "2",
-					descriptorsToCheck:  []string{"package.json"},
 				},
-			},
 
-			// Maven test cases
-			{
+				// Maven test cases
 				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "4.3.20",
-						IsDirectDependency:          false,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "4.3.20",
+							IsDirectDependency:          false,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "2.7",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "2.7",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
+						},
+						scanDetails:        scanDetails,
+						fixSupported:       true,
+						descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
 					},
-					scanDetails:        scanDetails,
-					fixSupported:       true,
-					descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
 				},
-			},
 
-			// NuGet test cases
-			{
+				// NuGet test cases
 				{
-					// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.1.1",
-						IsDirectDependency:          false,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+					{
+						// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.1.1",
+							IsDirectDependency:          false,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
+						testDirName:  "dotnet",
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-					testDirName:  "dotnet",
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.1.1",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.1.1",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
+						},
+						scanDetails:        scanDetails,
+						fixSupported:       true,
+						testDirName:        "dotnet",
+						descriptorsToCheck: []string{"dotnet.csproj"},
 					},
-					scanDetails:        scanDetails,
-					fixSupported:       true,
-					testDirName:        "dotnet",
-					descriptorsToCheck: []string{"dotnet.csproj"},
 				},
-			},
 
-			// Gradle test cases
-			{
+				// Gradle test cases
 				{
-					// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "4.13.1",
-						IsDirectDependency:          false,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
+					{
+						// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "4.13.1",
+							IsDirectDependency:          false,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{ // Unsupported fix: dynamic version
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.2.2",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
+					{ // Unsupported fix: dynamic version
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "3.2.2",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{ // Unsupported fix: latest version
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.2.2",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
+					{ // Unsupported fix: latest version
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "3.2.2",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{ // Unsupported fix: range version
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.2.2",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
+					{ // Unsupported fix: range version
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "3.2.2",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "4.13.1",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "4.13.1",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
+						},
+						scanDetails:        scanDetails,
+						fixSupported:       true,
+						descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
 					},
-					scanDetails:        scanDetails,
-					fixSupported:       true,
-					descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
 				},
-			},
 
-			// Pnpm test cases
-			{
-				// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+				// Pnpm test cases
 				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "0.8.4",
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
+					// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "0.8.4",
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
+						testDirName:  "npm",
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
-					testDirName:  "npm",
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "1.2.6",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "1.2.6",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
+						},
+						scanDetails:        scanDetails,
+						fixSupported:       true,
+						testDirName:        "npm",
+						descriptorsToCheck: []string{"package.json"},
 					},
-					scanDetails:        scanDetails,
-					fixSupported:       true,
-					testDirName:        "npm",
-					descriptorsToCheck: []string{"package.json"},
 				},
-			},
 
-			// Conan test cases
-			{
+				// Conan test cases
 				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.0.14",
-						IsDirectDependency:          true,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "3.0.14",
+							IsDirectDependency:          true,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
+						},
+						scanDetails:        scanDetails,
+						fixSupported:       true,
+						testDirName:        "conan",
+						descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
 					},
-					scanDetails:        scanDetails,
-					fixSupported:       true,
-					testDirName:        "conan",
-					descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
-				},
-				{
-					vulnDetails: &utils.VulnerabilityDetails{
-						SuggestedFixedVersion:       "3.0.14",
-						IsDirectDependency:          false,
-						VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
+					{
+						vulnDetails: &utils.VulnerabilityDetails{
+							SuggestedFixedVersion:       "3.0.14",
+							IsDirectDependency:          false,
+							VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
+						},
+						scanDetails:  scanDetails,
+						fixSupported: false,
 					},
-					scanDetails:  scanDetails,
-					fixSupported: false,
 				},
-			},
 		*/
 	}
 
@@ -388,16 +399,30 @@ func TestUpdateDependency(t *testing.T) {
 						assert.NoError(t, readErr, "Failed to read lock file before update")
 					}
 
+					var descriptorContentBeforeUpdate []byte
+					if test.descriptorToVerifyNoChange != "" {
+						var readErr error
+						descriptorContentBeforeUpdate, readErr = os.ReadFile(test.descriptorToVerifyNoChange)
+						assert.NoError(t, readErr, "Failed to read descriptor before update")
+					}
+
 					err := packageHandler.UpdateDependency(test.vulnDetails)
 					if !test.fixSupported {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
 						return
 					}
+
 					if test.errorExpected {
 						assert.Error(t, err)
+						if test.descriptorToVerifyNoChange != "" {
+							descriptorContentAfter, readErr := os.ReadFile(test.descriptorToVerifyNoChange)
+							assert.NoError(t, readErr, "Failed to read descriptor after update")
+							assert.Equal(t, descriptorContentBeforeUpdate, descriptorContentAfter, "Descriptor should be unchanged after rollback")
+						}
 						return
 					}
+
 					assert.NoError(t, err)
 					verifyDependencyUpdate(t, test)
 
