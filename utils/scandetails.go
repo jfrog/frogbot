@@ -30,7 +30,7 @@ type ScanDetails struct {
 
 	scansToPerform   []utils.SubScanType
 	uploadCdxResults bool
-	logCollector     *audit.LogCollector
+	logCollector     *log.BufferedLogger
 
 	results.ResultContext
 	MultiScanId string
@@ -60,13 +60,13 @@ func (sc *ScanDetails) Clone() *ScanDetails {
 }
 
 // CloneForBranchScan creates a clone configured for branch scanning with isolated logging.
-func (sc *ScanDetails) CloneForBranchScan(scans []utils.SubScanType, diffScan bool, resultsToCompare *results.SecurityCommandResults) (*ScanDetails, *audit.LogCollector) {
+func (sc *ScanDetails) CloneForBranchScan(scans []utils.SubScanType, diffScan bool, resultsToCompare *results.SecurityCommandResults) (*ScanDetails, *log.BufferedLogger) {
 	cloned := sc.Clone()
 	cloned.scansToPerform = scans
 	cloned.diffScan = diffScan
 	cloned.ResultsToCompare = resultsToCompare
 	cloned.uploadCdxResults = false
-	collector := audit.NewLogCollector(log.GetLogger().GetLogLevel())
+	collector := log.NewBufferedLogger(log.GetLogger().GetLogLevel())
 	cloned.logCollector = collector
 	return cloned, collector
 }
@@ -81,12 +81,12 @@ func (sc *ScanDetails) SetUploadCdxResults(upload bool) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) SetLogCollector(collector *audit.LogCollector) *ScanDetails {
+func (sc *ScanDetails) SetLogCollector(collector *log.BufferedLogger) *ScanDetails {
 	sc.logCollector = collector
 	return sc
 }
 
-func (sc *ScanDetails) GetLogCollector() *audit.LogCollector {
+func (sc *ScanDetails) GetLogCollector() *log.BufferedLogger {
 	return sc.logCollector
 }
 

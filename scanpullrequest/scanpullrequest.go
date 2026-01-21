@@ -11,7 +11,6 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	securityjas "github.com/jfrog/jfrog-cli-security/jas"
 	securityUtils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -54,7 +53,7 @@ type branchScanResult struct {
 
 type parallelJasResult struct {
 	scanResult
-	collector *audit.LogCollector
+	collector *log.BufferedLogger
 }
 
 type ScanPullRequestCmd struct{}
@@ -540,14 +539,14 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 }
 
 func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (*results.SecurityCommandResults, error) {
-	log.Info("Starting parallel PR scan...")
 	startTime := time.Now()
 
 	// Pre-download Analyzer Manager to avoid parallel download contention
 	if err := securityjas.DownloadAnalyzerManagerIfNeeded(0); err != nil {
 		log.Warn("Failed to pre-download Analyzer Manager:", err)
 	}
-
+	
+	log.Info("Starting parallel PR scan...")
 	scaChan := make(chan branchScanResult, 1)
 	jasChan := make(chan branchScanResult, 1)
 
@@ -586,7 +585,6 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 	unifiedTarget := results.MergeScaAndJasResults(scaResult.target, jasResult.target)
 	scanDetails.SetResultsToCompare(unifiedTarget)
 
-	log.Debug("[JAS] Computing diff...")
 	jasDiff := results.CompareJasResults(jasResult.target, jasResult.source)
 	log.Debug("[JAS] Diff computation completed")
 
@@ -607,7 +605,7 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	)
 	targetResults = targetScanDetails.Audit(targetDir)
 
-	if targetLogCollector.HasLogs() {
+	if targetLogCollector.Len() > 0 {
 		log.Info("[sca-target] Logs:")
 		targetLogCollector.ReplayTo(log.GetLogger())
 	} else {
@@ -624,7 +622,7 @@ func runScaScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	)
 	sourceResults = sourceScanDetails.Audit(sourceDir)
 
-	if sourceLogCollector.HasLogs() {
+	if sourceLogCollector.Len() > 0 {
 		log.Info("[sca-source] Logs:")
 		sourceLogCollector.ReplayTo(log.GetLogger())
 	} else {
@@ -679,13 +677,13 @@ func runJasScans(scanDetails *utils.ScanDetails, targetDir, sourceDir string) (t
 	targetResult := <-targetChan
 	sourceResult := <-sourceChan
 
-	if targetResult.collector != nil && targetResult.collector.HasLogs() {
+	if targetResult.collector != nil && targetResult.collector.Len() > 0 {
 		log.Info("[jas-target] Logs:")
 		targetResult.collector.ReplayTo(log.GetLogger())
 	} else if targetResult.collector != nil {
 		log.Warn("[jas-target] No logs captured - this may indicate a logging issue")
 	}
-	if sourceResult.collector != nil && sourceResult.collector.HasLogs() {
+	if sourceResult.collector != nil && sourceResult.collector.Len() > 0 {
 		log.Info("[jas-source] Logs:")
 		sourceResult.collector.ReplayTo(log.GetLogger())
 	} else if sourceResult.collector != nil {
