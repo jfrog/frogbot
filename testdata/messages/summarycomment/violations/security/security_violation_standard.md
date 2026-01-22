@@ -20,6 +20,7 @@
 <details><summary><b>[ XRAY-122345 ] github.com/nats-io/nats-streaming-server v0.21.0</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CVSS V3:** | - |
 | **Dependency Path:** | <details><summary><b>github.com/nats-io/nats-streaming-server: v0.21.0 (Direct)</b></summary>Fix Version: [0.24.1]<br></details> |
@@ -35,6 +36,7 @@ some remediation
 <details><summary><b>[ CVE-2022-26652, CVE-2023-4321 ] component-D v0.21.0</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Applicable |
 | **CVSS V3:** | - |
@@ -49,6 +51,7 @@ some remediation
 <details><summary><b>github.com/mholt/archiver/v3 v3.5.1</b></summary>
 
 ### Violation Details
+|                 |                   |
 | --------------------- | :-----------------------------------: |
 | **CVSS V3:** | - |
 | **Dependency Path:** | <details><summary><b>github.com/mholt/archiver/v3: v3.5.1 (Direct)</b></summary><br></details> |
