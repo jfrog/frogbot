@@ -60,8 +60,8 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
-github.com/eyalk007/jfrog-cli-security v0.0.0-20260121120306-0b35329a3fbd h1:r9aJVqPXWP+XRnZzl628YP/VKqxMVOx8WxRiHATcgs4=
-github.com/eyalk007/jfrog-cli-security v0.0.0-20260121120306-0b35329a3fbd/go.mod h1:CieWjxm7l3iJ3xCdsGE1MG69Wd5A6qinLhJ1XL4x/l8=
+github.com/eyalk007/jfrog-cli-security v0.0.0-20260122133906-bccd93268960 h1:WjUDgf9xLNEUgUx6Jcg/j+Wj/j7vZFNGuYXxfLvnYM4=
+github.com/eyalk007/jfrog-cli-security v0.0.0-20260122133906-bccd93268960/go.mod h1:CieWjxm7l3iJ3xCdsGE1MG69Wd5A6qinLhJ1XL4x/l8=
 github.com/eyalk007/jfrog-client-go v0.0.0-20260114112951-67b77f49255f h1:wievyISUpwoYv47Q+SreXShHnwPaNBkcqGjSOJ7hRZk=
 github.com/eyalk007/jfrog-client-go v0.0.0-20260114112951-67b77f49255f/go.mod h1:sCE06+GngPoyrGO0c+vmhgMoVSP83UMNiZnIuNPzU8U=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
