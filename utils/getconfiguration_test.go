@@ -133,7 +133,6 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 		assert.NoError(t, SanitizeEnv())
 	}()
 
-	// Validation order matches extractGitParamsFromEnvs: Repo → Provider → Owner → Token
 	_, err := extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
 
@@ -148,6 +147,15 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{GitRepoOwnerEnv: "jfrog"})
 	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
+
+	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token123"})
+	gitParams, err := extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "frogbot", gitParams.RepoName)
+	assert.Equal(t, vcsutils.GitHub, gitParams.GitProvider)
+	assert.Equal(t, "jfrog", gitParams.RepoOwner)
+	assert.Equal(t, "token123", gitParams.Token)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {
