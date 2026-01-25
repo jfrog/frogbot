@@ -545,7 +545,7 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 	if err := securityjas.DownloadAnalyzerManagerIfNeeded(0); err != nil {
 		log.Warn("Failed to pre-download Analyzer Manager:", err)
 	}
-	
+
 	log.Info("Starting parallel PR scan...")
 	scaChan := make(chan branchScanResult, 1)
 	jasChan := make(chan branchScanResult, 1)
@@ -585,7 +585,7 @@ func auditBranchesInParallel(scanDetails *utils.ScanDetails, sourceBranchWd, tar
 	unifiedTarget := results.MergeScaAndJasResults(scaResult.target, jasResult.target)
 	scanDetails.SetResultsToCompare(unifiedTarget)
 
-	jasDiff := results.CompareJasResults(jasResult.target, jasResult.source)
+	jasDiff := results.FilterNewJasFindings(jasResult.target, jasResult.source)
 	log.Debug("[JAS] Diff computation completed")
 
 	diffResults := results.MergeScaAndJasResults(scaResult.source, jasDiff)
