@@ -158,13 +158,13 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		}
 	}()
 
-	lockFileExistsInRemote, checkErr := utils.IsFileExistsInRemote(npmLockFileName, originalWd, npm.baseBranch)
+	lockFileTracked, checkErr := utils.IsFileTrackedByGit(npmLockFileName, originalWd)
 	if checkErr != nil {
-		log.Debug(fmt.Sprintf("Failed to check if lock file exists in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
-		lockFileExistsInRemote = true
+		log.Debug(fmt.Sprintf("Failed to check if lock file is tracked in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
+		lockFileTracked = true
 	}
 
-	if !lockFileExistsInRemote {
+	if !lockFileTracked {
 		log.Debug(fmt.Sprintf("Lock file '%s' does not exist in remote, skipping lock file regeneration", npmLockFileName))
 		log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s' without regenerating lock file", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
 		return

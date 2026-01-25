@@ -554,44 +554,28 @@ func LoadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 	return
 }
 
-// Checks if a file exists in a git branch and returns true if the file exists.
-// repoRootDir is the path to the repository root directory where .git resides and the filePath should be relative to the repository root.
-func IsFileExistsInRemote(filePath, repoRootDir, branchName string) (bool, error) {
+func IsFileTrackedByGit(filePath, repoRootDir string) (bool, error) {
 	repo, err := git.PlainOpen(repoRootDir)
 	if err != nil {
 		return false, fmt.Errorf("failed to open git repository at '%s': %w", repoRootDir, err)
 	}
 
-	var commitHash plumbing.Hash
-	if branchName == "" {
-		head, err := repo.Head()
-		if err != nil {
-			return false, fmt.Errorf("failed to get HEAD reference: %w", err)
-		}
-		commitHash = head.Hash()
-	} else {
-		ref, err := repo.Reference(plumbing.NewBranchReferenceName(branchName), true)
-		if err != nil {
-			return false, fmt.Errorf("failed to get branch '%s': %w", branchName, err)
-		}
-		commitHash = ref.Hash()
-	}
-
-	commit, err := repo.CommitObject(commitHash)
+	worktree, err := repo.Worktree()
 	if err != nil {
-		return false, fmt.Errorf("failed to get commit: %w", err)
+		return false, fmt.Errorf("failed to get worktree: %w", err)
 	}
 
-	tree, err := commit.Tree()
+	status, err := worktree.Status()
 	if err != nil {
-		return false, fmt.Errorf("failed to get commit tree: %w", err)
+		return false, fmt.Errorf("failed to get worktree status: %w", err)
 	}
 
-	if _, err = tree.File(filePath); err != nil {
-		// File not found in tree
-		return false, err
+	fileStatus := status.File(filePath)
+	if fileStatus == nil {
+		// Can happen when lock file is tracked+unmodified or ignored. In those cases, we assume it's tracked.
+		return true, nil
 	}
-	return true, nil
+	return fileStatus.Worktree != git.Untracked, nil
 }
 
 func setGoGitCustomClient() {

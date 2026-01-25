@@ -30,7 +30,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case techutils.Npm:
-		handler = &NpmPackageUpdater{CommonPackageHandler{baseBranch: details.BaseBranch()}}
+		handler = &NpmPackageUpdater{}
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
@@ -55,7 +55,6 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 type CommonPackageHandler struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
-	baseBranch    string
 }
 
 // UpdateDependency updates the impacted package to the fixed version
