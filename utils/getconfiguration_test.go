@@ -42,13 +42,14 @@ func TestExtractJFrogCredentialsFromEnvs(t *testing.T) {
 // Pull request ID is not the default, which means we don't have branches related variables defined.
 func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:         "http://127.0.0.1:8081",
-		JFrogTokenEnv:       "token",
-		GitProvider:         string(BitbucketServer),
-		GitRepoOwnerEnv:     "jfrog",
-		GitRepoEnv:          "frogbot",
-		GitTokenEnv:         "123456789",
-		GitPullRequestIDEnv: "1",
+		JFrogUrlEnv:             "http://127.0.0.1:8081",
+		JFrogTokenEnv:           "token",
+		GitProvider:             string(BitbucketServer),
+		GitRepoOwnerEnv:         "jfrog",
+		GitRepoEnv:              "frogbot",
+		GitTokenEnv:             "123456789",
+		GitPullRequestIDEnv:     "1",
+		GitBitBucketUsernameEnv: "bbuser",
 	})
 	extractAndAssertParamsFromEnv(t, true, ScanPullRequest)
 }
@@ -57,41 +58,44 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 // Pull request ID's default is 0, which means we will have branches related variables.
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogTokenEnv:    "token",
-		GitProvider:      string(BitbucketServer),
-		GitRepoOwnerEnv:  "jfrog",
-		GitRepoEnv:       "frogbot",
-		GitTokenEnv:      "123456789",
-		GitBaseBranchEnv: "dev",
+		JFrogUrlEnv:             "http://127.0.0.1:8081",
+		JFrogTokenEnv:           "token",
+		GitProvider:             string(BitbucketServer),
+		GitRepoOwnerEnv:         "jfrog",
+		GitRepoEnv:              "frogbot",
+		GitTokenEnv:             "123456789",
+		GitBaseBranchEnv:        "dev",
+		GitBitBucketUsernameEnv: "bbuser",
 	})
 	extractAndAssertParamsFromEnv(t, true, ScanRepository)
 }
 
 func TestExtractParamsFromEnvArtifactoryXray(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:            "",
-		jfrogArtifactoryUrlEnv: "http://127.0.0.1:8081/artifactory",
-		jfrogXrayUrlEnv:        "http://127.0.0.1:8081/xray",
-		JFrogTokenEnv:          "token",
-		GitProvider:            string(BitbucketServer),
-		GitRepoOwnerEnv:        "jfrog",
-		GitRepoEnv:             "frogbot",
-		GitTokenEnv:            "123456789",
-		GitBaseBranchEnv:       "dev",
+		JFrogUrlEnv:             "",
+		jfrogArtifactoryUrlEnv:  "http://127.0.0.1:8081/artifactory",
+		jfrogXrayUrlEnv:         "http://127.0.0.1:8081/xray",
+		JFrogTokenEnv:           "token",
+		GitProvider:             string(BitbucketServer),
+		GitRepoOwnerEnv:         "jfrog",
+		GitRepoEnv:              "frogbot",
+		GitTokenEnv:             "123456789",
+		GitBaseBranchEnv:        "dev",
+		GitBitBucketUsernameEnv: "bbuser",
 	})
 	extractAndAssertParamsFromEnv(t, false, ScanRepository)
 }
 
 func TestExtractParamsFromEnvToken(t *testing.T) {
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:      "http://127.0.0.1:8081",
-		JFrogTokenEnv:    "token",
-		GitProvider:      string(BitbucketServer),
-		GitRepoOwnerEnv:  "jfrog",
-		GitRepoEnv:       "frogbot",
-		GitTokenEnv:      "123456789",
-		GitBaseBranchEnv: "dev",
+		JFrogUrlEnv:             "http://127.0.0.1:8081",
+		JFrogTokenEnv:           "token",
+		GitProvider:             string(BitbucketServer),
+		GitRepoOwnerEnv:         "jfrog",
+		GitRepoEnv:              "frogbot",
+		GitTokenEnv:             "123456789",
+		GitBaseBranchEnv:        "dev",
+		GitBitBucketUsernameEnv: "bbuser",
 	})
 	extractAndAssertParamsFromEnv(t, true, ScanRepository)
 }
@@ -130,6 +134,10 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	}()
 
 	_, err := extractGitParamsFromEnvs()
+	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
+
+	SetEnvAndAssert(t, map[string]string{GitRepoEnv: "frogbot"})
+	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
@@ -140,9 +148,14 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token"})
-	_, err = extractGitParamsFromEnvs()
-	assert.EqualError(t, err, "'JF_GIT_REPO' environment variable is missing")
+	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token123"})
+	gitParams, err := extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+
+	assert.Equal(t, "frogbot", gitParams.RepoName)
+	assert.Equal(t, vcsutils.GitHub, gitParams.GitProvider)
+	assert.Equal(t, "jfrog", gitParams.RepoOwner)
+	assert.Equal(t, "token123", gitParams.Token)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {
