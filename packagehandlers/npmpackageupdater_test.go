@@ -240,7 +240,6 @@ func TestBuildIsolatedEnv(t *testing.T) {
 			assert.Equal(t, "false", envMap[configFundEnv])
 			assert.Equal(t, "error", envMap[configLevelEnv])
 			assert.Equal(t, "true", envMap[ciEnv])
-			assert.Equal(t, "1", envMap[noUpdateNotifierEnv])
 
 			if tc.predefineEnv {
 				assert.Equal(t, 1, envCount[ciEnv], "CI should appear exactly once")

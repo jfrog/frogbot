@@ -28,7 +28,6 @@ const (
 	configFundEnv          = "NPM_CONFIG_FUND"
 	configLevelEnv         = "NPM_CONFIG_LOGLEVEL"
 	ciEnv                  = "CI"
-	noUpdateNotifierEnv    = "NO_UPDATE_NOTIFIER"
 
 	npmDescriptorFileName       = "package.json"
 	npmLockFileName             = "package-lock.json"
@@ -48,7 +47,6 @@ var npmInstallEnvVars = map[string]string{
 	configFundEnv:          "false",
 	configLevelEnv:         "error",
 	ciEnv:                  "true",
-	noUpdateNotifierEnv:    "1",
 }
 
 type NpmPackageUpdater struct {
