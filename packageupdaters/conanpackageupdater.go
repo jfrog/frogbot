@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -14,11 +14,11 @@ const (
 	conanFilePy  = "conanfile.py"
 )
 
-type ConanPackageHandler struct {
-	CommonPackageHandler
+type ConanPackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (conan *ConanPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return conan.updateDirectDependency(vulnDetails)
 	} else {
@@ -30,8 +30,8 @@ func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabil
 	}
 }
 
-func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	conanDescriptors, err := conan.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
+func (conan *ConanPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	conanDescriptors, err := conan.CommonPackageUpdater.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
 	if err != nil {
 		err = fmt.Errorf("failed while searching for Conan descriptor files in project: %s", err.Error())
 		return
@@ -54,7 +54,7 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 	return
 }
 
-func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+func (conan *ConanPackageUpdater) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	data, err := os.ReadFile(conanFilePath)
 	if err != nil {
 		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s", conanFilePath, err.Error())

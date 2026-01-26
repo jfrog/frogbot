@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"context"
@@ -50,7 +50,7 @@ var npmInstallEnvVars = map[string]string{
 }
 
 type NpmPackageUpdater struct {
-	CommonPackageHandler
+	CommonPackageUpdater
 }
 
 func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {

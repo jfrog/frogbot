@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"errors"
@@ -21,13 +21,13 @@ const (
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 )
 
-// PythonPackageHandler Handles all the python package mangers as they share behavior
-type PythonPackageHandler struct {
+// PythonPackageUpdater Handles all the python package mangers as they share behavior
+type PythonPackageUpdater struct {
 	pipRequirementsFile string
-	CommonPackageHandler
+	CommonPackageUpdater
 }
 
-func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (py *PythonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return py.updateDirectDependency(vulnDetails)
 	}
@@ -39,29 +39,29 @@ func (py *PythonPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (py *PythonPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (py *PythonPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	switch vulnDetails.Technology {
 	case techutils.Poetry:
 		return py.handlePoetry(vulnDetails)
 	case techutils.Pip:
 		return py.handlePip(vulnDetails)
 	case techutils.Pipenv:
-		return py.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
+		return py.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
 	default:
 		return errors.New("unknown python package manger: " + vulnDetails.Technology.GetPackageType())
 	}
 }
 
-func (py *PythonPackageHandler) handlePoetry(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (py *PythonPackageUpdater) handlePoetry(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// Install the desired fixed version
-	if err = py.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
+	if err = py.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
 		return
 	}
 	// Update Poetry lock file as well
 	return runPackageMangerCommand(techutils.Poetry.GetExecCommandName(), techutils.Poetry.String(), []string{"update"})
 }
 
-func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var fixedFile string
 	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.SuggestedFixedVersion
@@ -84,7 +84,7 @@ func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetail
 	return
 }
 
-func (py *PythonPackageHandler) tryGetRequirementFile() (string, error) {
+func (py *PythonPackageUpdater) tryGetRequirementFile() (string, error) {
 	if py.pipRequirementsFile != "" {
 		fileContent, err := py.tryReadRequirementFile(py.pipRequirementsFile)
 		if err != nil {
@@ -107,7 +107,7 @@ func (py *PythonPackageHandler) tryGetRequirementFile() (string, error) {
 	}
 }
 
-func (py *PythonPackageHandler) tryReadRequirementFile(file string) (string, error) {
+func (py *PythonPackageUpdater) tryReadRequirementFile(file string) (string, error) {
 	wd, err := os.Getwd()
 	if err != nil {
 		return "", err

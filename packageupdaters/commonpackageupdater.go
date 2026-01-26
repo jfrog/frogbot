@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -16,49 +16,49 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// PackageHandler interface to hold operations on packages
-type PackageHandler interface {
+// PackageUpdater interface to hold operations on packages
+type PackageUpdater interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
 
-func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageUpdater) {
 	switch vulnDetails.Technology {
 	case techutils.Go:
-		handler = &GoPackageHandler{}
+		handler = &GoPackageUpdater{}
 	case techutils.Poetry:
-		handler = &PythonPackageHandler{}
+		handler = &PythonPackageUpdater{}
 	case techutils.Pipenv:
-		handler = &PythonPackageHandler{}
+		handler = &PythonPackageUpdater{}
 	case techutils.Npm:
 		handler = &NpmPackageUpdater{}
 	case techutils.Yarn:
-		handler = &YarnPackageHandler{}
+		handler = &YarnPackageUpdater{}
 	case techutils.Pip:
-		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
+		handler = &PythonPackageUpdater{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
-		handler = NewMavenPackageHandler(details)
+		handler = NewMavenPackageUpdater(details)
 	case techutils.Nuget:
-		handler = &NugetPackageHandler{}
+		handler = &NugetPackageUpdater{}
 	case techutils.Gradle:
-		handler = &GradlePackageHandler{}
+		handler = &GradlePackageUpdater{}
 	case techutils.Pnpm:
-		handler = &PnpmPackageHandler{}
+		handler = &PnpmPackageUpdater{}
 	case techutils.Conan:
-		handler = &ConanPackageHandler{}
+		handler = &ConanPackageUpdater{}
 	default:
-		handler = &UnsupportedPackageHandler{}
+		handler = &UnsupportedPackageUpdater{}
 	}
 	return
 }
 
 // TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
-type CommonPackageHandler struct {
+type CommonPackageUpdater struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
 }
 
 // UpdateDependency updates the impacted package to the fixed version
-func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
+func (cph *CommonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
 	commandArgs := []string{installationCommand}
@@ -92,7 +92,7 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 // Recursively scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
 // The patternsToExclude must be provided as regexp patterns. For instance, if the pattern ".*node_modules.*" is provided, any paths containing "node_modules" will be excluded from the result.
 // Returns a slice of all discovered descriptor files, represented as absolute paths.
-func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+func (cph *CommonPackageUpdater) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	if len(descriptorFilesSuffixes) == 0 {
 		return
 	}

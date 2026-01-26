@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"encoding/json"
@@ -80,7 +80,7 @@ func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
 
 // fillDependenciesMap collects direct dependencies from the pomPath pom.xml file.
 // If the version of a dependency is set in another property section, it is added as its value in the map.
-func (mph *MavenPackageHandler) fillDependenciesMap(pomPath string) error {
+func (mph *MavenPackageUpdater) fillDependenciesMap(pomPath string) error {
 	contentBytes, err := os.ReadFile(filepath.Clean(pomPath))
 	if err != nil {
 		return errors.New("couldn't read pom.xml file: " + err.Error())
@@ -133,7 +133,7 @@ type pomDependencyDetails struct {
 	foundInDependencyManagement bool
 }
 
-func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler {
+func NewMavenPackageUpdater(scanDetails *utils.ScanDetails) *MavenPackageUpdater {
 	depTreeParams := &java.DepTreeParams{
 		Server:                  scanDetails.ServerDetails,
 		IsMavenDepTreeInstalled: true,
@@ -141,11 +141,11 @@ func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler
 	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,
 	// Therefore, we set the `isDepTreeInstalled` flag to true
 	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.Projects)
-	return &MavenPackageHandler{MavenDepTreeManager: mavenDepTreeManager}
+	return &MavenPackageUpdater{MavenDepTreeManager: mavenDepTreeManager}
 }
 
-type MavenPackageHandler struct {
-	CommonPackageHandler
+type MavenPackageUpdater struct {
+	CommonPackageUpdater
 	// pomDependencies holds a map of direct dependencies found in pom.xml.
 	pomDependencies map[string]pomDependencyDetails
 	// pomPaths holds the paths to all the pom.xml files that are related to the current project.
@@ -154,7 +154,7 @@ type MavenPackageHandler struct {
 	*java.MavenDepTreeManager
 }
 
-func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (mph *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	// When resolution from an Artifactory server is necessary, a settings.xml file will be generated, and its path will be set in mph.
 	if mph.GetDepsRepo() != "" {
 		var clearMavenDepTreeRun func() error
@@ -201,7 +201,7 @@ func (mph *MavenPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 }
 
 // Returns project's Pom paths. This function requires an execution of maven-dep-tree 'project' command prior to its execution
-func (mph *MavenPackageHandler) getProjectPoms() (err error) {
+func (mph *MavenPackageUpdater) getProjectPoms() (err error) {
 	// Check if we already scanned the project pom.xml locations
 	if len(mph.pomPaths) > 0 {
 		return
@@ -243,7 +243,7 @@ func (mph *MavenPackageHandler) getProjectPoms() (err error) {
 }
 
 // Update the package version. Updates it only if the version is not a reference to a property.
-func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersion string, foundInDependencyManagement bool) error {
+func (mph *MavenPackageUpdater) updatePackageVersion(impactedPackage, fixedVersion string, foundInDependencyManagement bool) error {
 	updateVersionArgs := []string{
 		"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:use-dep-version", "-Dincludes=" + impactedPackage,
 		"-DdepVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
@@ -263,7 +263,7 @@ func (mph *MavenPackageHandler) updatePackageVersion(impactedPackage, fixedVersi
 }
 
 // Update properties that represent this package's version.
-func (mph *MavenPackageHandler) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
+func (mph *MavenPackageUpdater) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
 	for _, property := range depDetails.properties {
 		updatePropertyArgs := []string{
 			"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:set-property", "-Dproperty=" + property,

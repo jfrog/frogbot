@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"os"
