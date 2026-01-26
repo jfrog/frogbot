@@ -131,11 +131,6 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 	return
 }
 
-// This function adjusts the name and version of a dependency to conform to a regular expression format and constructs the complete regular expression pattern for searching.
-// Note: 'dependencyLineFormat' should be a template with two placeholders to be populated. The first one will be replaced with 'impactedName', and the second one with 'impactedVersion'.
-// Note: All supplied arguments are converted to lowercase. Hence, when utilizing this function, the file in which we search for the patterns must also be converted to lowercase.
-// Note: This function may not support all package manager dependency formats. It is designed for package managers where the dependency's name consists of a single component.
-// For example, in Gradle descriptors, a dependency line may consist of two components for the dependency's name (e.g., implementation group: 'junit', name: 'junit', version: '4.7'), therefore this func cannot be utilized in this case.
 func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
 	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
 	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))

@@ -322,7 +322,6 @@ func (npm *NpmPackageUpdater) runNpmInstall() error {
 	return nil
 }
 
-// Creates an environment slice with npm isolation variables that override user's .npmrc settings for specific options while allowing registry configuration to pass through
 func (npm *NpmPackageUpdater) buildIsolatedEnv() []string {
 	env := os.Environ()
 	for key, value := range npmInstallEnvVars {
