@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetFixedDescriptor(t *testing.T) {
+func TestYarnGetFixedDescriptor(t *testing.T) {
 	testcases := []struct {
 		name            string
 		originalContent string
@@ -78,19 +78,19 @@ func TestGetFixedDescriptor(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name:            "update in overrides section",
-			originalContent: `{"dependencies": {"express": "4.18.0"}, "overrides": {"minimist": "1.2.5"}}`,
+			name:            "update in resolutions section (Yarn-specific)",
+			originalContent: `{"dependencies": {"express": "4.18.0"}, "resolutions": {"minimist": "1.2.5"}}`,
 			packageName:     "minimist",
 			newVersion:      "1.2.6",
-			expectedContent: `{"dependencies": {"express": "4.18.0"}, "overrides": {"minimist": "1.2.6"}}`,
+			expectedContent: `{"dependencies": {"express": "4.18.0"}, "resolutions": {"minimist": "1.2.6"}}`,
 			expectError:     false,
 		},
 		{
-			name:            "update in both dependencies and overrides",
-			originalContent: `{"dependencies": {"minimist": "1.2.5"}, "overrides": {"minimist": "1.2.5"}}`,
+			name:            "update in both dependencies and resolutions",
+			originalContent: `{"dependencies": {"minimist": "1.2.5"}, "resolutions": {"minimist": "1.2.5"}}`,
 			packageName:     "minimist",
 			newVersion:      "1.2.6",
-			expectedContent: `{"dependencies": {"minimist": "1.2.6"}, "overrides": {"minimist": "1.2.6"}}`,
+			expectedContent: `{"dependencies": {"minimist": "1.2.6"}, "resolutions": {"minimist": "1.2.6"}}`,
 			expectError:     false,
 		},
 		{
@@ -137,7 +137,7 @@ func TestGetFixedDescriptor(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := UpdatePackageJsonDependency([]byte(tc.originalContent), tc.packageName, tc.newVersion, npmAllowedSections, "package.json")
+			result, err := UpdatePackageJsonDependency([]byte(tc.originalContent), tc.packageName, tc.newVersion, yarnAllowedSections, "package.json")
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -149,7 +149,7 @@ func TestGetFixedDescriptor(t *testing.T) {
 	}
 }
 
-func TestBuildIsolatedEnv(t *testing.T) {
+func TestYarnBuildIsolatedEnv(t *testing.T) {
 	testcases := []struct {
 		name         string
 		predefineEnv bool
@@ -167,14 +167,14 @@ func TestBuildIsolatedEnv(t *testing.T) {
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			if tc.predefineEnv {
-				originalCI := os.Getenv(ciEnv)
+				originalCI := os.Getenv(ciEnvYarn)
 				defer func() {
-					assert.NoError(t, os.Setenv(ciEnv, originalCI))
+					assert.NoError(t, os.Setenv(ciEnvYarn, originalCI))
 				}()
-				assert.NoError(t, os.Setenv(ciEnv, "false"))
+				assert.NoError(t, os.Setenv(ciEnvYarn, "false"))
 			}
 
-			env := buildIsolatedEnv(npmInstallEnvVars)
+			env := buildIsolatedEnv(yarnInstallEnvVars)
 
 			envMap := make(map[string]string)
 			envCount := make(map[string]int)
@@ -186,21 +186,17 @@ func TestBuildIsolatedEnv(t *testing.T) {
 				}
 			}
 
-			assert.Equal(t, "true", envMap[configIgnoreScriptsEnv])
-			assert.Equal(t, "false", envMap[configAuditEnv])
-			assert.Equal(t, "false", envMap[configFundEnv])
-			assert.Equal(t, "error", envMap[configLevelEnv])
-			assert.Equal(t, "true", envMap[ciEnv])
+			assert.Equal(t, "true", envMap[ciEnvYarn])
 
 			if tc.predefineEnv {
-				assert.Equal(t, 1, envCount[ciEnv], "CI should appear exactly once")
+				assert.Equal(t, 1, envCount[ciEnvYarn], "CI should appear exactly once")
 			}
 		})
 	}
 }
 
-func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
-	tmpDir, err := os.MkdirTemp("", "npm-descriptor-test-")
+func TestYarnGetDescriptorsToFixFromVulnerability(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "yarn-descriptor-test-")
 	assert.NoError(t, err)
 	defer func() {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
@@ -222,13 +218,13 @@ func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name: "derives package.json from package-lock.json path",
+			name: "derives package.json from yarn.lock path",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						ImpactedDependencyName: "minimist",
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(tmpDir, "package-lock.json")}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(tmpDir, "yarn.lock")}},
 						},
 					},
 				},
@@ -243,7 +239,7 @@ func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						ImpactedDependencyName: "minimist",
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(nestedDir, "package-lock.json")}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(nestedDir, "yarn.lock")}},
 						},
 					},
 				},
@@ -272,7 +268,7 @@ func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						ImpactedDependencyName: "minimist",
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/nonexistent/path/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/nonexistent/path/yarn.lock"}},
 						},
 					},
 				},
@@ -285,7 +281,7 @@ func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := GetDescriptorsToFixFromVulnerability(tc.vulnDetails, npmLockFileName)
+			result, err := GetDescriptorsToFixFromVulnerability(tc.vulnDetails, yarnLockFileName)
 			if tc.expectError {
 				assert.Error(t, err)
 				if tc.errorContains != "" {
@@ -298,4 +294,89 @@ func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestYarnDetectVersion(t *testing.T) {
+	testcases := []struct {
+		name            string
+		lockfileContent string
+		expectedIsBerry bool
+	}{
+		{
+			name: "Yarn Berry - detected by __metadata header",
+			lockfileContent: `__metadata:
+  version: 6
+  cacheKey: 8
+
+"minimist@npm:^1.2.6":
+  version: 1.2.6
+  resolution: "minimist@npm:1.2.6"`,
+			expectedIsBerry: true,
+		},
+		{
+			name: "Yarn Classic - any other lockfile format",
+			lockfileContent: `# yarn lockfile v1
+
+minimist@^1.2.5:
+  version "1.2.6"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz"`,
+			expectedIsBerry: false,
+		},
+		{
+			name: "Yarn Classic - ambiguous header defaults to Classic",
+			lockfileContent: `# Some other header
+
+minimist@^1.2.5:
+  version "1.2.6"`,
+			expectedIsBerry: false,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, err := os.MkdirTemp("", "yarn-version-test-")
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+			}()
+
+			originalWd, err := os.Getwd()
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, os.Chdir(originalWd))
+			}()
+
+			assert.NoError(t, os.Chdir(tmpDir))
+
+			lockfilePath := filepath.Join(tmpDir, yarnLockFileName)
+			assert.NoError(t, os.WriteFile(lockfilePath, []byte(tc.lockfileContent), 0644))
+
+			yarn := &YarnPackageUpdater{}
+			isBerry, err := yarn.detectYarnVersion()
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedIsBerry, isBerry)
+		})
+	}
+}
+
+func TestYarnDetectVersionError(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "yarn-version-error-test-")
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+
+	originalWd, err := os.Getwd()
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, os.Chdir(originalWd))
+	}()
+
+	assert.NoError(t, os.Chdir(tmpDir))
+
+	yarn := &YarnPackageUpdater{}
+	_, err = yarn.detectYarnVersion()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to read yarn.lock")
 }
