@@ -89,7 +89,7 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 
 	var failingDescriptors []string
 	for _, descriptorPath := range descriptorPaths {
-		if fixErr := npm.fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
+		if fixErr := npm.fixVulnerabilityAndRegenerateLock(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
 			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, descriptorPath, fixErr)
 			log.Warn(failedFixErrorMsg.Error())
 			err = errors.Join(err, failedFixErrorMsg)
@@ -127,36 +127,11 @@ func (npm *NpmPackageUpdater) getDescriptorsToFixFromVulnerability(vulnDetails *
 	return descriptorPaths, nil
 }
 
-func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) (err error) {
-	descriptorContent, err := os.ReadFile(descriptorPath)
+func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) error {
+	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath, vulnRegexp)
 	if err != nil {
-		return fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
+		return err
 	}
-
-	if !vulnRegexp.MatchString(strings.ToLower(string(descriptorContent))) {
-		return fmt.Errorf("dependency '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, descriptorPath)
-	}
-
-	backupContent := make([]byte, len(descriptorContent))
-	copy(backupContent, descriptorContent)
-	updatedContent, err := npm.updateVersionInDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, descriptorPath)
-	if err != nil {
-		return fmt.Errorf("failed to update version in descriptor: %w", err)
-	}
-
-	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
-		return fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
-	}
-
-	descriptorDir := filepath.Dir(descriptorPath)
-	if err = os.Chdir(descriptorDir); err != nil {
-		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
-	}
-	defer func() {
-		if chErr := os.Chdir(originalWd); chErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
-		}
-	}()
 
 	lockFileTracked, checkErr := utils.IsFileTrackedByGit(npmLockFileName, originalWd)
 	if checkErr != nil {
@@ -167,8 +142,50 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 	if !lockFileTracked {
 		log.Debug(fmt.Sprintf("Lock file '%s' does not exist in remote, skipping lock file regeneration", npmLockFileName))
 		log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s' without regenerating lock file", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
-		return
+		return nil
 	}
+
+	if err = npm.RegenerateLockfile(vulnDetails, descriptorPath, originalWd, backupContent); err != nil {
+		return err
+	}
+
+	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
+	return nil
+}
+
+func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, vulnRegexp *regexp.Regexp) ([]byte, error) {
+	descriptorContent, err := os.ReadFile(descriptorPath)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
+	}
+
+	if !vulnRegexp.MatchString(strings.ToLower(string(descriptorContent))) {
+		return []byte{}, fmt.Errorf("dependency '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, descriptorPath)
+	}
+
+	backupContent := make([]byte, len(descriptorContent))
+	copy(backupContent, descriptorContent)
+	updatedContent, err := npm.getFixedDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, descriptorPath)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to update version in descriptor: %w", err)
+	}
+
+	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
+		return []byte{}, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
+	}
+	return backupContent, nil
+}
+
+func (npm *NpmPackageUpdater) RegenerateLockfile(vulnDetails *utils.VulnerabilityDetails, descriptorPath, originalWd string, backupContent []byte) (err error) {
+	descriptorDir := filepath.Dir(descriptorPath)
+	if err = os.Chdir(descriptorDir); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
+	}
+	defer func() {
+		if chErr := os.Chdir(originalWd); chErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
+		}
+	}()
 
 	if err = npm.regenerateLockFileWithRetry(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
@@ -177,11 +194,11 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLockIfNeeded(vulnDeta
 		}
 		return err
 	}
-	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
 	return nil
 }
 
-func (npm *NpmPackageUpdater) updateVersionInDescriptor(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
+// todo eran here was updateVersionInDescriptor
+func (npm *NpmPackageUpdater) getFixedDescriptor(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
 	sectionRanges := npm.findAllowedSectionRanges(content)
 	if len(sectionRanges) == 0 {
 		return nil, fmt.Errorf("no dependency sections found in descriptor")

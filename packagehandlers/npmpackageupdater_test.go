@@ -78,7 +78,7 @@ func TestNpmBuildPackageRegex(t *testing.T) {
 	}
 }
 
-func TestUpdateVersionInDescriptor(t *testing.T) {
+func TestGetFixedDescriptor(t *testing.T) {
 	npm := &NpmPackageUpdater{}
 
 	testcases := []struct {
@@ -205,7 +205,7 @@ func TestUpdateVersionInDescriptor(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := npm.updateVersionInDescriptor([]byte(tc.originalContent), tc.packageName, tc.newVersion, "package.json")
+			result, err := npm.getFixedDescriptor([]byte(tc.originalContent), tc.packageName, tc.newVersion, "package.json")
 
 			if tc.expectError {
 				assert.Error(t, err)
