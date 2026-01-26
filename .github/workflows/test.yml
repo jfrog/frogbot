@@ -73,8 +73,8 @@ jobs:
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
 
-          - name: 'Package Handlers'
-            package: 'packagehandlers'
+          - name: 'Package Updaters'
+            package: 'packageupdaters'
 
         os: [ ubuntu, windows, macos ]
     steps:
