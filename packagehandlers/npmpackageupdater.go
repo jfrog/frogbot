@@ -1,20 +1,20 @@
 package packagehandlers
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -38,9 +38,6 @@ const (
 	overridesSection            = "overrides"
 
 	npmInstallTimeout = 15 * time.Minute
-
-	npmDependencyRegexpPattern  = `\s*"%s"\s*:\s*"[^"]+"`
-	npmDependencyReplacePattern = `(\s*"%s"\s*:\s*")[^"]+(")`
 )
 
 var npmAllowedSections = []string{dependenciesSection, devDependenciesSection, optionalDependenciesSection, overridesSection}
@@ -52,11 +49,6 @@ var npmInstallEnvVars = map[string]string{
 	configLevelEnv:         "error",
 	ciEnv:                  "true",
 	noUpdateNotifierEnv:    "1",
-}
-
-type byteRange struct {
-	start int
-	end   int
 }
 
 type NpmPackageUpdater struct {
@@ -85,11 +77,9 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	vulnRegexp := BuildPackageRegex(vulnDetails.ImpactedDependencyName, npmDependencyRegexpPattern)
-
 	var failingDescriptors []string
 	for _, descriptorPath := range descriptorPaths {
-		if fixErr := npm.fixVulnerabilityAndRegenerateLock(vulnDetails, descriptorPath, originalWd, vulnRegexp); fixErr != nil {
+		if fixErr := npm.fixVulnerabilityAndRegenerateLock(vulnDetails, descriptorPath, originalWd); fixErr != nil {
 			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, descriptorPath, fixErr)
 			log.Warn(failedFixErrorMsg.Error())
 			err = errors.Join(err, failedFixErrorMsg)
@@ -127,8 +117,8 @@ func (npm *NpmPackageUpdater) getDescriptorsToFixFromVulnerability(vulnDetails *
 	return descriptorPaths, nil
 }
 
-func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string, vulnRegexp *regexp.Regexp) error {
-	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath, vulnRegexp)
+func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string) error {
+	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath)
 	if err != nil {
 		return err
 	}
@@ -153,25 +143,22 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	return nil
 }
 
-func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, vulnRegexp *regexp.Regexp) ([]byte, error) {
+func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string) ([]byte, error) {
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
-		return []byte{}, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
-	}
-
-	if !vulnRegexp.MatchString(strings.ToLower(string(descriptorContent))) {
-		return []byte{}, fmt.Errorf("dependency '%s' not found in descriptor '%s' despite lock file evidence", vulnDetails.ImpactedDependencyName, descriptorPath)
+		return nil, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
 	}
 
 	backupContent := make([]byte, len(descriptorContent))
 	copy(backupContent, descriptorContent)
+
 	updatedContent, err := npm.getFixedDescriptor(descriptorContent, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, descriptorPath)
 	if err != nil {
-		return []byte{}, fmt.Errorf("failed to update version in descriptor: %w", err)
+		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
 	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
-		return []byte{}, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
+		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
 	return backupContent, nil
 }
@@ -197,103 +184,31 @@ func (npm *NpmPackageUpdater) RegenerateLockfile(vulnDetails *utils.Vulnerabilit
 	return nil
 }
 
-// todo eran here was updateVersionInDescriptor
 func (npm *NpmPackageUpdater) getFixedDescriptor(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
-	sectionRanges := npm.findAllowedSectionRanges(content)
-	if len(sectionRanges) == 0 {
-		return nil, fmt.Errorf("no dependency sections found in descriptor")
+	updated := false
+	escapedName := escapeJsonPathKey(packageName)
+
+	for _, section := range npmAllowedSections {
+		path := section + "." + escapedName
+		if gjson.GetBytes(content, path).Exists() {
+			var err error
+			content, err = sjson.SetBytes(content, path, newVersion)
+			if err != nil {
+				return nil, fmt.Errorf("failed to set version for '%s' in section '%s': %w", packageName, section, err)
+			}
+			updated = true
+		}
 	}
 
-	escapedName := regexp.QuoteMeta(packageName)
-	replacePattern := fmt.Sprintf(npmDependencyReplacePattern, escapedName)
-	replaceRegex := regexp.MustCompile("(?i)" + replacePattern)
-
-	validMatches := findValidMatches(replaceRegex, content, sectionRanges)
-	if len(validMatches) == 0 {
+	if !updated {
 		return nil, fmt.Errorf("package '%s' not found in allowed sections [%s] in '%s'", packageName, strings.Join(npmAllowedSections, ", "), descriptorPath)
 	}
-
-	return replaceVersionInMatches(content, validMatches, replaceRegex, newVersion), nil
+	return content, nil
 }
 
-func replaceVersionInMatches(content []byte, matches [][]int, replaceRegex *regexp.Regexp, newVersion string) []byte {
-	replacement := []byte(fmt.Sprintf("${1}%s${2}", newVersion))
-	for i := len(matches) - 1; i >= 0; i-- {
-		match := matches[i]
-		matchedText := content[match[0]:match[1]]
-		replacedText := replaceRegex.ReplaceAll(matchedText, replacement)
-		content = append(content[:match[0]], append(replacedText, content[match[1]:]...)...)
-	}
-	return content
-}
-
-func findValidMatches(replaceRegex *regexp.Regexp, content []byte, sectionRanges []byteRange) [][]int {
-	matches := replaceRegex.FindAllIndex(content, -1)
-	var validMatches [][]int
-	for _, match := range matches {
-		if isPositionInRanges(match[0], sectionRanges) {
-			validMatches = append(validMatches, match)
-		}
-	}
-	return validMatches
-}
-
-func (npm *NpmPackageUpdater) findAllowedSectionRanges(content []byte) []byteRange {
-	var ranges []byteRange
-	contentLower := bytes.ToLower(content)
-
-	for _, sectionName := range npmAllowedSections {
-		pattern := fmt.Sprintf(`"%s"\s*:\s*\{`, strings.ToLower(sectionName))
-		regex := regexp.MustCompile(pattern)
-
-		match := regex.FindIndex(contentLower)
-		if match != nil {
-			openBrace := bytes.IndexByte(content[match[0]:match[1]], '{') + match[0]
-			closeBrace := npm.findMatchingBrace(content, openBrace)
-			if closeBrace != -1 {
-				ranges = append(ranges, byteRange{start: openBrace, end: closeBrace})
-			}
-		}
-	}
-
-	return ranges
-}
-
-func (npm *NpmPackageUpdater) findMatchingBrace(content []byte, openBracePos int) int {
-	depth := 1
-	inString := false
-
-	for i := openBracePos + 1; i < len(content); i++ {
-		c := content[i]
-
-		if c == '"' && (i == 0 || content[i-1] != '\\') {
-			inString = !inString
-			continue
-		}
-
-		if !inString {
-			switch c {
-			case '{':
-				depth++
-			case '}':
-				depth--
-				if depth == 0 {
-					return i
-				}
-			}
-		}
-	}
-
-	return -1
-}
-
-func isPositionInRanges(pos int, ranges []byteRange) bool {
-	for _, r := range ranges {
-		if pos >= r.start && pos <= r.end {
-			return true
-		}
-	}
-	return false
+func escapeJsonPathKey(key string) string {
+	r := strings.NewReplacer(".", "\\.", "*", "\\*", "?", "\\?")
+	return r.Replace(key)
 }
 
 func (npm *NpmPackageUpdater) regenerateLockFileWithRetry() error {
@@ -340,10 +255,15 @@ func (npm *NpmPackageUpdater) runNpmInstall() error {
 }
 
 func (npm *NpmPackageUpdater) buildIsolatedEnv() []string {
-	env := os.Environ()
+	var env []string
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if _, shouldOverride := npmInstallEnvVars[key]; !shouldOverride {
+			env = append(env, e)
+		}
+	}
 	for key, value := range npmInstallEnvVars {
 		env = append(env, fmt.Sprintf("%s=%s", key, value))
 	}
-
 	return env
 }

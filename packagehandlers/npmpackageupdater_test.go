@@ -12,72 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNpmBuildPackageRegex(t *testing.T) {
-	testcases := []struct {
-		name        string
-		packageName string
-		testContent string
-		shouldMatch bool
-	}{
-		{
-			name:        "matches package with exact version format",
-			packageName: "minimist",
-			testContent: `"minimist": "1.2.5"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "matches package with caret version format",
-			packageName: "lodash",
-			testContent: `"lodash": "^4.17.0"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "matches package with tilde version format",
-			packageName: "express",
-			testContent: `"express": "~4.18.0"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "matches scoped package",
-			packageName: "@types/node",
-			testContent: `"@types/node": "18.0.0"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "matches package regardless of version value",
-			packageName: "minimist",
-			testContent: `"minimist": "1.2.6"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "does not match similar package name",
-			packageName: "minimist",
-			testContent: `"minimatch": "1.2.5"`,
-			shouldMatch: false,
-		},
-		{
-			name:        "matches package case insensitively",
-			packageName: "Minimist",
-			testContent: `"minimist": "1.2.5"`,
-			shouldMatch: true,
-		},
-		{
-			name:        "matches package with build metadata in version",
-			packageName: "somepackage",
-			testContent: `"somepackage": "1.0.0+build.123"`,
-			shouldMatch: true,
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			regex := BuildPackageRegex(tc.packageName, npmDependencyRegexpPattern)
-			matches := regex.MatchString(strings.ToLower(tc.testContent))
-			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
-		})
-	}
-}
-
 func TestGetFixedDescriptor(t *testing.T) {
 	npm := &NpmPackageUpdater{}
 
@@ -186,20 +120,20 @@ func TestGetFixedDescriptor(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			name: "preserve formatting with spaces",
-			originalContent: `{
-  "dependencies": {
-    "minimist": "1.2.5"
-  }
-}`,
-			packageName: "minimist",
-			newVersion:  "1.2.6",
-			expectedContent: `{
-  "dependencies": {
-    "minimist": "1.2.6"
-  }
-}`,
-			expectError: false,
+			name:            "package name with dot",
+			originalContent: `{"dependencies": {"vue.config": "1.0.0"}}`,
+			packageName:     "vue.config",
+			newVersion:      "2.0.0",
+			expectedContent: `{"dependencies": {"vue.config": "2.0.0"}}`,
+			expectError:     false,
+		},
+		{
+			name:            "no dependency sections",
+			originalContent: `{"name": "test", "version": "1.0.0"}`,
+			packageName:     "minimist",
+			newVersion:      "1.2.6",
+			expectedContent: "",
+			expectError:     true,
 		},
 	}
 
@@ -217,29 +151,105 @@ func TestGetFixedDescriptor(t *testing.T) {
 	}
 }
 
-func TestBuildIsolatedEnv(t *testing.T) {
-	npm := &NpmPackageUpdater{}
-	env := npm.buildIsolatedEnv()
-
-	// Convert to map for easier checking
-	envMap := make(map[string]string)
-	for _, e := range env {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
+func TestEscapeJsonPathKey(t *testing.T) {
+	testcases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "simple package name",
+			input:    "lodash",
+			expected: "lodash",
+		},
+		{
+			name:     "scoped package",
+			input:    "@types/node",
+			expected: "@types/node",
+		},
+		{
+			name:     "package with dot",
+			input:    "vue.config",
+			expected: "vue\\.config",
+		},
+		{
+			name:     "package with multiple dots",
+			input:    "some.package.name",
+			expected: "some\\.package\\.name",
+		},
+		{
+			name:     "package with asterisk",
+			input:    "package*name",
+			expected: "package\\*name",
+		},
+		{
+			name:     "package with question mark",
+			input:    "package?name",
+			expected: "package\\?name",
+		},
 	}
 
-	// Verify all required env vars are set
-	assert.Equal(t, "true", envMap[configIgnoreScriptsEnv])
-	assert.Equal(t, "false", envMap[configAuditEnv])
-	assert.Equal(t, "false", envMap[configFundEnv])
-	assert.Equal(t, "error", envMap[configLevelEnv])
-	assert.Equal(t, "true", envMap[ciEnv])
-	assert.Equal(t, "1", envMap[noUpdateNotifierEnv])
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := escapeJsonPathKey(tc.input)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
 }
 
-func TestNpmGetDescriptorPathsFromVulnerability(t *testing.T) {
+func TestBuildIsolatedEnv(t *testing.T) {
+	testcases := []struct {
+		name         string
+		predefineEnv bool
+	}{
+		{
+			name:         "sets required env vars",
+			predefineEnv: false,
+		},
+		{
+			name:         "overrides conflicting user env vars",
+			predefineEnv: true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.predefineEnv {
+				originalCI := os.Getenv(ciEnv)
+				defer func() {
+					assert.NoError(t, os.Setenv(ciEnv, originalCI))
+				}()
+				assert.NoError(t, os.Setenv(ciEnv, "false"))
+			}
+
+			npm := &NpmPackageUpdater{}
+			env := npm.buildIsolatedEnv()
+
+			envMap := make(map[string]string)
+			envCount := make(map[string]int)
+			for _, e := range env {
+				parts := strings.SplitN(e, "=", 2)
+				if len(parts) == 2 {
+					envMap[parts[0]] = parts[1]
+					envCount[parts[0]]++
+				}
+			}
+
+			assert.Equal(t, "true", envMap[configIgnoreScriptsEnv])
+			assert.Equal(t, "false", envMap[configAuditEnv])
+			assert.Equal(t, "false", envMap[configFundEnv])
+			assert.Equal(t, "error", envMap[configLevelEnv])
+			assert.Equal(t, "true", envMap[ciEnv])
+			assert.Equal(t, "1", envMap[noUpdateNotifierEnv])
+
+			if tc.predefineEnv {
+				assert.Equal(t, 1, envCount[ciEnv], "CI should appear exactly once")
+			}
+		})
+	}
+}
+
+func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
 	npm := &NpmPackageUpdater{}
 	tmpDir, err := os.MkdirTemp("", "npm-descriptor-test-")
 	assert.NoError(t, err)
@@ -247,11 +257,9 @@ func TestNpmGetDescriptorPathsFromVulnerability(t *testing.T) {
 		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
 	}()
 
-	// Create a package.json in the temp directory
 	packageJsonPath := filepath.Join(tmpDir, "package.json")
 	assert.NoError(t, os.WriteFile(packageJsonPath, []byte(`{"name": "test"}`), 0644))
 
-	// Create nested directory with package.json
 	nestedDir := filepath.Join(tmpDir, "apps", "frontend")
 	assert.NoError(t, os.MkdirAll(nestedDir, 0755))
 	nestedPackageJsonPath := filepath.Join(nestedDir, "package.json")
@@ -338,121 +346,6 @@ func TestNpmGetDescriptorPathsFromVulnerability(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.ElementsMatch(t, tc.expectedPaths, result)
-			}
-		})
-	}
-}
-
-func TestFindAllowedSectionRanges(t *testing.T) {
-	npm := &NpmPackageUpdater{}
-
-	testcases := []struct {
-		name           string
-		content        string
-		expectedRanges int
-	}{
-		{
-			name: "single dependencies section",
-			content: `{
-  "name": "test",
-  "dependencies": {
-    "lodash": "4.17.21"
-  }
-}`,
-			expectedRanges: 1,
-		},
-		{
-			name: "multiple allowed sections",
-			content: `{
-  "name": "test",
-  "dependencies": {
-    "lodash": "4.17.21"
-  },
-  "devDependencies": {
-    "jest": "29.0.0"
-  },
-  "optionalDependencies": {
-    "fsevents": "2.3.2"
-  }
-}`,
-			expectedRanges: 3,
-		},
-		{
-			name: "all allowed sections including overrides",
-			content: `{
-  "dependencies": { "a": "1.0.0" },
-  "devDependencies": { "b": "1.0.0" },
-  "optionalDependencies": { "c": "1.0.0" },
-  "overrides": { "d": "1.0.0" }
-}`,
-			expectedRanges: 4,
-		},
-		{
-			name: "ignored sections only - peerDependencies",
-			content: `{
-  "name": "test",
-  "peerDependencies": {
-    "react": "^18.0.0"
-  }
-}`,
-			expectedRanges: 0,
-		},
-		{
-			name: "mixed allowed and ignored sections",
-			content: `{
-  "dependencies": {
-    "lodash": "4.17.21"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0"
-  },
-  "devDependencies": {
-    "jest": "29.0.0"
-  }
-}`,
-			expectedRanges: 2,
-		},
-		{
-			name:           "no sections at all",
-			content:        `{"name": "test", "version": "1.0.0"}`,
-			expectedRanges: 0,
-		},
-		{
-			name: "nested braces within section",
-			content: `{
-  "dependencies": {
-    "webpack": "5.0.0",
-    "config": {
-      "nested": "value"
-    }
-  }
-}`,
-			expectedRanges: 1,
-		},
-		{
-			name: "section with string containing braces",
-			content: `{
-  "dependencies": {
-    "lodash": "4.17.21"
-  },
-  "scripts": {
-    "test": "echo \"{test}\""
-  }
-}`,
-			expectedRanges: 1,
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			ranges := npm.findAllowedSectionRanges([]byte(tc.content))
-			assert.Len(t, ranges, tc.expectedRanges)
-
-			for _, r := range ranges {
-				assert.True(t, r.start >= 0, "start should be non-negative")
-				assert.True(t, r.end > r.start, "end should be greater than start")
-				assert.Equal(t, byte('{'), tc.content[r.start], "range should start with opening brace")
-				assert.Equal(t, byte('}'), tc.content[r.end], "range should end with closing brace")
 			}
 		})
 	}

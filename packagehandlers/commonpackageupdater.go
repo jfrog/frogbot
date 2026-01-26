@@ -138,12 +138,6 @@ func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineF
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-func BuildPackageRegex(packageName, dependencyLineFormat string) *regexp.Regexp {
-	escapedName := strings.ToLower(regexp.QuoteMeta(packageName))
-	pattern := fmt.Sprintf(dependencyLineFormat, escapedName)
-	return regexp.MustCompile(pattern)
-}
-
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
