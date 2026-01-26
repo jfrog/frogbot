@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -23,9 +22,15 @@ type dependencyFixTest struct {
 	vulnDetails         *utils.VulnerabilityDetails
 	scanDetails         *utils.ScanDetails
 	fixSupported        bool
+	errorExpected       bool
 	specificTechVersion string
 	testDirName         string
 	descriptorsToCheck  []string
+	testcaseInfo        string
+	// For this param give the relative path from the test project root
+	lockFileToVerifyItsChange string
+	// Verifies descriptor content is unchanged after error (for rollback testing)
+	descriptorToVerifyNoChange string
 }
 
 const (
@@ -50,31 +55,19 @@ func TestUpdateDependency(t *testing.T) {
 		// Go test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.0.0-20201216223049-8b5274cf687f",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "golang.org/x/crypto"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "golang.org/x/crypto", "", "0.0.0-20201216223049-8b5274cf687f", false, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.7.7",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/gin-gonic/gin"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/gin-gonic/gin", "", "1.7.7", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.3.0",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Go, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "github.com/google/uuid"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/google/uuid", "", "1.3.0", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{GoPackageDescriptor},
@@ -84,66 +77,40 @@ func TestUpdateDependency(t *testing.T) {
 		// Python test cases (includes pip, pipenv, poetry)
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pip, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Poetry, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.25.9",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "urllib3"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pipenv, "urllib3", "", "1.25.9", false, ""),
 				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true,
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pip, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "Pyjwt"}},
-					IsDirectDependency:          true},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "Pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Poetry, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-					IsDirectDependency:          true},
+				vulnDetails:        createVulnerabilityDetails(techutils.Poetry, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"pyproject.toml"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.4.0",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pipenv, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "pyjwt"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pipenv, "pyjwt", "", "2.4.0", true, ""),
 				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
 				fixSupported:       true,
 				descriptorsToCheck: []string{"Pipfile"},
@@ -153,56 +120,53 @@ func TestUpdateDependency(t *testing.T) {
 		// Npm test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.8.4",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
-				},
+				// Test project doesn't exist for the testcase - we just check skipping indirect dependency fix
+				testcaseInfo: "test-skip-fixing-indirect",
+				vulnDetails:  createVulnerabilityDetails(techutils.Npm, "mpath", "0.8.3", "0.8.4", false, "package-lock.json"),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Npm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
-				scanDetails:        scanDetails,
-				fixSupported:       true,
-				descriptorsToCheck: []string{"package.json"},
+				vulnDetails:               createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				scanDetails:               scanDetails,
+				fixSupported:              true,
+				descriptorsToCheck:        []string{"package.json"},
+				lockFileToVerifyItsChange: "package-lock.json",
+			},
+			{
+				testcaseInfo:  "no-location-evidence",
+				vulnDetails:   createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, ""),
+				scanDetails:   scanDetails,
+				fixSupported:  true,
+				errorExpected: true,
+			},
+			{
+				testcaseInfo:               "rollback-on-npm-install-failure",
+				vulnDetails:                createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				scanDetails:                scanDetails,
+				testDirName:                "npm-rollback",
+				fixSupported:               true,
+				errorExpected:              true,
+				descriptorToVerifyNoChange: "package.json",
 			},
 		},
 
 		// Yarn test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:         createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", true, ""),
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "1",
 				descriptorsToCheck:  []string{"package.json"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Yarn, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist"}},
-				},
+				vulnDetails:         createVulnerabilityDetails(techutils.Yarn, "minimist", "", "1.2.6", true, ""),
 				scanDetails:         scanDetails,
 				fixSupported:        true,
 				specificTechVersion: "2",
@@ -213,20 +177,12 @@ func TestUpdateDependency(t *testing.T) {
 		// Maven test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.3.20",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "org.springframework:spring-core"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Maven, "org.springframework:spring-core", "", "4.3.20", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "2.7",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Maven, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-io:commons-io"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Maven, "commons-io:commons-io", "", "2.7", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
@@ -236,22 +192,13 @@ func TestUpdateDependency(t *testing.T) {
 		// NuGet test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.1.1",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Nuget, "snappier", "1.1.0", "1.1.1", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 				testDirName:  "dotnet",
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.1.1",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Nuget, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "snappier", ImpactedDependencyVersion: "1.1.0"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Nuget, "snappier", "1.1.0", "1.1.1", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "dotnet",
@@ -262,48 +209,30 @@ func TestUpdateDependency(t *testing.T) {
 		// Gradle test cases
 		{
 			{
-				// This test case is designed to use a project that doesn't exist in the testdata/indirect-projects directory. Its purpose is to confirm that we correctly skip fixing an indirect dependency.
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.13.1",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.2"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: dynamic version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "3.+"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: latest version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "latest.release"}},
-				},
-				scanDetails:  scanDetails,
-				fixSupported: false,
-			},
-			{ // Unsupported fix: range version
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.2.2",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "commons-collections:commons-collections", ImpactedDependencyVersion: "[3.0, 3.5.6)"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "3.2", "4.13.1", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "4.13.1",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Gradle, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "junit:junit", ImpactedDependencyVersion: "4.7"}},
-				},
+				testcaseInfo: "unsupported-dynamic-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "3.+", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				testcaseInfo: "unsupported-latest-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "latest.release", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				testcaseInfo: "unsupported-range-version",
+				vulnDetails:  createVulnerabilityDetails(techutils.Gradle, "commons-collections:commons-collections", "[3.0, 3.5.6)", "3.2.2", true, ""),
+				scanDetails:  scanDetails,
+				fixSupported: false,
+			},
+			{
+				vulnDetails:        createVulnerabilityDetails(techutils.Gradle, "junit:junit", "4.7", "4.13.1", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
@@ -312,22 +241,14 @@ func TestUpdateDependency(t *testing.T) {
 
 		// Pnpm test cases
 		{
-			// This test case directs to non-existing directory. It only checks if the dependency update is blocked if the vulnerable dependency is not a direct dependency
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "0.8.4",
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "mpath"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Pnpm, "mpath", "", "0.8.4", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 				testDirName:  "npm",
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "1.2.6",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Pnpm, "minimist", "1.2.5", "1.2.6", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "npm",
@@ -338,22 +259,14 @@ func TestUpdateDependency(t *testing.T) {
 		// Conan test cases
 		{
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.0.14",
-					IsDirectDependency:          true,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
-				},
+				vulnDetails:        createVulnerabilityDetails(techutils.Conan, "openssl", "3.0.9", "3.0.14", true, ""),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "conan",
 				descriptorsToCheck: []string{"conanfile.py", "conanfile.txt"},
 			},
 			{
-				vulnDetails: &utils.VulnerabilityDetails{
-					SuggestedFixedVersion:       "3.0.14",
-					IsDirectDependency:          false,
-					VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Conan, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "openssl", ImpactedDependencyVersion: "3.0.9"}},
-				},
+				vulnDetails:  createVulnerabilityDetails(techutils.Conan, "openssl", "3.0.9", "3.0.14", false, ""),
 				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
@@ -363,7 +276,7 @@ func TestUpdateDependency(t *testing.T) {
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
 			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
-			t.Run(fmt.Sprintf("%s:%s direct:%s", test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.ImpactedDependencyName, strconv.FormatBool(test.vulnDetails.IsDirectDependency)),
+			t.Run(getUpdateDependencyTestcaseName(test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.IsDirectDependency, test.testcaseInfo),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
 					testDirName := test.vulnDetails.Technology.String()
@@ -372,13 +285,45 @@ func TestUpdateDependency(t *testing.T) {
 					}
 					cleanup := createTempDirAndChdir(t, testDataDir, testDirName+test.specificTechVersion)
 					defer cleanup()
+
+					var lockFileContentBeforeUpdate []byte
+					if test.lockFileToVerifyItsChange != "" {
+						var readErr error
+						lockFileContentBeforeUpdate, readErr = os.ReadFile(test.lockFileToVerifyItsChange)
+						assert.NoError(t, readErr, "Failed to read lock file before update")
+					}
+
+					var descriptorContentBeforeUpdate []byte
+					if test.descriptorToVerifyNoChange != "" {
+						var readErr error
+						descriptorContentBeforeUpdate, readErr = os.ReadFile(test.descriptorToVerifyNoChange)
+						assert.NoError(t, readErr, "Failed to read descriptor before update")
+					}
+
 					err := packageHandler.UpdateDependency(test.vulnDetails)
-					if test.fixSupported {
-						assert.NoError(t, err)
-						verifyDependencyUpdate(t, test)
-					} else {
+					if !test.fixSupported {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
+						return
+					}
+
+					if test.errorExpected {
+						assert.Error(t, err)
+						if test.descriptorToVerifyNoChange != "" {
+							descriptorContentAfter, readErr := os.ReadFile(test.descriptorToVerifyNoChange)
+							assert.NoError(t, readErr, "Failed to read descriptor after update")
+							assert.Equal(t, descriptorContentBeforeUpdate, descriptorContentAfter, "Descriptor should be unchanged after rollback")
+						}
+						return
+					}
+
+					assert.NoError(t, err)
+					verifyDependencyUpdate(t, test)
+
+					if test.lockFileToVerifyItsChange != "" {
+						lockFileContentAfter, readErr := os.ReadFile(test.lockFileToVerifyItsChange)
+						assert.NoError(t, readErr, "Failed to read lock file after update")
+						assert.NotEqual(t, lockFileContentBeforeUpdate, lockFileContentAfter, "Lock file should have been updated")
 					}
 				})
 		}
@@ -769,7 +714,7 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 	testedDescriptorFile := descriptorFiles[0]
 
 	for _, testcase := range testcases {
-		vulnRegexpCompiler := GetVulnerabilityRegexCompiler(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
+		vulnRegexpCompiler := BuildPackageWithVersionRegex(testcase.vulnerabilityDetails.ImpactedDependencyName, testcase.vulnerabilityDetails.ImpactedDependencyVersion, dotnetDependencyRegexpPattern)
 		var isFileChanged bool
 		isFileChanged, err = nph.fixVulnerabilityIfExists(testcase.vulnerabilityDetails, testedDescriptorFile, tmpDir, vulnRegexpCompiler)
 		assert.NoError(t, err)
@@ -999,7 +944,7 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 	assert.NoError(t, err)
 	descriptorFileToTest := descriptorFiles[0]
 
-	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
+	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
 	var isFileChanged bool
 	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
 	assert.NoError(t, err)
@@ -1016,4 +961,557 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
 	assert.NoError(t, err)
 	assert.False(t, nodeModulesExist)
+}
+
+func TestGetVulnerabilityLocations(t *testing.T) {
+	testcases := []struct {
+		name          string
+		vulnDetails   *utils.VulnerabilityDetails
+		namesFilters  []string
+		expectedPaths []string
+	}{
+		{
+			name: "single component with location",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/package-lock.json"},
+		},
+		{
+			name: "multiple components with same location - deduplicated",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/package-lock.json"},
+		},
+		{
+			name: "multiple components with different locations",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app1/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app2/package-lock.json"}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/app1/package-lock.json", "/repo/app2/package-lock.json"},
+		},
+		{
+			name: "component with nil location",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: nil},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+		{
+			name: "component with empty file path",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: ""}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+		{
+			name: "no components",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{},
+					},
+				},
+			},
+			expectedPaths: []string{},
+		},
+		{
+			name: "filter by basename - match",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
+							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package-lock.json"},
+			expectedPaths: []string{"package-lock.json"},
+		},
+		{
+			name: "filter by basename - no match",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package-lock.json"},
+			expectedPaths: []string{},
+		},
+		{
+			name: "filter by basename - full path matched by basename",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/apps/frontend/package-lock.json"}},
+							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "/repo/package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package-lock.json"},
+			expectedPaths: []string{"/repo/apps/frontend/package-lock.json"},
+		},
+		{
+			name: "filter with multiple allowed names",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
+							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "yarn.lock"}},
+							{Name: "axios", Version: "0.21.0", Location: &formats.Location{File: "package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package-lock.json", "yarn.lock"},
+			expectedPaths: []string{"package-lock.json", "yarn.lock"},
+		},
+		{
+			name: "empty filter returns all locations",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
+							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{},
+			expectedPaths: []string{"package-lock.json", "package.json"},
+		},
+		{
+			name: "nil filter returns all locations",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
+							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+						},
+					},
+				},
+			},
+			namesFilters:  nil,
+			expectedPaths: []string{"package-lock.json", "package.json"},
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := GetVulnerabilityLocations(tc.vulnDetails, tc.namesFilters)
+			assert.ElementsMatch(t, tc.expectedPaths, result)
+		})
+	}
+}
+
+func TestGetVulnerabilityRegexCompiler(t *testing.T) {
+	// Sample format patterns from different package managers
+	const (
+		npmPattern    = `\s*"%s"\s*:\s*"[~^]?%s"`
+		dotnetPattern = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
+		simplePattern = `%s:%s`
+	)
+
+	testcases := []struct {
+		name          string
+		packageName   string
+		packageVer    string
+		formatPattern string
+		testContent   string
+		shouldMatch   bool
+	}{
+		// Basic matching
+		{
+			name:          "basic npm match",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with caret prefix",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "^4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with tilde prefix",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "~4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm version mismatch",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.21"`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "npm name mismatch",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"underscore": "4.17.20"`,
+			shouldMatch:   false,
+		},
+
+		// Case insensitivity
+		{
+			name:          "case insensitive package name",
+			packageName:   "PyJWT",
+			packageVer:    "2.4.0",
+			formatPattern: simplePattern,
+			testContent:   `pyjwt:2.4.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "case insensitive mixed case",
+			packageName:   "LODASH",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `"lodash": "4.17.20"`,
+			shouldMatch:   true,
+		},
+
+		// Scoped npm packages with @
+		{
+			name:          "scoped npm package",
+			packageName:   "@types/node",
+			packageVer:    "18.0.0",
+			formatPattern: npmPattern,
+			testContent:   `"@types/node": "18.0.0"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "scoped package with org",
+			packageName:   "@angular/core",
+			packageVer:    "15.0.0",
+			formatPattern: npmPattern,
+			testContent:   `"@angular/core": "^15.0.0"`,
+			shouldMatch:   true,
+		},
+
+		// Regex special characters in package name - should be escaped
+		{
+			name:          "package name with dot",
+			packageName:   "lodash.merge",
+			packageVer:    "4.6.2",
+			formatPattern: npmPattern,
+			testContent:   `"lodash.merge": "4.6.2"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dot should not match any character",
+			packageName:   "lodash.merge",
+			packageVer:    "4.6.2",
+			formatPattern: npmPattern,
+			testContent:   `"lodashXmerge": "4.6.2"`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with asterisk",
+			packageName:   "test*package",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test*package:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "asterisk should not match multiple chars",
+			packageName:   "test*package",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `testABCpackage:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with question mark",
+			packageName:   "test?pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test?pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "question mark should not match single char",
+			packageName:   "test?pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `testXpkg:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with brackets",
+			packageName:   "test[pkg]",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test[pkg]:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with parentheses",
+			packageName:   "test(pkg)",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test(pkg):1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with curly braces",
+			packageName:   "test{pkg}",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test{pkg}:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with pipe",
+			packageName:   "test|pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test|pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "pipe should not match as OR",
+			packageName:   "test|pkg",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test:1.0.0`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "package name with caret and dollar",
+			packageName:   "^test$",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `^test$:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "package name with backslash",
+			packageName:   `test\pkg`,
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `test\pkg:1.0.0`,
+			shouldMatch:   true,
+		},
+
+		// Version with special characters
+		{
+			name:          "version with plus (build metadata)",
+			packageName:   "mypackage",
+			packageVer:    "1.0.0+build123",
+			formatPattern: simplePattern,
+			testContent:   `mypackage:1.0.0+build123`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "plus in version should not match one-or-more",
+			packageName:   "mypackage",
+			packageVer:    "1.0.0+",
+			formatPattern: simplePattern,
+			testContent:   `mypackage:1.0.00000`,
+			shouldMatch:   false,
+		},
+		{
+			name:          "version with dots should match literally",
+			packageName:   "pkg",
+			packageVer:    "1.2.3",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1.2.3`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dots should not match any char",
+			packageName:   "pkg",
+			packageVer:    "1.2.3",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1X2Y3`,
+			shouldMatch:   false,
+		},
+
+		// Empty name and version edge cases
+		{
+			name:          "empty package name matches empty",
+			packageName:   "",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "empty version matches empty",
+			packageName:   "pkg",
+			packageVer:    "",
+			formatPattern: simplePattern,
+			testContent:   `pkg:`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "both empty",
+			packageName:   "",
+			packageVer:    "",
+			formatPattern: simplePattern,
+			testContent:   `:`,
+			shouldMatch:   true,
+		},
+
+		// Complex realistic scenarios
+		{
+			name:          "dotnet pattern match",
+			packageName:   "Newtonsoft.Json",
+			packageVer:    "13.0.1",
+			formatPattern: dotnetPattern,
+			testContent:   `Include="Newtonsoft.Json" Version="13.0.1"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "dotnet single quotes",
+			packageName:   "Newtonsoft.Json",
+			packageVer:    "13.0.1",
+			formatPattern: dotnetPattern,
+			testContent:   `Include='Newtonsoft.Json' Version='13.0.1'`,
+			shouldMatch:   true,
+		},
+
+		// Whitespace handling
+		{
+			name:          "npm with extra whitespace",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   `  "lodash"  :  "4.17.20"`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "npm with tabs",
+			packageName:   "lodash",
+			packageVer:    "4.17.20",
+			formatPattern: npmPattern,
+			testContent:   "\t\"lodash\"\t:\t\"4.17.20\"",
+			shouldMatch:   true,
+		},
+
+		// Unicode characters (less common but possible)
+		{
+			name:          "package name with unicode",
+			packageName:   "пакет",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `пакет:1.0.0`,
+			shouldMatch:   true,
+		},
+
+		// Long package names and versions
+		{
+			name:          "very long package name",
+			packageName:   "this-is-a-very-long-package-name-that-might-exist-in-real-world",
+			packageVer:    "1.0.0",
+			formatPattern: simplePattern,
+			testContent:   `this-is-a-very-long-package-name-that-might-exist-in-real-world:1.0.0`,
+			shouldMatch:   true,
+		},
+		{
+			name:          "prerelease version",
+			packageName:   "pkg",
+			packageVer:    "1.0.0-alpha.1",
+			formatPattern: simplePattern,
+			testContent:   `pkg:1.0.0-alpha.1`,
+			shouldMatch:   true,
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			regex := BuildPackageWithVersionRegex(tc.packageName, tc.packageVer, tc.formatPattern)
+			matches := regex.MatchString(strings.ToLower(tc.testContent))
+			assert.Equal(t, tc.shouldMatch, matches, "Pattern: %s, Content: %s", regex.String(), tc.testContent)
+		})
+	}
+}
+
+func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTestInfo string) string {
+	testName := technology
+	if isDirect {
+		testName += "-direct-dep"
+	} else {
+		testName += "-indirect-dep"
+	}
+	if extraTestInfo != "" {
+		testName += "_(" + extraTestInfo + ")"
+	}
+	return testName
+}
+
+func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, locationEvidencePath string) *utils.VulnerabilityDetails {
+	return &utils.VulnerabilityDetails{
+		SuggestedFixedVersion: fixedVersion,
+		IsDirectDependency:    isDirectDependency,
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+			Technology: technology,
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName:    packageName,
+				ImpactedDependencyVersion: packageVersion,
+				Components: []formats.ComponentRow{
+					{
+						Name:     packageName,
+						Version:  packageVersion,
+						Location: &formats.Location{File: locationEvidencePath},
+					},
+				},
+			},
+		},
+	}
 }

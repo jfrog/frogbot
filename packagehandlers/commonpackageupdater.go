@@ -8,11 +8,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-
-	"github.com/jfrog/frogbot/v2/utils"
+	"golang.org/x/exp/slices"
 )
 
 // PackageHandler interface to hold operations on packages
@@ -29,7 +30,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pipenv:
 		handler = &PythonPackageHandler{}
 	case techutils.Npm:
-		handler = &NpmPackageHandler{}
+		handler = &NpmPackageUpdater{}
 	case techutils.Yarn:
 		handler = &YarnPackageHandler{}
 	case techutils.Pip:
@@ -50,7 +51,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO delete CommonPackageHandler or at least its fields since they are no londer needed
+// TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
 type CommonPackageHandler struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
@@ -130,16 +131,21 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 	return
 }
 
-// This function adjusts the name and version of a dependency to conform to a regular expression format and constructs the complete regular expression pattern for searching.
-// Note: 'dependencyLineFormat' should be a template with two placeholders to be populated. The first one will be replaced with 'impactedName', and the second one with 'impactedVersion'.
-// Note: All supplied arguments are converted to lowercase. Hence, when utilizing this function, the file in which we search for the patterns must also be converted to lowercase.
-// Note: This function may not support all package manager dependency formats. It is designed for package managers where the dependency's name consists of a single component.
-// For example, in Gradle descriptors, a dependency line may consist of two components for the dependency's name (e.g., implementation group: 'junit', name: 'junit', version: '4.7'), therefore this func cannot be utilized in this case.
-func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
-	// We replace '.' with '\\.' since '.' is a special character in regexp patterns, and we want to capture the character '.' itself
-	// To avoid dealing with case sensitivity we lower all characters in the package's name and in the file we check
-	regexpFitImpactedName := strings.ToLower(strings.ReplaceAll(impactedName, ".", "\\."))
-	regexpFitImpactedVersion := strings.ToLower(strings.ReplaceAll(impactedVersion, ".", "\\."))
+func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
+	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
+	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
+}
+
+func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
+	pathsSet := datastructures.MakeSet[string]()
+	for _, component := range vulnDetails.Components {
+		if component.Location != nil && component.Location.File != "" {
+			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
+				pathsSet.Add(component.Location.File)
+			}
+		}
+	}
+	return pathsSet.ToSlice()
 }

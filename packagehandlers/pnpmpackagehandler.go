@@ -46,7 +46,7 @@ func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 		return err
 	}
 
-	vulnRegexpCompiler := GetVulnerabilityRegexCompiler(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
+	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
 
 	var anyDescriptorChanged bool
 	for _, descriptorFile := range descriptorFilesFullPaths {

@@ -554,6 +554,30 @@ func LoadCustomTemplates(commitMessageTemplate, branchNameTemplate, pullRequestT
 	return
 }
 
+func IsFileTrackedByGit(filePath, repoRootDir string) (bool, error) {
+	repo, err := git.PlainOpen(repoRootDir)
+	if err != nil {
+		return false, fmt.Errorf("failed to open git repository at '%s': %w", repoRootDir, err)
+	}
+
+	worktree, err := repo.Worktree()
+	if err != nil {
+		return false, fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	status, err := worktree.Status()
+	if err != nil {
+		return false, fmt.Errorf("failed to get worktree status: %w", err)
+	}
+
+	fileStatus := status.File(filePath)
+	if fileStatus == nil {
+		// Can happen when lock file is tracked+unmodified or ignored. In those cases, we assume it's tracked.
+		return true, nil
+	}
+	return fileStatus.Worktree != git.Untracked, nil
+}
+
 func setGoGitCustomClient() {
 	log.Debug("Setting timeout for go-git to", goGitTimeoutSeconds, "seconds ...")
 	customClient := &http.Client{
