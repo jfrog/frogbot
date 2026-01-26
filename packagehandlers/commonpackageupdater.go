@@ -51,7 +51,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO delete serverDetails and depsRepo since they are no londer needed
+// TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
 type CommonPackageHandler struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string
@@ -153,11 +153,7 @@ func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFil
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
 		if component.Location != nil && component.Location.File != "" {
-			if len(namesFilters) > 0 {
-				if slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
-					pathsSet.Add(component.Location.File)
-				}
-			} else {
+			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
 				pathsSet.Add(component.Location.File)
 			}
 		}
