@@ -48,6 +48,7 @@ func GetCommands() []*clitool.Command {
 func Exec(command FrogbotCommand, commandName string) (err error) {
 	// Get frogbotDetails that contains the config, server, and VCS client
 	log.Info("Frogbot version:", utils.FrogbotVersion)
+	log.Debug("Executing Frogbot V3")
 	frogbotDetails, err := utils.GetFrogbotDetails(commandName)
 	if err != nil {
 		return err
