@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -16,7 +17,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// PackageHandler interface to hold operations on packages
 type PackageHandler interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
@@ -32,7 +32,7 @@ func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Npm:
 		handler = &NpmPackageUpdater{}
 	case techutils.Yarn:
-		handler = &YarnPackageHandler{}
+		handler = &YarnPackageUpdater{}
 	case techutils.Pip:
 		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
@@ -57,7 +57,6 @@ type CommonPackageHandler struct {
 	depsRepo      string
 }
 
-// UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
@@ -89,9 +88,7 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 	return
 }
 
-// Recursively scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
-// The patternsToExclude must be provided as regexp patterns. For instance, if the pattern ".*node_modules.*" is provided, any paths containing "node_modules" will be excluded from the result.
-// Returns a slice of all discovered descriptor files, represented as absolute paths.
+// patternsToExclude must be regexp patterns (e.g., ".*node_modules.*" excludes paths containing "node_modules")
 func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	if len(descriptorFilesSuffixes) == 0 {
 		return
@@ -148,4 +145,18 @@ func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFil
 		}
 	}
 	return pathsSet.ToSlice()
+}
+
+func buildIsolatedEnv(envVars map[string]string) []string {
+	var env []string
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if _, shouldOverride := envVars[key]; !shouldOverride {
+			env = append(env, e)
+		}
+	}
+	for key, value := range envVars {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
 }
