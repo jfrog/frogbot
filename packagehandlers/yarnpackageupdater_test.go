@@ -137,7 +137,7 @@ func TestYarnGetFixedDescriptor(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := UpdatePackageJsonDependency([]byte(tc.originalContent), tc.packageName, tc.newVersion, yarnAllowedSections, "package.json")
+			result, err := updatePackageJsonDependency([]byte(tc.originalContent), tc.packageName, tc.newVersion, yarnAllowedSections, "package.json")
 
 			if tc.expectError {
 				assert.Error(t, err)

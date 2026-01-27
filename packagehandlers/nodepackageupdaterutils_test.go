@@ -74,7 +74,7 @@ func TestGetPackageJsonPathsFromLockfilePaths(t *testing.T) {
 				}
 			}
 
-			result, err := GetPackageJsonPathsFromLockfilePaths(tc.lockfilePaths)
+			result, err := getPackageJsonPathsFromLockfilePaths(tc.lockfilePaths)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -139,7 +139,7 @@ func TestUpdatePackageInDescriptor(t *testing.T) {
 			descriptorPath := filepath.Join(tmpDir, "package.json")
 			assert.NoError(t, os.WriteFile(descriptorPath, []byte(tc.initialContent), 0644))
 
-			backupContent, err := UpdatePackageInDescriptor(tc.packageName, tc.newVersion, descriptorPath, tc.allowedSections)
+			backupContent, err := updatePackageInDescriptor(tc.packageName, tc.newVersion, descriptorPath, tc.allowedSections)
 
 			if tc.expectError {
 				assert.Error(t, err)
@@ -181,7 +181,7 @@ func TestRegenerateLockfile_Success(t *testing.T) {
 		return nil
 	}
 
-	err = RegenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
+	err = regenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
 
 	assert.NoError(t, err)
 	assert.True(t, regenerateCalled, "Regenerate function should have been called")
@@ -212,7 +212,7 @@ func TestRegenerateLockfile_FailureWithRollback(t *testing.T) {
 		return regenerateError
 	}
 
-	err = RegenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
+	err = regenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
 
 	assert.Error(t, err)
 	assert.Equal(t, regenerateError, err, "Original error should be returned")
@@ -244,7 +244,7 @@ func TestRegenerateLockfile_RollbackFailure(t *testing.T) {
 		return regenerateError
 	}
 
-	err = RegenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
+	err = regenerateLockfile("lodash", "4.17.21", descriptorPath, originalWd, backupContent, mockRegenerate)
 
 	assert.Error(t, err)
 	assert.Equal(t, regenerateError, err, "Original regenerate error should be returned even if rollback fails")
@@ -358,7 +358,7 @@ func TestGetPackageJsonPathsFromLockfilePaths_EdgeCases(t *testing.T) {
 				assert.NoError(t, os.WriteFile(expectedPath, []byte("{}"), 0644))
 			}
 
-			result, err := GetPackageJsonPathsFromLockfilePaths(tc.lockfilePaths)
+			result, err := getPackageJsonPathsFromLockfilePaths(tc.lockfilePaths)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedPaths, result)
 		})
