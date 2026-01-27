@@ -21,9 +21,28 @@ const (
 	optionalDependenciesSectionName = "optionalDependencies"
 )
 
-// TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
-// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{packageJsonFileName}) and verify it exists (delete func & test)
 func GetDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails, lockFileName string) ([]string, error) {
+	// Get package.json paths from component locations
+	descriptorPaths := GetVulnerabilityLocations(vulnDetails, []string{packageJsonFileName})
+	if len(descriptorPaths) > 0 {
+		// Verify the corresponding lockfile exists in the same directory
+		var validDescriptorPaths []string
+		for _, descriptorPath := range descriptorPaths {
+			lockFilePath := filepath.Join(filepath.Dir(descriptorPath), lockFileName)
+			fileExists, err := fileutils.IsFileExists(lockFilePath, false)
+			if err != nil {
+				return nil, err
+			}
+			if fileExists {
+				validDescriptorPaths = append(validDescriptorPaths, descriptorPath)
+			}
+		}
+		if len(validDescriptorPaths) > 0 {
+			return validDescriptorPaths, nil
+		}
+	}
+
+	// Fallback: try to get lockfile paths and derive package.json from them (old behavior)
 	lockFilePaths := GetVulnerabilityLocations(vulnDetails, []string{lockFileName})
 	if len(lockFilePaths) == 0 {
 		return nil, fmt.Errorf("no location evidence was found for package %s", vulnDetails.ImpactedDependencyName)
