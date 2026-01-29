@@ -699,7 +699,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 	cfp := &ScanRepositoryCmd{}
-	
+
 	scanResults := &results.SecurityCommandResults{
 		ResultsMetaData: results.ResultsMetaData{ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 		Targets: []*results.TargetResults{
@@ -739,7 +739,7 @@ func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 			},
 		},
 	}
-	
+
 	convertor1 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: true,
 		IncludeTargets:         []string{"project1"},
@@ -751,7 +751,7 @@ func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 	assert.Len(t, vulnsMap1, 1)
 	assert.Contains(t, vulnsMap1, "pkg1")
 	assert.NotContains(t, vulnsMap1, "pkg2")
-	
+
 	convertor2 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: true,
 		IncludeTargets:         []string{"project2"},
