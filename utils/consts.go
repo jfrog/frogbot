@@ -71,6 +71,7 @@ const (
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
 	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"
+	FailBuildOnViolationsEnv           = "JF_REPO_SCAN_FAIL_BUILD"
 	UseWrapperEnv                      = "JF_USE_WRAPPER"
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
