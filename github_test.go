@@ -1,17 +1,20 @@
 package main
 
 import (
+	"os"
+	"testing"
+
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 const (
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	githubIntegrationTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
-	githubGitCloneUrl         = "https://github.com/frogbot-test/integration.git"
+	githubIntegrationTokenEnv = "FROGBOT_V3_TESTS_GITHUB_TOKEN"
+	githubGitCloneUrl         = "https://github.com/frogbot-e2e-test/frogbot-test.git"
+	githubRepoOwner           = "frogbot-e2e-test"
 )
 
 func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
@@ -20,28 +23,30 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 	return githubClient
 }
 
-func buildGitHubIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
+func buildGitHubIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, githubIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl, "frogbot-test", useLocalRepo)
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl, githubRepoOwner)
 }
 
-func githubTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildGitHubIntegrationTestDetails(t, useLocalRepo)
+func githubTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildGitHubIntegrationTestDetails(t)
 	githubClient := buildGitHubClient(t, testDetails.GitToken)
 	return githubClient, testDetails
 }
 
+// TODO: Fix scan-pr tests once local directory solution is implemented
 func TestGitHub_ScanPullRequestIntegration(t *testing.T) {
-	githubClient, testDetails := githubTestsInit(t, false)
+	githubClient, testDetails := githubTestsInit(t)
 	runScanPullRequestCmd(t, githubClient, testDetails)
 }
 
+// TODO set a profile without JAS for the test
 func TestGitHub_ScanRepositoryIntegration(t *testing.T) {
-	githubClient, testDetails := githubTestsInit(t, false)
-	runScanRepositoryCmd(t, githubClient, testDetails)
-}
+	assert.NoError(t, os.Setenv(utils.EnableFrogbotV3FixEnv, "true"))
+	defer func() {
+		assert.NoError(t, os.Unsetenv(utils.EnableFrogbotV3FixEnv))
+	}()
 
-func TestGitHub_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
-	githubClient, testDetails := githubTestsInit(t, true)
+	githubClient, testDetails := githubTestsInit(t)
 	runScanRepositoryCmd(t, githubClient, testDetails)
 }

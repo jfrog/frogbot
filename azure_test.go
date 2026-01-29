@@ -21,30 +21,26 @@ func buildAzureReposClient(t *testing.T, azureToken string) vcsclient.VcsClient 
 	return azureClient
 }
 
-func buildAzureReposIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
+func buildAzureReposIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, azureIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl, "frogbot-test", useLocalRepo)
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.AzureRepos), azureGitCloneUrl, "frogbot-test")
 	testDetails.ApiEndpoint = azureApiEndpoint
 	return testDetails
 }
 
-func azureReposTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildAzureReposIntegrationTestDetails(t, useLocalRepo)
+func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildAzureReposIntegrationTestDetails(t)
 	azureClient := buildAzureReposClient(t, testDetails.GitToken)
 	return azureClient, testDetails
 }
 
+// TODO: Fix scan-pr tests once local directory solution is implemented
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	azureClient, testDetails := azureReposTestsInit(t, false)
+	azureClient, testDetails := azureReposTestsInit(t)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
-	azureClient, testDetails := azureReposTestsInit(t, false)
-	runScanRepositoryCmd(t, azureClient, testDetails)
-}
-
-func TestAzureRepos_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
-	azureClient, testDetails := azureReposTestsInit(t, true)
+	azureClient, testDetails := azureReposTestsInit(t)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }

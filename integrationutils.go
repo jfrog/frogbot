@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	repoName               = "integration"
-	issuesBranch           = "issues-branch"
+	repoName               = "frogbot-test"
+	issuesBranch           = "issues-branch" // TODO consider changing (without 'frogbot' prefix)
 	mainBranch             = "main"
-	expectedNumberOfIssues = 10
+	gitUsername            = "frogbot-e2e-test"
+	expectedNumberOfIssues = 10 // TODO change when fixing PR tests
 )
 
 type IntegrationTestDetails struct {
@@ -40,19 +41,17 @@ type IntegrationTestDetails struct {
 	ApiEndpoint      string
 	PullRequestID    string
 	CustomBranchName string
-	UseLocalRepo     bool // TODO can remove when deprecating non-local repository concept from integration tests
 }
 
-func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string, useLocalRepo bool) *IntegrationTestDetails {
+func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string) *IntegrationTestDetails {
 	return &IntegrationTestDetails{
-		GitProject:   repoName,
-		RepoOwner:    repoOwner,
-		RepoName:     repoName,
-		GitToken:     token,
-		GitUsername:  "frogbot",
-		GitProvider:  gitProvider,
-		GitCloneURL:  gitCloneUrl,
-		UseLocalRepo: useLocalRepo,
+		GitProject:  repoName,
+		RepoOwner:   repoOwner,
+		RepoName:    repoName,
+		GitToken:    token,
+		GitUsername: gitUsername,
+		GitProvider: gitProvider,
+		GitCloneURL: gitCloneUrl,
 	}
 }
 
@@ -131,6 +130,19 @@ func findRelevantPrID(pullRequests []vcsclient.PullRequestInfo, branch string) (
 	return
 }
 
+func cleanupLeftoverFrogbotPRs(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, gitManager *utils.GitManager) {
+	remainingPRs := getOpenPullRequests(t, client, testDetails)
+	for _, pr := range remainingPRs {
+		if strings.HasPrefix(pr.Source.Name, "frogbot-") {
+			t.Logf("Cleaning up leftover frogbot PR: %s (ID: %d)", pr.Source.Name, pr.ID)
+			closePullRequest(t, client, testDetails, int(pr.ID))
+			if err := gitManager.RemoveRemoteBranch(pr.Source.Name); err != nil {
+				t.Logf("Warning: failed to remove leftover branch %s: %v", pr.Source.Name, err)
+			}
+		}
+	}
+}
+
 func getOpenPullRequests(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails) []vcsclient.PullRequestInfo {
 	ctx := context.Background()
 	pullRequests, err := client.ListOpenPullRequests(ctx, testDetails.RepoOwner, testDetails.RepoName)
@@ -181,49 +193,47 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 		assert.NoError(t, restoreFunc())
 	}()
 
-	// When testing using local repository, clone the repository before the test starts, so we can work with it as if it existed locally
-	if testDetails.UseLocalRepo {
-		cloneOptions := &git.CloneOptions{
-			URL: testDetails.GitCloneURL,
-			Auth: &githttp.BasicAuth{
-				Username: testDetails.GitUsername,
-				Password: testDetails.GitToken,
-			},
-			RemoteName:    "origin",
-			ReferenceName: utils.GetFullBranchName("main"),
-			SingleBranch:  true,
-			Depth:         1,
-			Tags:          git.NoTags,
-		}
-		_, err := git.PlainClone(testTempDir, false, cloneOptions)
-		require.NoError(t, err)
+	cloneOptions := &git.CloneOptions{
+		URL: testDetails.GitCloneURL,
+		Auth: &githttp.BasicAuth{
+			Username: testDetails.GitUsername,
+			Password: testDetails.GitToken,
+		},
+		RemoteName:    "origin",
+		ReferenceName: utils.GetFullBranchName("main"),
+		SingleBranch:  true,
+		Depth:         1,
+		Tags:          git.NoTags,
 	}
-	timestamp := getTimestamp()
-	// Add a timestamp to the fixing pull requests, to identify them later
-	testDetails.CustomBranchName = "frogbot-{IMPACTED_PACKAGE}-{BRANCH_NAME_HASH}-" + timestamp
+	_, err := git.PlainClone(testTempDir, false, cloneOptions)
+	require.NoError(t, err)
 
 	// Set the required environment variables for the scan-repository command
 	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
 	defer unsetEnvs()
 
-	err := Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
+	err = Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
 	require.NoError(t, err)
 
 	gitManager := buildGitManager(t, testDetails)
 
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
-	expectedBranchName := "frogbot-pyjwt-45ebb5a61916a91ae7c1e3ff7ffb6112-" + timestamp
-	prId := findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NotZero(t, prId)
-	closePullRequest(t, client, testDetails, prId)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	expectedBranches := []string{
+		"frogbot-snyk-5aaa88cc32aaaf2d8d893decd0a1b284",
+		"frogbot-lodash-aa38d67476e2ac9a5f7011b7c2c6728b",
+		"frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7",
+	}
+	for _, expectedBranch := range expectedBranches {
+		prId := findRelevantPrID(pullRequests, expectedBranch)
+		assert.NotZero(t, prId, "Expected to find PR for branch %s", expectedBranch)
+		if prId != 0 {
+			closePullRequest(t, client, testDetails, prId)
+			assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranch))
+		}
+	}
 
-	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
-	prId = findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NotZero(t, prId)
-	closePullRequest(t, client, testDetails, prId)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	cleanupLeftoverFrogbotPRs(t, client, testDetails, gitManager)
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
