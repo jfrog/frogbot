@@ -36,6 +36,7 @@ func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 
 // TODO: Fix scan-pr tests once local directory solution is implemented
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
+	t.Skip("Pull Request Scan is not yes supported in V3. Skipping the test.")
 	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
