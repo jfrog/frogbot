@@ -15,6 +15,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-security/policy"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -132,25 +133,18 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 	return
 }
 
-func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int, error) {
-	var totalFindings int
+func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (totalFindings int, err error) {
 	scanResults, err := sr.scan()
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Fixes will be skipped for this branch", sr.scanDetails.BaseBranch()), err); err != nil {
 			return 0, err
 		}
 	}
-	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
-	if err != nil {
-		return 0, err
-	} else {
-		findingCount := summary.GetTotalViolations()
-		if findingCount == 0 {
-			findingCount = summary.GetTotalVulnerabilities()
-		}
-		totalFindings = findingCount
-	}
-
+	defer func() {
+		// Always check policy even if an error occurred during the scan
+		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
+	}()
+	totalFindings = getTotalFindingsFromScanResults(scanResults)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
@@ -169,6 +163,19 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 		return totalFindings, nil
 	}
 	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+}
+
+func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
+	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
+	if err != nil {
+		log.Error("Failed to extract findings summary from scan results:", err)
+		return 0
+	}
+	findingCount := summary.GetTotalViolations()
+	if findingCount == 0 {
+		findingCount = summary.GetTotalVulnerabilities()
+	}
+	return findingCount
 }
 
 func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
