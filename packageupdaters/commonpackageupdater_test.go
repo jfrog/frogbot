@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -275,7 +275,7 @@ func TestUpdateDependency(t *testing.T) {
 
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
-			packageHandler := GetCompatiblePackageHandler(test.vulnDetails, test.scanDetails)
+			packageUpdater := GetCompatiblePackageUpdater(test.vulnDetails, test.scanDetails)
 			t.Run(getUpdateDependencyTestcaseName(test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.IsDirectDependency, test.testcaseInfo),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
@@ -300,7 +300,7 @@ func TestUpdateDependency(t *testing.T) {
 						assert.NoError(t, readErr, "Failed to read descriptor before update")
 					}
 
-					err := packageHandler.UpdateDependency(test.vulnDetails)
+					err := packageUpdater.UpdateDependency(test.vulnDetails)
 					if !test.fixSupported {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
@@ -523,7 +523,7 @@ func TestGetDependenciesFromDependencyManagement(t *testing.T) {
 }
 
 func TestGetProjectPoms(t *testing.T) {
-	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: java.NewMavenDepTreeManager(&java.DepTreeParams{IsMavenDepTreeInstalled: false}, java.Projects)}
+	mvnHandler := &MavenPackageUpdater{MavenDepTreeManager: java.NewMavenDepTreeManager(&java.DepTreeParams{IsMavenDepTreeInstalled: false}, java.Projects)}
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -542,7 +542,7 @@ func TestGetProjectPoms(t *testing.T) {
 }
 
 func TestUpdatePackageVersion(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
+	testProjectPath := filepath.Join("..", "testdata", "packageupdaters")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -564,7 +564,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 		{impactedPackage: "com.fasterxml.jackson.core:jackson-core", fixedVersion: "2.15.0", foundInDependencyManagement: true},
 		{impactedPackage: "org.apache.httpcomponents:httpcore", fixedVersion: "4.4.16", foundInDependencyManagement: true},
 	}
-	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
+	mvnHandler := &MavenPackageUpdater{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	for _, test := range testCases {
 		assert.NoError(t, mvnHandler.updatePackageVersion(test.impactedPackage, test.fixedVersion, test.foundInDependencyManagement))
 	}
@@ -581,7 +581,7 @@ func TestUpdatePackageVersion(t *testing.T) {
 }
 
 func TestUpdatePropertiesVersion(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
+	testProjectPath := filepath.Join("..", "testdata", "packageupdaters")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
 	tmpDir, err := os.MkdirTemp("", "")
@@ -594,7 +594,7 @@ func TestUpdatePropertiesVersion(t *testing.T) {
 	defer func() {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
-	mvnHandler := &MavenPackageHandler{MavenDepTreeManager: &java.MavenDepTreeManager{}}
+	mvnHandler := &MavenPackageUpdater{MavenDepTreeManager: &java.MavenDepTreeManager{}}
 	assert.NoError(t, mvnHandler.updateProperties(&pomDependencyDetails{properties: []string{"buildinfo.version"}}, "2.39.9"))
 	modifiedPom, err := os.ReadFile("pom.xml")
 	assert.NoError(t, err)
@@ -707,7 +707,7 @@ func TestNugetFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(testRootDir))
 	}()
 
-	nph := &NugetPackageHandler{}
+	nph := &NugetPackageUpdater{}
 
 	descriptorFiles, err := nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	assert.NoError(t, err)
@@ -793,7 +793,7 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 		assert.NoError(t, os.Chdir(currDir))
 	}()
 
-	gph := GradlePackageHandler{}
+	gph := GradlePackageUpdater{}
 
 	descriptorFiles, err := gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
 	assert.NoError(t, err)
@@ -908,7 +908,7 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 			expectedResults = append(expectedResults, filepath.Join(finalDirPath, suffix))
 		}
 
-		var cph CommonPackageHandler
+		var cph CommonPackageUpdater
 		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.suffixesToSearch, testcase.patternsToExclude...)
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
@@ -938,7 +938,7 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 		IsDirectDependency:          true,
 		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
 	}
-	pnpm := &PnpmPackageHandler{}
+	pnpm := &PnpmPackageUpdater{}
 
 	descriptorFiles, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
 	assert.NoError(t, err)

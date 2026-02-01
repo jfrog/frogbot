@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,7 +27,6 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/packagehandlers"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
@@ -44,7 +44,7 @@ type ScanRepositoryCmd struct {
 	baseWd          string
 	gitManager      *utils.GitManager
 	projectTech     []techutils.Technology
-	handlers        map[techutils.Technology]packagehandlers.PackageHandler
+	updaters        map[techutils.Technology]packageupdaters.PackageUpdater
 	customTemplates utils.CustomTemplates
 	XrayVersion     string
 	XscVersion      string
@@ -524,19 +524,19 @@ func (sr *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vuln
 		return
 	}
 
-	if sr.handlers == nil {
-		sr.handlers = make(map[techutils.Technology]packagehandlers.PackageHandler)
+	if sr.updaters == nil {
+		sr.updaters = make(map[techutils.Technology]packageupdaters.PackageUpdater)
 	}
 
-	handler := sr.handlers[vulnDetails.Technology]
+	handler := sr.updaters[vulnDetails.Technology]
 	if handler == nil {
-		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, sr.scanDetails)
-		sr.handlers[vulnDetails.Technology] = handler
-	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+		handler = packageupdaters.GetCompatiblePackageUpdater(vulnDetails, sr.scanDetails)
+		sr.updaters[vulnDetails.Technology] = handler
+	} else if _, unsupported := handler.(*packageupdaters.UnsupportedPackageUpdater); unsupported {
 		return
 	}
 
-	return sr.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
+	return sr.updaters[vulnDetails.Technology].UpdateDependency(vulnDetails)
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.

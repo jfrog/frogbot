@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"errors"
@@ -18,11 +18,11 @@ const (
 	nodeModulesPathPattern      = ".*node_modules.*"
 )
 
-type PnpmPackageHandler struct {
-	CommonPackageHandler
+type PnpmPackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (pnpm *PnpmPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (pnpm *PnpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return pnpm.updateDirectDependency(vulnDetails)
 	}
@@ -34,8 +34,8 @@ func (pnpm *PnpmPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	descriptorFilesFullPaths, err := pnpm.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix}, nodeModulesPathPattern)
+func (pnpm *PnpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	descriptorFilesFullPaths, err := pnpm.CommonPackageUpdater.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix}, nodeModulesPathPattern)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (pnpm *PnpmPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	return err
 }
 
-func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
+func (pnpm *PnpmPackageUpdater) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
 	var descriptorFileData []byte
 	descriptorFileData, err = os.ReadFile(descriptorFilePath)
 	if err != nil {
@@ -94,7 +94,7 @@ func (pnpm *PnpmPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 			}()
 		}
 
-		if err = pnpm.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
+		if err = pnpm.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
 			return isFileChanged, fmt.Errorf("failed to update dependency '%s' from version '%s' to '%s': %s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, err.Error())
 		}
 		isFileChanged = true

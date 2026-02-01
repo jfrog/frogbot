@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"errors"
@@ -17,11 +17,11 @@ const (
 	dotnetDependencyRegexpPattern  = "include=[\\\"|\\']%s[\\\"|\\']\\s*version=[\\\"|\\']%s[\\\"|\\']"
 )
 
-type NugetPackageHandler struct {
-	CommonPackageHandler
+type NugetPackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (nph *NugetPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return nph.updateDirectDependency(vulnDetails)
 	}
@@ -33,7 +33,7 @@ func (nph *NugetPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (nph *NugetPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var descriptorFilesFullPaths []string
 	descriptorFilesFullPaths, err = nph.GetAllDescriptorFilesFullPaths([]string{dotnetAssetsFilesSuffix})
 	if err != nil {
@@ -67,7 +67,7 @@ func (nph *NugetPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	return
 }
 
-func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
+func (nph *NugetPackageUpdater) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
 	modulePath := path.Dir(descriptorFilePath)
 
 	var fileData []byte
@@ -87,7 +87,7 @@ func (nph *NugetPackageHandler) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 			err = errors.Join(err, os.Chdir(originalWd))
 		}()
 
-		err = nph.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetUpdateCmdPackageExtraArg, dotnetNoRestoreFlag)
+		err = nph.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand(), dotnetUpdateCmdPackageExtraArg, dotnetNoRestoreFlag)
 		if err != nil {
 			return
 		}
