@@ -275,7 +275,7 @@ func TestUpdateDependency(t *testing.T) {
 
 	for _, testBatch := range testCases {
 		for _, test := range testBatch {
-			packageHandler := GetCompatiblePackageUpdater(test.vulnDetails, test.scanDetails)
+			packageUpdater := GetCompatiblePackageUpdater(test.vulnDetails, test.scanDetails)
 			t.Run(getUpdateDependencyTestcaseName(test.vulnDetails.Technology.String()+test.specificTechVersion, test.vulnDetails.IsDirectDependency, test.testcaseInfo),
 				func(t *testing.T) {
 					testDataDir := getTestDataDir(t, test.vulnDetails.IsDirectDependency)
@@ -300,7 +300,7 @@ func TestUpdateDependency(t *testing.T) {
 						assert.NoError(t, readErr, "Failed to read descriptor before update")
 					}
 
-					err := packageHandler.UpdateDependency(test.vulnDetails)
+					err := packageUpdater.UpdateDependency(test.vulnDetails)
 					if !test.fixSupported {
 						assert.Error(t, err)
 						assert.IsType(t, &utils.ErrUnsupportedFix{}, err, "Expected unsupported fix error")
