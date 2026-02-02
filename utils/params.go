@@ -165,6 +165,7 @@ type Scan struct {
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
 	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	FailBuildOnViolations           *bool     `yaml:"failBuildOnViolations,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	DisableJas                      bool      `yaml:"disableJas,omitempty"`
@@ -250,6 +251,14 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 		s.FailOnSecurityIssues = &failOnSecurityIssues
+	}
+	if s.FailBuildOnViolations == nil {
+		var failBuildOnViolations bool
+		// Default is false for backward compatibility
+		if failBuildOnViolations, err = getBoolEnv(FailBuildOnViolationsEnv, false); err != nil {
+			return
+		}
+		s.FailBuildOnViolations = &failBuildOnViolations
 	}
 	if s.MinSeverity == "" {
 		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
