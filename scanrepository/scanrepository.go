@@ -74,7 +74,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 		return
 	}
 	log.Debug(fmt.Sprintf("Detected branches for scan: %s", strings.Join(repository.Branches, ", ")))
-	isAnyFailedBuild := false
+	anyHasFailBuild := false
 	for _, branch := range repository.Branches {
 		log.Debug(fmt.Sprintf("Scanning '%s' branch...", branch))
 		cfp.scanDetails.SetBaseBranch(branch)
@@ -83,16 +83,16 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 		if e != nil {
 			return e
 		}
-		isAnyFailedBuild = isAnyFailedBuild || hadFailBuild
+		anyHasFailBuild = anyHasFailBuild || hadFailBuild
 	}
 	// Check if we need to output error due to fail the build flag on violations if repository configuration requires it
-	if repository.FailBuildOnViolations != nil && *repository.FailBuildOnViolations && isAnyFailedBuild {
+	if repository.FailBuildOnViolations != nil && *repository.FailBuildOnViolations && anyHasFailBuild {
 		return policy.NewFailBuildError()
 	}
 	return
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (isAnyFailedBuild bool, err error) {
+func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (hasFailBuild bool, err error) {
 	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -123,11 +123,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (is
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
-		if hadFailBuild, findings, e := cfp.scanAndFixProject(repository); e != nil {
+		if hasFailBuildInProject, findings, e := cfp.scanAndFixProject(repository); e != nil {
 			return false, e
 		} else {
 			totalFindings += findings
-			isAnyFailedBuild = isAnyFailedBuild || hadFailBuild
+			hasFailBuild = hasFailBuild || hasFailBuildInProject
 		}
 	}
 
@@ -180,7 +180,6 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
 	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
 	for _, fullPathWd := range projectFullPathWorkingDirs {
-		// Scan
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
 			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
@@ -188,10 +187,8 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 			}
 			continue
 		}
-		// Process scan results
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
 		shouldFailBuild = shouldFailBuild || (scanResults.Violations != nil && scanResults.Violations.ShouldFailBuild())
-		// Output
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only
