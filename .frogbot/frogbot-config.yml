@@ -1,9 +1,13 @@
 - params:
     git:
-      repoName: blink-mono
+      repoName: frogbot
       branches:
-        - feature/jfrog-scan
+        - dev
     scan:
+      emailReceivers:
+        - eco-system@jfrog.com
       projects:
+        - workingDirs:
+            - action
         - workingDirs:
             - .
