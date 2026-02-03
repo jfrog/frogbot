@@ -198,7 +198,7 @@ func GetMarkdownSizeLimit(client vcsclient.VcsClient) int {
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider) OutputWriter {
 	switch provider {
-	case vcsutils.BitbucketServer:
+	case vcsutils.BitbucketServer, vcsutils.BitbucketCloud:
 		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}
 	default:
 		return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: true}}

@@ -748,10 +748,12 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	// For backward compatibility, we are accepting also "bitbucket server"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
+	case string(BitbucketCloud):
+		return vcsutils.BitbucketCloud, nil
 	case string(AzureRepos):
 		return vcsutils.AzureRepos, nil
 	}
-	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, AzureRepos)
+	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, BitbucketCloud, AzureRepos)
 }
 
 func SanitizeEnv() error {
