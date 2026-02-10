@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -31,6 +30,7 @@ const (
 
 	npmDescriptorFileName       = "package.json"
 	npmLockFileName             = "package-lock.json"
+	nodeModulesDirName          = "node_modules"
 	dependenciesSection         = "dependencies"
 	devDependenciesSection      = "devDependencies"
 	optionalDependenciesSection = "optionalDependencies"
@@ -65,9 +65,15 @@ func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	descriptorPaths, err := npm.getDescriptorsToFixFromVulnerability(vulnDetails)
-	if err != nil {
-		return err
+	/* TODO eran delete this loop. Uncomment this to check with the expected evidences
+	for i := range vulnDetails.Components {
+		vulnDetails.Components[i].Evidences = append(vulnDetails.Components[i].Evidences, formats.Location{File: "package.json"})
+	}
+
+	*/
+	descriptorPaths := GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}, []string{nodeModulesDirName})
+	if len(descriptorPaths) == 0 {
+		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
 	}
 
 	originalWd, err := os.Getwd()
@@ -91,45 +97,27 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 	return nil
 }
 
-// TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
-// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}) and verify it exists (delete func & test)
-func (npm *NpmPackageUpdater) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
-	lockFilePaths := GetVulnerabilityLocations(vulnDetails, []string{npmLockFileName})
-	if len(lockFilePaths) == 0 {
-		return nil, fmt.Errorf("no location evidence was found for package %s", vulnDetails.ImpactedDependencyName)
-	}
-
-	var descriptorPaths []string
-	for _, lockFilePath := range lockFilePaths {
-		// We currently assume the descriptor resides in the same directory as the lock file, and this is the only supported use case
-		descriptorPath := filepath.Join(filepath.Dir(lockFilePath), npmDescriptorFileName)
-		fileExists, err := fileutils.IsFileExists(descriptorPath, false)
-		if err != nil {
-			return nil, err
-		}
-		if !fileExists {
-			return nil, fmt.Errorf("descriptor file '%s' not found for lock file '%s': %w", descriptorPath, lockFilePath, err)
-		}
-		descriptorPaths = append(descriptorPaths, descriptorPath)
-	}
-	return descriptorPaths, nil
-}
-
 func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string) error {
 	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath)
 	if err != nil {
 		return err
 	}
 
-	lockFileTracked, checkErr := utils.IsFileTrackedByGit(npmLockFileName, originalWd)
+	descriptorDir := filepath.Dir(descriptorPath)
+	lockFilePath := FindLockFileInEvidences(vulnDetails, descriptorDir, npmLockFileName)
+	if lockFilePath == "" {
+		log.Debug(fmt.Sprintf("No lock file evidence found for descriptor '%s', skipping lock file regeneration", descriptorPath))
+		return nil
+	}
+
+	lockFileTracked, checkErr := utils.IsFileTrackedByGit(lockFilePath, originalWd)
 	if checkErr != nil {
 		log.Debug(fmt.Sprintf("Failed to check if lock file is tracked in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
 		lockFileTracked = true
 	}
 
 	if !lockFileTracked {
-		log.Debug(fmt.Sprintf("Lock file '%s' does not exist in remote, skipping lock file regeneration", npmLockFileName))
-		log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s' without regenerating lock file", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
+		log.Debug(fmt.Sprintf("Lock file '%s' is not tracked in git, skipping lock file regeneration", lockFilePath))
 		return nil
 	}
 
