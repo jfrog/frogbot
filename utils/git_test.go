@@ -96,7 +96,7 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion, "")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, commitMessage)
 		})

@@ -309,7 +309,7 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Reposi
 
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
-		if e := cfp.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
+		if e := cfp.fixSinglePackageAndCreatePR(repository, fullProjectPath, vulnerability); e != nil {
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 
@@ -386,10 +386,10 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, fullProjectPath string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion, fullProjectPath)
 	if err != nil {
 		return
 	}

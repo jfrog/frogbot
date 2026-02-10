@@ -15,8 +15,6 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -31,6 +29,9 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"
@@ -392,20 +393,37 @@ func TestGenerateFixBranchName(t *testing.T) {
 		baseBranch      string
 		impactedPackage string
 		fixVersion      string
+		projectPath     string
 		expectedName    string
 	}{
-		{"dev", "gopkg.in/yaml.v3", "3.0.0", "frogbot-gopkg.in/yaml.v3-d61bde82dc594e5ccc5a042fe224bf7c"},
-		{"master", "gopkg.in/yaml.v3", "3.0.0", "frogbot-gopkg.in/yaml.v3-41405528994061bd108e3bbd4c039a03"},
-		{"dev", "replace:colons:colons", "3.0.0", "frogbot-replace_colons_colons-89e555131b4a70a32fe9d9c44d6ff0fc"},
+		{"dev", "gopkg.in/yaml.v3", "3.0.0", "", "frogbot-gopkg.in/yaml.v3-d61bde82dc594e5ccc5a042fe224bf7c"},
+		{"master", "gopkg.in/yaml.v3", "3.0.0", "", "frogbot-gopkg.in/yaml.v3-41405528994061bd108e3bbd4c039a03"},
+		{"dev", "replace:colons:colons", "3.0.0", "", "frogbot-replace_colons_colons-89e555131b4a70a32fe9d9c44d6ff0fc"},
 	}
 	gitManager := utils.GitManager{}
 	for _, test := range tests {
 		t.Run(test.expectedName, func(t *testing.T) {
-			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion)
+			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion, test.projectPath)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
 	}
+}
+
+func TestGenerateFixBranchName_UniquePerProject(t *testing.T) {
+	gitManager := utils.GitManager{}
+	branchName1, err := gitManager.GenerateFixBranchName("main", "requests", "2.25.3", "")
+	assert.NoError(t, err)
+	branchName2, err := gitManager.GenerateFixBranchName("main", "requests", "2.25.3", "subfolder")
+	assert.NoError(t, err)
+	branchName3, err := gitManager.GenerateFixBranchName("main", "requests", "2.25.3", "other/project")
+	assert.NoError(t, err)
+	assert.NotEqual(t, branchName1, branchName2, "root and subfolder projects should have different branch names")
+	assert.NotEqual(t, branchName1, branchName3, "root and other/project should have different branch names")
+	assert.NotEqual(t, branchName2, branchName3, "subfolder and other/project should have different branch names")
+	assert.Regexp(t, `^frogbot-requests-[a-f0-9]+$`, branchName1)
+	assert.Regexp(t, `^frogbot-requests-[a-f0-9]+$`, branchName2)
+	assert.Regexp(t, `^frogbot-requests-[a-f0-9]+$`, branchName3)
 }
 
 func TestPackageTypeFromScan(t *testing.T) {
