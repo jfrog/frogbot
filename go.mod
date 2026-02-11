@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.13.1-0.20260120103048-d7f367bfa36e
