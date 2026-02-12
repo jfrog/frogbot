@@ -609,11 +609,14 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 		log.Info("The existing pull request is in sync with the latest scan, and no further updates are required.")
 		return
 	}
+	/* TODO eran uncomment before merging
 	if len(fixedVulnerabilities) > 0 {
 		if e = sr.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
 			err = errors.Join(err, fmt.Errorf("failed while creating aggregated pull request. Error: \n%s", e.Error()))
 		}
 	}
+
+	*/
 	log.Info("-----------------------------------------------------------------")
 	err = errors.Join(err, sr.gitManager.Checkout(sr.scanDetails.BaseBranch()))
 	return
