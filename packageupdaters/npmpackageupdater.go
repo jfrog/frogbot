@@ -65,12 +65,6 @@ func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	/* TODO eran delete this loop. Uncomment this to check with the expected evidences
-	for i := range vulnDetails.Components {
-		vulnDetails.Components[i].Evidences = append(vulnDetails.Components[i].Evidences, formats.Location{File: "package.json"})
-	}
-
-	*/
 	descriptorPaths := GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}, []string{nodeModulesDirName})
 	if len(descriptorPaths) == 0 {
 		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
