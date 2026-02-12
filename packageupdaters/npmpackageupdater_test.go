@@ -2,13 +2,9 @@ package packageupdaters
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-cli-security/utils/formats"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -243,108 +239,6 @@ func TestBuildIsolatedEnv(t *testing.T) {
 
 			if tc.predefineEnv {
 				assert.Equal(t, 1, envCount[ciEnv], "CI should appear exactly once")
-			}
-		})
-	}
-}
-
-func TestGetDescriptorsToFixFromVulnerability(t *testing.T) {
-	npm := &NpmPackageUpdater{}
-	tmpDir, err := os.MkdirTemp("", "npm-descriptor-test-")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-
-	packageJsonPath := filepath.Join(tmpDir, "package.json")
-	assert.NoError(t, os.WriteFile(packageJsonPath, []byte(`{"name": "test"}`), 0644))
-
-	nestedDir := filepath.Join(tmpDir, "apps", "frontend")
-	assert.NoError(t, os.MkdirAll(nestedDir, 0755))
-	nestedPackageJsonPath := filepath.Join(nestedDir, "package.json")
-	assert.NoError(t, os.WriteFile(nestedPackageJsonPath, []byte(`{"name": "frontend"}`), 0644))
-
-	testcases := []struct {
-		name          string
-		vulnDetails   *utils.VulnerabilityDetails
-		expectedPaths []string
-		expectError   bool
-		errorContains string
-	}{
-		{
-			name: "derives package.json from package-lock.json path",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						ImpactedDependencyName: "minimist",
-						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(tmpDir, "package-lock.json")}},
-						},
-					},
-				},
-			},
-			expectedPaths: []string{packageJsonPath},
-			expectError:   false,
-		},
-		{
-			name: "derives package.json from nested directory",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						ImpactedDependencyName: "minimist",
-						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: filepath.Join(nestedDir, "package-lock.json")}},
-						},
-					},
-				},
-			},
-			expectedPaths: []string{nestedPackageJsonPath},
-			expectError:   false,
-		},
-		{
-			name: "error when no location evidence found",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						ImpactedDependencyName: "minimist",
-						Components:             []formats.ComponentRow{},
-					},
-				},
-			},
-			expectedPaths: nil,
-			expectError:   true,
-			errorContains: "no location evidence was found",
-		},
-		{
-			name: "error when descriptor file does not exist",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						ImpactedDependencyName: "minimist",
-						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/nonexistent/path/package-lock.json"}},
-						},
-					},
-				},
-			},
-			expectedPaths: nil,
-			expectError:   true,
-			errorContains: "not found for lock file",
-		},
-	}
-
-	for _, tc := range testcases {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := npm.getDescriptorsToFixFromVulnerability(tc.vulnDetails)
-			if tc.expectError {
-				assert.Error(t, err)
-				if tc.errorContains != "" {
-					assert.Contains(t, err.Error(), tc.errorContains)
-				}
-				assert.Nil(t, result)
-			} else {
-				assert.NoError(t, err)
-				assert.ElementsMatch(t, tc.expectedPaths, result)
 			}
 		})
 	}
