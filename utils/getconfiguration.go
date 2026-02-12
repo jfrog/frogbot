@@ -511,7 +511,7 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
-	// TODO: Remove this line once autofix logic is added
+	// TODO: Remove this line once new config profile is merged
 	configProfile.FrogbotConfig.CreateAutoFixPr = false
 	return
 }
