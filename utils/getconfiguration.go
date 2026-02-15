@@ -49,6 +49,7 @@ type Params struct {
 	*services.ConfigProfile
 	Git
 	JFrogPlatform
+	DisableParallelPrScan bool
 }
 
 type JFrogPlatform struct {
@@ -107,7 +108,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		}
 		g.Branches = gitParamsFromEnv.Branches
 	}
-	envValue, err := getBoolEnv(GitDependencyGraphSubmissionEnv, true)
+	envValue, err := GetBoolEnv(GitDependencyGraphSubmissionEnv, true)
 	if err != nil {
 		return err
 	}
@@ -189,6 +190,11 @@ func BuildRepositoryFromEnv(xrayVersion, xscVersion string, gitClient vcsclient.
 
 	if err = repository.Params.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 		return
+	}
+
+	// Read parallel PR scan setting before env vars are sanitized
+	if parallelEnabled, parseErr := GetBoolEnv(ParallelPrScanEnv, true); parseErr == nil {
+		repository.Params.DisableParallelPrScan = !parallelEnabled
 	}
 
 	repository.setOutputWriterDetails()
@@ -484,7 +490,7 @@ func SanitizeEnv() error {
 	return nil
 }
 
-func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
+func GetBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	envValue := getTrimmedEnv(envKey)
 	if envValue != "" {
 		parsedEnv, err := strconv.ParseBool(envValue)

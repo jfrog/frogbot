@@ -35,11 +35,10 @@ import (
 const (
 	ScanPullRequest                     = "scan-pull-request"
 	ScanRepository                      = "scan-repository"
-	RootDir                             = "."
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
 	frogbotUrl                          = "https://github.com/jfrog/frogbot"
-	frogbotUploadRtRepoPath             = "frogbot"
+	FrogbotUploadRtRepoPath             = "frogbot"
 
 	// Branch validation error messages
 	branchInvalidChars             = "branch name cannot contain the following chars  ~, ^, :, ?, *, [, ], @, {, }"
