@@ -14,22 +14,90 @@ import (
 const (
 	goFlagModEditEnv = "GOFLAGS=-mod=mod"
 	goWorkOffEnv     = "GOWORK=off"
+	goModFileName    = "go.mod"
+	goSumFileName    = "go.sum"
 )
 
 type GoPackageUpdater struct{}
 
+type goModuleBackup struct {
+	goModContent []byte
+	goSumContent []byte
+	goSumExisted bool
+}
+
 func (gpu *GoPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	env := gpu.buildGoCommandEnv()
+
+	backup, err := gpu.backupModuleFiles()
+	if err != nil {
+		return err
+	}
 
 	if err := gpu.updateDependency(vulnDetails, env); err != nil {
 		return err
 	}
 
-	return gpu.tidyLockFiles(env)
+	if err := gpu.tidyLockFiles(env); err != nil {
+		log.Warn(fmt.Sprintf("Failed to tidy module files after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
+		if rollbackErr := gpu.restoreModuleFiles(backup); rollbackErr != nil {
+			return fmt.Errorf("failed to rollback module files after tidy failure: %w (original error: %v)", rollbackErr, err)
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (gpu *GoPackageUpdater) buildGoCommandEnv() []string {
 	return append(os.Environ(), goFlagModEditEnv, goWorkOffEnv)
+}
+
+func (gpu *GoPackageUpdater) backupModuleFiles() (*goModuleBackup, error) {
+	goModContent, err := os.ReadFile(goModFileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read '%s': %w", goModFileName, err)
+	}
+
+	backup := &goModuleBackup{
+		goModContent: make([]byte, len(goModContent)),
+	}
+	copy(backup.goModContent, goModContent)
+
+	goSumContent, err := os.ReadFile(goSumFileName)
+	if err != nil {
+		if os.IsNotExist(err) {
+			backup.goSumExisted = false
+			log.Debug(fmt.Sprintf("'%s' does not exist yet, will be created by go get", goSumFileName))
+		} else {
+			return nil, fmt.Errorf("failed to read '%s': %w", goSumFileName, err)
+		}
+	} else {
+		backup.goSumExisted = true
+		backup.goSumContent = make([]byte, len(goSumContent))
+		copy(backup.goSumContent, goSumContent)
+	}
+
+	return backup, nil
+}
+
+func (gpu *GoPackageUpdater) restoreModuleFiles(backup *goModuleBackup) error {
+	if err := os.WriteFile(goModFileName, backup.goModContent, 0644); err != nil {
+		return fmt.Errorf("failed to restore '%s': %w", goModFileName, err)
+	}
+
+	if backup.goSumExisted {
+		if err := os.WriteFile(goSumFileName, backup.goSumContent, 0644); err != nil {
+			return fmt.Errorf("failed to restore '%s': %w", goSumFileName, err)
+		}
+	} else {
+		if err := os.Remove(goSumFileName); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove '%s' during rollback: %w", goSumFileName, err)
+		}
+	}
+
+	log.Debug("Successfully rolled back go.mod and go.sum to original state")
+	return nil
 }
 
 func (gpu *GoPackageUpdater) updateDependency(vulnDetails *utils.VulnerabilityDetails, env []string) error {
