@@ -1,26 +1,20 @@
-name: "Go Tests"
+name: "Go Tests - v3"
 
 on:
-  push:
-  # Triggers the workflow on labeled PRs only.
   pull_request_target:
     types: [labeled]
-    branches-ignore: [v3_er]
+    branches: [v3_er]
 
-
-# Ensures that only the latest commit is running for each PR at a time.
-# Ignores this rule for push events.
 concurrency:
-  group: ${{ github.event.pull_request.number || github.sha }}
+  group: v3-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   Pretest:
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     runs-on: ubuntu-latest
     steps:
       - name: Unlabel 'safe to test'
         uses: actions-ecosystem/action-remove-labels@v1
-        if: ${{ github.event_name != 'push' }}
         with:
           labels: "safe to test"
 
@@ -74,8 +68,8 @@ jobs:
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
 
-          - name: 'Package Handlers'
-            package: 'packagehandlers'
+          - name: 'Package Updaters'
+            package: 'packageupdaters'
 
         os: [ ubuntu, windows, macos ]
     steps:
