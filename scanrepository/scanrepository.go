@@ -37,6 +37,11 @@ const (
 	createAutoFixPrConfigNameInProfile = "Create automated fixes"
 )
 
+// TODO add to this map every tech that we support fixing in V3
+var supportedAutoFixTechnologies = []techutils.Technology{
+	techutils.Npm,
+}
+
 type ScanRepositoryCmd struct {
 	outputwriter.OutputWriter
 	dryRun          bool
@@ -159,7 +164,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 		}
 	}
 	if len(vulnerabilitiesByPathMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", sr.scanDetails.RepoName)
+		log.Info(fmt.Sprintf("Didn't find any vulnerable dependencies with existing fix versions or that are currently supported for fixing, for %s", sr.scanDetails.RepoName))
 		return totalFindings, nil
 	}
 	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
@@ -494,6 +499,11 @@ func (sr *ScanRepositoryCmd) createVulnerabilitiesMap(failUponError bool, scanRe
 
 func (sr *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(failUponError bool, vulnerability *formats.VulnerabilityOrViolationRow, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
 	if len(vulnerability.FixedVersions) == 0 {
+		return nil
+	}
+	// TODO remove this check once all existing package managers support fix again
+	if !slices.Contains(supportedAutoFixTechnologies, vulnerability.Technology) {
+		log.Debug(fmt.Sprintf("Auto-fix is currently not supported for '%s' package manager, skipping fix for '%s'", vulnerability.Technology, vulnerability.ImpactedDependencyName))
 		return nil
 	}
 	if len(sr.projectTech) == 0 {

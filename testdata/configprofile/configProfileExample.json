@@ -19,6 +19,7 @@
     "pr_comment_title": "Frogbot notes:",
     "commit_message_template": "Upgrade {IMPACTED_PACKAGE} to {FIX_VERSION}",
     "show_secrets_as_pr_comment": false,
+    "create_auto_fix_pr": true,
     "skip_auto_fix": false,
     "include_all_repository_vulnerabilities": true
   },
