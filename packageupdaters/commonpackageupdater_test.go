@@ -127,7 +127,7 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: false,
 			},
 			{
-				vulnDetails:               createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				vulnDetails:               createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package.json", "package-lock.json"),
 				scanDetails:               scanDetails,
 				fixSupported:              true,
 				descriptorsToCheck:        []string{"package.json"},
@@ -135,14 +135,14 @@ func TestUpdateDependency(t *testing.T) {
 			},
 			{
 				testcaseInfo:  "no-location-evidence",
-				vulnDetails:   createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, ""),
+				vulnDetails:   createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true),
 				scanDetails:   scanDetails,
 				fixSupported:  true,
 				errorExpected: true,
 			},
 			{
 				testcaseInfo:               "rollback-on-npm-install-failure",
-				vulnDetails:                createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package-lock.json"),
+				vulnDetails:                createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true, "package.json", "package-lock.json"),
 				scanDetails:                scanDetails,
 				testDirName:                "npm-rollback",
 				fixSupported:               true,
@@ -968,56 +968,57 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 		name          string
 		vulnDetails   *utils.VulnerabilityDetails
 		namesFilters  []string
+		ignoreFilters []string
 		expectedPaths []string
 	}{
 		{
-			name: "single component with location",
+			name: "single component with descriptor evidence",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/package.json"}}},
 						},
 					},
 				},
 			},
-			expectedPaths: []string{"/repo/package-lock.json"},
+			expectedPaths: []string{"/repo/package.json"},
 		},
 		{
-			name: "multiple components with same location - deduplicated",
+			name: "multiple components with same evidence - deduplicated",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/package.json"}}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/package.json"}}},
 						},
 					},
 				},
 			},
-			expectedPaths: []string{"/repo/package-lock.json"},
+			expectedPaths: []string{"/repo/package.json"},
 		},
 		{
-			name: "multiple components with different locations",
+			name: "multiple components with different descriptor locations",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app1/package-lock.json"}},
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/app2/package-lock.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/app1/package.json"}}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/app2/package.json"}}},
 						},
 					},
 				},
 			},
-			expectedPaths: []string{"/repo/app1/package-lock.json", "/repo/app2/package-lock.json"},
+			expectedPaths: []string{"/repo/app1/package.json", "/repo/app2/package.json"},
 		},
 		{
-			name: "component with nil location",
+			name: "component with empty evidences",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: nil},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{}},
 						},
 					},
 				},
@@ -1025,12 +1026,12 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			expectedPaths: []string{},
 		},
 		{
-			name: "component with empty file path",
+			name: "component with empty file path in evidence",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: ""}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: ""}}},
 						},
 					},
 				},
@@ -1049,19 +1050,35 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			expectedPaths: []string{},
 		},
 		{
+			name: "non-descriptor evidences are filtered out",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package-lock.json"},
+								{File: "package.json"},
+							}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"package.json"},
+		},
+		{
 			name: "filter by basename - match",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
-							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "package.json"}}},
+							{Name: "lodash", Version: "4.17.0", Evidences: []formats.Location{{File: "go.mod"}}},
 						},
 					},
 				},
 			},
-			namesFilters:  []string{"package-lock.json"},
-			expectedPaths: []string{"package-lock.json"},
+			namesFilters:  []string{"package.json"},
+			expectedPaths: []string{"package.json"},
 		},
 		{
 			name: "filter by basename - no match",
@@ -1069,12 +1086,12 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "package.json"}}},
 						},
 					},
 				},
 			},
-			namesFilters:  []string{"package-lock.json"},
+			namesFilters:  []string{"go.mod"},
 			expectedPaths: []string{},
 		},
 		{
@@ -1083,14 +1100,14 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "/repo/apps/frontend/package-lock.json"}},
-							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "/repo/package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "/repo/apps/frontend/package.json"}}},
+							{Name: "lodash", Version: "4.17.0", Evidences: []formats.Location{{File: "/repo/go.mod"}}},
 						},
 					},
 				},
 			},
-			namesFilters:  []string{"package-lock.json"},
-			expectedPaths: []string{"/repo/apps/frontend/package-lock.json"},
+			namesFilters:  []string{"package.json"},
+			expectedPaths: []string{"/repo/apps/frontend/package.json"},
 		},
 		{
 			name: "filter with multiple allowed names",
@@ -1098,52 +1115,245 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
-							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "yarn.lock"}},
-							{Name: "axios", Version: "0.21.0", Location: &formats.Location{File: "package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "package.json"}}},
+							{Name: "lodash", Version: "4.17.0", Evidences: []formats.Location{{File: "go.mod"}}},
+							{Name: "axios", Version: "0.21.0", Evidences: []formats.Location{{File: "pyproject.toml"}}},
 						},
 					},
 				},
 			},
-			namesFilters:  []string{"package-lock.json", "yarn.lock"},
-			expectedPaths: []string{"package-lock.json", "yarn.lock"},
+			namesFilters:  []string{"package.json", "go.mod"},
+			expectedPaths: []string{"package.json", "go.mod"},
 		},
 		{
-			name: "empty filter returns all locations",
+			name: "empty filter returns all descriptor locations",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
-							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package-lock.json"},
+								{File: "package.json"},
+							}},
 						},
 					},
 				},
 			},
 			namesFilters:  []string{},
-			expectedPaths: []string{"package-lock.json", "package.json"},
+			expectedPaths: []string{"package.json"},
 		},
 		{
-			name: "nil filter returns all locations",
+			name: "nil filter returns all descriptor locations",
 			vulnDetails: &utils.VulnerabilityDetails{
 				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
 					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 						Components: []formats.ComponentRow{
-							{Name: "minimist", Version: "1.2.5", Location: &formats.Location{File: "package-lock.json"}},
-							{Name: "lodash", Version: "4.17.0", Location: &formats.Location{File: "package.json"}},
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package-lock.json"},
+								{File: "package.json"},
+							}},
 						},
 					},
 				},
 			},
 			namesFilters:  nil,
-			expectedPaths: []string{"package-lock.json", "package.json"},
+			expectedPaths: []string{"package.json"},
+		},
+		{
+			name: "multiple evidences per component - descriptors collected from all",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "/repo/app1/package.json"},
+								{File: "/repo/app1/package-lock.json"},
+								{File: "/repo/app2/package.json"},
+							}},
+						},
+					},
+				},
+			},
+			expectedPaths: []string{"/repo/app1/package.json", "/repo/app2/package.json"},
+		},
+		{
+			name: "ignoreFilters excludes paths containing pattern",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package.json"},
+								{File: "node_modules/minimist/package.json"},
+								{File: "libs/node_modules/foo/package.json"},
+							}},
+						},
+					},
+				},
+			},
+			ignoreFilters: []string{"node_modules"},
+			expectedPaths: []string{"package.json"},
+		},
+		{
+			name: "ignoreFilters with multiple patterns",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package.json"},
+								{File: "node_modules/minimist/package.json"},
+								{File: "vendor/something/package.json"},
+							}},
+						},
+					},
+				},
+			},
+			ignoreFilters: []string{"node_modules", "vendor"},
+			expectedPaths: []string{"package.json"},
+		},
+		{
+			name: "ignoreFilters nil does not filter",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package.json"},
+								{File: "sub/package.json"},
+							}},
+						},
+					},
+				},
+			},
+			ignoreFilters: nil,
+			expectedPaths: []string{"package.json", "sub/package.json"},
 		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := GetVulnerabilityLocations(tc.vulnDetails, tc.namesFilters)
+			result := GetVulnerabilityLocations(tc.vulnDetails, tc.namesFilters, tc.ignoreFilters)
 			assert.ElementsMatch(t, tc.expectedPaths, result)
+		})
+	}
+}
+
+func TestFindLockFileInEvidences(t *testing.T) {
+	testcases := []struct {
+		name          string
+		vulnDetails   *utils.VulnerabilityDetails
+		descriptorDir string
+		lockFileName  string
+		expected      string
+	}{
+		{
+			name: "lock file found in same directory as descriptor",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package.json"},
+								{File: "package-lock.json"},
+							}},
+						},
+					},
+				},
+			},
+			descriptorDir: ".",
+			lockFileName:  "package-lock.json",
+			expected:      "package-lock.json",
+		},
+		{
+			name: "lock file found in nested directory",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "apps/frontend/package.json"},
+								{File: "apps/frontend/package-lock.json"},
+							}},
+						},
+					},
+				},
+			},
+			descriptorDir: "apps/frontend",
+			lockFileName:  "package-lock.json",
+			expected:      "apps/frontend/package-lock.json",
+		},
+		{
+			name: "lock file not in evidences",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "package.json"},
+							}},
+						},
+					},
+				},
+			},
+			descriptorDir: ".",
+			lockFileName:  "package-lock.json",
+			expected:      "",
+		},
+		{
+			name: "lock file in different directory than descriptor",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{
+								{File: "other/package-lock.json"},
+							}},
+						},
+					},
+				},
+			},
+			descriptorDir: "apps/frontend",
+			lockFileName:  "package-lock.json",
+			expected:      "",
+		},
+		{
+			name: "empty evidences",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{}},
+						},
+					},
+				},
+			},
+			descriptorDir: ".",
+			lockFileName:  "package-lock.json",
+			expected:      "",
+		},
+		{
+			name: "lock file found across multiple components",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "minimist", Version: "1.2.5", Evidences: []formats.Location{{File: "package.json"}}},
+							{Name: "lodash", Version: "4.17.0", Evidences: []formats.Location{{File: "package-lock.json"}}},
+						},
+					},
+				},
+			},
+			descriptorDir: ".",
+			lockFileName:  "package-lock.json",
+			expected:      "package-lock.json",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := FindLockFileInEvidences(tc.vulnDetails, tc.descriptorDir, tc.lockFileName)
+			assert.Equal(t, tc.expected, result)
 		})
 	}
 }
@@ -1495,7 +1705,13 @@ func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTest
 	return testName
 }
 
-func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, locationEvidencePath string) *utils.VulnerabilityDetails {
+func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, evidencePaths ...string) *utils.VulnerabilityDetails {
+	var evidences []formats.Location
+	for _, path := range evidencePaths {
+		if path != "" {
+			evidences = append(evidences, formats.Location{File: path})
+		}
+	}
 	return &utils.VulnerabilityDetails{
 		SuggestedFixedVersion: fixedVersion,
 		IsDirectDependency:    isDirectDependency,
@@ -1506,9 +1722,9 @@ func createVulnerabilityDetails(technology techutils.Technology, packageName, pa
 				ImpactedDependencyVersion: packageVersion,
 				Components: []formats.ComponentRow{
 					{
-						Name:     packageName,
-						Version:  packageVersion,
-						Location: &formats.Location{File: locationEvidencePath},
+						Name:      packageName,
+						Version:   packageVersion,
+						Evidences: evidences,
 					},
 				},
 			},

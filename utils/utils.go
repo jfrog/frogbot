@@ -445,6 +445,7 @@ func isUrlAccessible(url string) bool {
 		return false
 	}
 	log.Debug(fmt.Sprintf("Sending HTTP %s request to: '%s'", req.Method, req.URL))
+	//#nosec G704 -- The URL is intentionally provided by the caller to check connectivity.
 	resp, err := client.GetClient().Do(req)
 	if errorutils.CheckError(err) != nil {
 		log.Debug(fmt.Sprintf("Can't check access to '%s', error while sending request:\n%s", url, err.Error()))
