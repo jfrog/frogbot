@@ -51,7 +51,7 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
+// TODO can be deleted if not needed after refactoring all package updaters
 type CommonPackageUpdater struct {
 	serverDetails *config.ServerDetails
 	depsRepo      string

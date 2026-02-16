@@ -40,6 +40,7 @@ const (
 // TODO add to this map every tech that we support fixing in V3
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
+	techutils.Go,
 }
 
 type ScanRepositoryCmd struct {

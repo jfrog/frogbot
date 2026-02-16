@@ -1,6 +1,7 @@
 package packageupdaters
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,33 +13,88 @@ import (
 )
 
 const (
-	goFlagModEditEnv = "GOFLAGS=-mod=mod"
-	goWorkOffEnv     = "GOWORK=off"
-	goModFileName    = "go.mod"
-	goSumFileName    = "go.sum"
+	goFlagModEditEnv      = "GOFLAGS=-mod=mod"
+	goWorkOffEnv          = "GOWORK=off"
+	goModFileName         = "go.mod"
+	goSumFileName         = "go.sum"
+	goVendorDirName       = "vendor"
+	goTidyContinueOnError = "-e"
 )
 
 type GoPackageUpdater struct{}
 
 type goModuleBackup struct {
+	goModPath    string
 	goModContent []byte
+	goSumPath    string
 	goSumContent []byte
-	goSumExisted bool
 }
 
 func (gpu *GoPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	descriptorPaths := GetVulnerabilityLocations(vulnDetails, []string{goModFileName}, []string{goVendorDirName})
+	if len(descriptorPaths) == 0 {
+		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
+	}
+
+	originalWd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+
 	env := gpu.buildGoCommandEnv()
 
-	backup, err := gpu.backupModuleFiles()
+	var failingDescriptors []string
+	for _, descriptorPath := range descriptorPaths {
+		if fixErr := gpu.fixVulnerabilityAndTidy(vulnDetails, descriptorPath, originalWd, env); fixErr != nil {
+			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, descriptorPath, fixErr)
+			log.Warn(failedFixErrorMsg.Error())
+			err = errors.Join(err, failedFixErrorMsg)
+			failingDescriptors = append(failingDescriptors, descriptorPath)
+		}
+	}
 	if err != nil {
+		return fmt.Errorf("encountered errors while fixing '%s' vulnerability in descriptors [%s]: %w", vulnDetails.ImpactedDependencyName, strings.Join(failingDescriptors, ", "), err)
+	}
+
+	return nil
+}
+
+func (gpu *GoPackageUpdater) fixVulnerabilityAndTidy(vulnDetails *utils.VulnerabilityDetails, descriptorPath, originalWd string, env []string) (err error) {
+	backup, backupErr := gpu.backupModuleFiles(descriptorPath)
+	if backupErr != nil {
+		return backupErr
+	}
+
+	descriptorDir := filepath.Dir(descriptorPath)
+	if err = os.Chdir(descriptorDir); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
+	}
+	defer func() {
+		if chErr := os.Chdir(originalWd); chErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
+		}
+	}()
+
+	if err = gpu.updateDependency(vulnDetails, env); err != nil {
+		log.Warn(fmt.Sprintf("Failed to update '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
+		if rollbackErr := gpu.restoreModuleFiles(backup); rollbackErr != nil {
+			return fmt.Errorf("failed to rollback module files after go get failure: %w (original error: %v)", rollbackErr, err)
+		}
 		return err
 	}
 
-	if err := gpu.updateDependency(vulnDetails, env); err != nil {
-		return err
+	lockFileTracked, checkErr := utils.IsFileTrackedByGit(backup.goSumPath, originalWd)
+	if checkErr != nil {
+		log.Debug(fmt.Sprintf("Failed to check if lock file is tracked in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
+		lockFileTracked = true
 	}
 
-	if err := gpu.tidyLockFiles(env); err != nil {
+	if !lockFileTracked {
+		log.Debug(fmt.Sprintf("Lock file '%s' is not tracked in git, skipping lock file regeneration", backup.goSumPath))
+		return nil
+	}
+
+	if err = gpu.tidyLockFiles(descriptorDir, env); err != nil {
 		log.Warn(fmt.Sprintf("Failed to tidy module files after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
 		if rollbackErr := gpu.restoreModuleFiles(backup); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback module files after tidy failure: %w (original error: %v)", rollbackErr, err)
@@ -46,6 +102,7 @@ func (gpu *GoPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDe
 		return err
 	}
 
+	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
 	return nil
 }
 
@@ -53,50 +110,40 @@ func (gpu *GoPackageUpdater) buildGoCommandEnv() []string {
 	return append(os.Environ(), goFlagModEditEnv, goWorkOffEnv)
 }
 
-func (gpu *GoPackageUpdater) backupModuleFiles() (*goModuleBackup, error) {
-	goModContent, err := os.ReadFile(goModFileName)
+func (gpu *GoPackageUpdater) backupModuleFiles(goModPath string) (*goModuleBackup, error) {
+	goModContent, err := os.ReadFile(goModPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read '%s': %w", goModFileName, err)
+		return nil, fmt.Errorf("failed to read '%s': %w", goModPath, err)
+	}
+
+	// We assume go.sum resides under the same directory as go.mod
+	descriptorDir := filepath.Dir(goModPath)
+	goSumPath := filepath.Join(descriptorDir, goSumFileName)
+	goSumContent, err := os.ReadFile(goSumPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read '%s': %w", goSumPath, err)
 	}
 
 	backup := &goModuleBackup{
+		goModPath:    goModPath,
 		goModContent: make([]byte, len(goModContent)),
+		goSumPath:    goSumPath,
+		goSumContent: make([]byte, len(goSumContent)),
 	}
 	copy(backup.goModContent, goModContent)
-
-	goSumContent, err := os.ReadFile(goSumFileName)
-	if err != nil {
-		if os.IsNotExist(err) {
-			backup.goSumExisted = false
-			log.Debug(fmt.Sprintf("'%s' does not exist yet, will be created by go get", goSumFileName))
-		} else {
-			return nil, fmt.Errorf("failed to read '%s': %w", goSumFileName, err)
-		}
-	} else {
-		backup.goSumExisted = true
-		backup.goSumContent = make([]byte, len(goSumContent))
-		copy(backup.goSumContent, goSumContent)
-	}
+	copy(backup.goSumContent, goSumContent)
 
 	return backup, nil
 }
 
 func (gpu *GoPackageUpdater) restoreModuleFiles(backup *goModuleBackup) error {
-	if err := os.WriteFile(goModFileName, backup.goModContent, 0644); err != nil {
-		return fmt.Errorf("failed to restore '%s': %w", goModFileName, err)
+	if err := os.WriteFile(backup.goModPath, backup.goModContent, 0644); err != nil {
+		return fmt.Errorf("failed to restore '%s': %w", backup.goModPath, err)
 	}
-
-	if backup.goSumExisted {
-		if err := os.WriteFile(goSumFileName, backup.goSumContent, 0644); err != nil {
-			return fmt.Errorf("failed to restore '%s': %w", goSumFileName, err)
-		}
-	} else {
-		if err := os.Remove(goSumFileName); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to remove '%s' during rollback: %w", goSumFileName, err)
-		}
+	if err := os.WriteFile(backup.goSumPath, backup.goSumContent, 0644); err != nil {
+		return fmt.Errorf("failed to restore '%s': %w", backup.goSumPath, err)
 	}
-
-	log.Debug("Successfully rolled back go.mod and go.sum to original state")
+	log.Debug(fmt.Sprintf("Successfully rolled back '%s' and '%s' to original state", backup.goModPath, backup.goSumPath))
 	return nil
 }
 
@@ -125,8 +172,8 @@ func (gpu *GoPackageUpdater) updateDependency(vulnDetails *utils.VulnerabilityDe
 	return nil
 }
 
-func (gpu *GoPackageUpdater) tidyLockFiles(env []string) error {
-	cmd := exec.Command("go", "mod", "tidy")
+func (gpu *GoPackageUpdater) tidyLockFiles(descriptorDir string, env []string) error {
+	cmd := exec.Command("go", "mod", "tidy", goTidyContinueOnError)
 	cmd.Env = env
 	log.Debug("Running 'go mod tidy'")
 
@@ -140,7 +187,7 @@ func (gpu *GoPackageUpdater) tidyLockFiles(env []string) error {
 		return fmt.Errorf("go mod tidy failed: %s\n%s", err.Error(), output)
 	}
 
-	if gpu.hasVendorDirectory() {
+	if gpu.hasVendorDirectory(descriptorDir) {
 		if err := gpu.updateVendor(env); err != nil {
 			return err
 		}
@@ -149,8 +196,8 @@ func (gpu *GoPackageUpdater) tidyLockFiles(env []string) error {
 	return nil
 }
 
-func (gpu *GoPackageUpdater) hasVendorDirectory() bool {
-	vendorModulesPath := filepath.Join("vendor", "modules.txt")
+func (gpu *GoPackageUpdater) hasVendorDirectory(descriptorDir string) bool {
+	vendorModulesPath := filepath.Join(descriptorDir, goVendorDirName, "modules.txt")
 	if _, err := os.Stat(vendorModulesPath); err == nil {
 		log.Debug(fmt.Sprintf("Detected vendor directory at: %s", vendorModulesPath))
 		return true
