@@ -10,7 +10,6 @@ import (
 
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
@@ -51,11 +50,8 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO can be deleted if not needed after refactoring all package updaters
-type CommonPackageUpdater struct {
-	serverDetails *config.ServerDetails
-	depsRepo      string
-}
+// TODO delete this struct after refactoring all package managers and deprecating all its usages
+type CommonPackageUpdater struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
