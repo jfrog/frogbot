@@ -152,15 +152,3 @@ func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFil
 	}
 	return pathsSet.ToSlice()
 }
-
-func FindLockFileInEvidences(vulnDetails *utils.VulnerabilityDetails, descriptorDir, lockFileName string) string {
-	expectedPath := filepath.Join(descriptorDir, lockFileName)
-	for _, component := range vulnDetails.Components {
-		for _, evidence := range component.Evidences {
-			if filepath.Clean(evidence.File) == filepath.Clean(expectedPath) {
-				return evidence.File
-			}
-		}
-	}
-	return ""
-}

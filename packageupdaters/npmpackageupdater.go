@@ -20,6 +20,7 @@ const (
 	npmPackageLockOnlyFlag = "--package-lock-only"
 	npmIgnoreScriptsFlag   = "--ignore-scripts"
 	npmNoAuditFlag         = "--no-audit"
+	npmLegacyPeerDepsFlag  = "--legacy-peer-deps"
 	npmNoFundFlag          = "--no-fund"
 
 	configIgnoreScriptsEnv = "NPM_CONFIG_IGNORE_SCRIPTS"
@@ -37,6 +38,8 @@ const (
 	overridesSection            = "overrides"
 
 	npmInstallTimeout = 15 * time.Minute
+
+	npmEreresolveErrorPrefix = "ERESOLVE"
 )
 
 var npmAllowedSections = []string{dependenciesSection, devDependenciesSection, optionalDependenciesSection, overridesSection}
@@ -98,11 +101,8 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	}
 
 	descriptorDir := filepath.Dir(descriptorPath)
-	lockFilePath := FindLockFileInEvidences(vulnDetails, descriptorDir, npmLockFileName)
-	if lockFilePath == "" {
-		log.Debug(fmt.Sprintf("No lock file evidence found for descriptor '%s', skipping lock file regeneration", descriptorPath))
-		return nil
-	}
+	// We assume lock file and manifest reside under the same directory
+	lockFilePath := filepath.Join(descriptorDir, npmLockFileName)
 
 	lockFileTracked, checkErr := utils.IsFileTrackedByGit(lockFilePath, originalWd)
 	if checkErr != nil {
@@ -192,23 +192,34 @@ func escapeJsonPathKey(key string) string {
 }
 
 func (npm *NpmPackageUpdater) regenerateLockFileWithRetry() error {
-	err := npm.runNpmInstall()
+	err := npm.runNpmInstall(false)
 	if err != nil {
+		// Retry with --legacy-peer-deps when peer dependency resolution fails (ERESOLVE)
+		if strings.Contains(err.Error(), npmEreresolveErrorPrefix) {
+			log.Debug(fmt.Sprintf("First npm install attempt failed due to peer dependency conflict. Retrying with %s...", npmLegacyPeerDepsFlag))
+			if err = npm.runNpmInstall(true); err != nil {
+				return fmt.Errorf("npm install failed after retry with %s: %w", npmLegacyPeerDepsFlag, err)
+			}
+			return nil
+		}
 		log.Debug(fmt.Sprintf("First npm install attempt failed: %s. Retrying...", err.Error()))
-		if err = npm.runNpmInstall(); err != nil {
+		if err = npm.runNpmInstall(false); err != nil {
 			return fmt.Errorf("npm install failed after retry: %w", err)
 		}
 	}
 	return nil
 }
 
-func (npm *NpmPackageUpdater) runNpmInstall() error {
+func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	args := []string{
 		"install",
 		npmPackageLockOnlyFlag,
 		npmIgnoreScriptsFlag,
 		npmNoAuditFlag,
 		npmNoFundFlag,
+	}
+	if useLegacyPeerDeps {
+		args = append(args, npmLegacyPeerDepsFlag)
 	}
 
 	fullCommand := "npm " + strings.Join(args, " ")

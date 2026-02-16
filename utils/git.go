@@ -576,7 +576,7 @@ func IsFileTrackedByGit(filePath, repoRootDir string) (bool, error) {
 	}
 
 	_, err = tree.File(filePath)
-	if err == object.ErrFileNotFound {
+	if errors.Is(err, object.ErrFileNotFound) {
 		return false, nil
 	}
 	if err != nil {
