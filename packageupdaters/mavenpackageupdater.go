@@ -83,8 +83,8 @@ func (m *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 func (m *MavenPackageUpdater) getVulnerabilityOccurrences(vulnDetails *utils.VulnerabilityDetails) []string {
 	var pomPaths []string
 	for _, component := range vulnDetails.Components {
-		if component.Location != nil && component.Location.File != "" {
-			pomPaths = append(pomPaths, component.Location.File)
+		if component.PreferredLocation != nil && component.PreferredLocation.File != "" {
+			pomPaths = append(pomPaths, component.PreferredLocation.File)
 		}
 
 	}

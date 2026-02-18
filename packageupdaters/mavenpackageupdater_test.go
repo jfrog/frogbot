@@ -40,7 +40,7 @@ func TestMavenUpdateRegularDependency(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "org.jfrog.filespecs:file-specs-java",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func TestMavenUpdateDependencyManagement(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-core",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
@@ -142,7 +142,7 @@ func TestMavenUpdatePropertyVersion(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-databind",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
@@ -198,7 +198,7 @@ func TestMavenUpdateParentPOM(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "org.springframework.boot:spring-boot-starter-parent",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
@@ -238,7 +238,7 @@ func TestMavenDependencyNotFound(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "com.nonexistent:package",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
@@ -259,7 +259,7 @@ func TestMavenIndirectDependencyNotSupported(t *testing.T) {
 			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
 				ImpactedDependencyName: "org.springframework:spring-core",
 				Components: []formats.ComponentRow{
-					{Location: &formats.Location{File: "pom.xml"}},
+					{PreferredLocation: &formats.Location{File: "pom.xml"}},
 				},
 			},
 		},
