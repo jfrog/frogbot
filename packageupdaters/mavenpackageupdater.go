@@ -102,7 +102,7 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 		return fmt.Errorf("failed to update Pom file: failed to parse %s: %w", pomPath, err)
 	}
 
-	updated := false
+	var updated bool
 	newContent := content
 
 	if updated, newContent = m.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
