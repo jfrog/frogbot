@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	mavenCoordinateSeparator = ":"
+	mavenDependencySeparator = ":"
 	propertyPrefix           = "${"
 	propertySuffix           = "}"
 )
@@ -48,7 +48,7 @@ type mavenDepManagement struct {
 	Dependencies []mavenDep `xml:"dependencies>dependency"`
 }
 
-func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (m *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if !vulnDetails.IsDirectDependency {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
@@ -62,14 +62,14 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 		return err
 	}
 
-	pomPaths := mpu.getPomPaths(vulnDetails)
+	pomPaths := m.getVulnerabilityOccurrences(vulnDetails)
 	if len(pomPaths) == 0 {
 		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data", vulnDetails.ImpactedDependencyName)
 	}
 
 	var errors []string
 	for _, pomPath := range pomPaths {
-		if err := mpu.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); err != nil {
+		if err := m.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); err != nil {
 			errors = append(errors, fmt.Sprintf("%s: %v", pomPath, err))
 		}
 	}
@@ -80,52 +80,53 @@ func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	return nil
 }
 
-func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDetails) []string {
+func (m *MavenPackageUpdater) getVulnerabilityOccurrences(vulnDetails *utils.VulnerabilityDetails) []string {
 	var pomPaths []string
 	for _, component := range vulnDetails.Components {
 		if component.Location != nil && component.Location.File != "" {
 			pomPaths = append(pomPaths, component.Location.File)
 		}
+
 	}
 	return pomPaths
 }
 
-func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
+func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", pomPath, err)
+		return fmt.Errorf("failed to update Pom file: failed to read %s: %w", pomPath, err)
 	}
 
 	var project mavenProject
-	if err := xml.Unmarshal(content, &project); err != nil {
-		return fmt.Errorf("failed to parse %s: %w", pomPath, err)
+	if err = xml.Unmarshal(content, &project); err != nil {
+		return fmt.Errorf("failed to update Pom file: failed to parse %s: %w", pomPath, err)
 	}
 
 	updated := false
 	newContent := content
 
-	if updated, newContent = mpu.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
-		if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
-			return fmt.Errorf("failed to write %s: %w", pomPath, err)
+	if updated, newContent = m.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
+		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
+			return fmt.Errorf("failed to update Pom file: failed to write %s: %w", pomPath, err)
 		}
-		log.Debug("Successfully updated", pomPath)
+		log.Debug("Successfully updated Pom Parent", pomPath)
 		return nil
 	}
 
-	if updated, newContent = mpu.updateInDependencies(&project, project.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
-		if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
+	if updated, newContent = m.updateInDependencies(&project, project.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
+		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", pomPath, err)
 		}
-		log.Debug("Successfully updated", pomPath)
+		log.Debug("Successfully updated dependency", pomPath)
 		return nil
 	}
 
 	if project.DependencyManagement != nil {
-		if updated, newContent = mpu.updateInDependencies(&project, project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
-			if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
+		if updated, newContent = m.updateInDependencies(&project, project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
+			if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", pomPath, err)
 			}
-			log.Debug("Successfully updated", pomPath)
+			log.Debug("Successfully updated Dependency Management", pomPath)
 			return nil
 		}
 	}
@@ -134,7 +135,7 @@ func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixe
 }
 
 func parseDependencyName(dependencyName string) (groupId, artifactId string, err error) {
-	parts := strings.Split(dependencyName, mavenCoordinateSeparator)
+	parts := strings.Split(dependencyName, mavenDependencySeparator)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("invalid Maven dependency name: %s. Expected format 'groupId:artifactId'", dependencyName)
 	}
@@ -142,10 +143,10 @@ func parseDependencyName(dependencyName string) (groupId, artifactId string, err
 }
 
 func toDependencyName(groupId, artifactId string) string {
-	return groupId + mavenCoordinateSeparator + artifactId
+	return groupId + mavenDependencySeparator + artifactId
 }
 
-func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
+func (m *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
 	if project.Parent == nil {
 		return false, content
 	}
@@ -161,11 +162,11 @@ func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, a
 	return false, content
 }
 
-func (mpu *MavenPackageUpdater) updateInDependencies(project *mavenProject, deps []mavenDep, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
+func (m *MavenPackageUpdater) updateInDependencies(project *mavenProject, deps []mavenDep, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
 	for _, dep := range deps {
 		if dep.GroupId == groupId && dep.ArtifactId == artifactId {
 			if propertyName, isProperty := extractPropertyName(dep.Version); isProperty {
-				return mpu.updateProperty(project, propertyName, fixedVersion, content)
+				return m.updateProperty(project, propertyName, fixedVersion, content)
 			}
 
 			pattern := regexp.MustCompile(`(?s)(<groupId>` + regexp.QuoteMeta(groupId) + `</groupId>\s*<artifactId>` + regexp.QuoteMeta(artifactId) + `</artifactId>\s*<version>)[^<]+(</version>)`)
@@ -186,7 +187,7 @@ func extractPropertyName(version string) (string, bool) {
 	return "", false
 }
 
-func (mpu *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName, newValue string, content []byte) (bool, []byte) {
+func (m *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName, newValue string, content []byte) (bool, []byte) {
 	if project.Properties == nil {
 		return false, content
 	}
