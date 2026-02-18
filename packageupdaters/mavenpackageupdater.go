@@ -1,280 +1,205 @@
 package packageupdaters
 
 import (
-	"encoding/json"
+	"bytes"
 	"encoding/xml"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
+	"regexp"
 	"strings"
 
-	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
 	"github.com/jfrog/jfrog-client-go/utils/log"
-	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils"
 )
 
-const MavenVersionNotAvailableErrorFormat = "Version %s is not available for artifact"
+const (
+	mavenCoordinateSeparator = ":"
+	propertyPrefix           = "${"
+	propertySuffix           = "}"
+)
 
-type gavCoordinate struct {
-	GroupId                     string `xml:"groupId"`
-	ArtifactId                  string `xml:"artifactId"`
-	Version                     string `xml:"version"`
-	foundInDependencyManagement bool
+type MavenPackageUpdater struct{}
+
+type mavenProject struct {
+	XMLName              xml.Name            `xml:"project"`
+	Parent               *mavenDep           `xml:"parent"`
+	Properties           *mavenProperties    `xml:"properties"`
+	Dependencies         []mavenDep          `xml:"dependencies>dependency"`
+	DependencyManagement *mavenDepManagement `xml:"dependencyManagement"`
 }
 
-func (gc *gavCoordinate) isEmpty() bool {
-	return gc.GroupId == "" && gc.ArtifactId == "" && gc.Version == ""
+type mavenProperties struct {
+	Props []mavenProperty `xml:",any"`
 }
 
-func (gc *gavCoordinate) trimSpaces() *gavCoordinate {
-	gc.GroupId = strings.TrimSpace(gc.GroupId)
-	gc.ArtifactId = strings.TrimSpace(gc.ArtifactId)
-	gc.Version = strings.TrimSpace(gc.Version)
-	return gc
+type mavenProperty struct {
+	XMLName xml.Name
+	Value   string `xml:",chardata"`
 }
 
-type mavenDependency struct {
-	gavCoordinate
-	Dependencies         []mavenDependency `xml:"dependencies>dependency"`
-	DependencyManagement []mavenDependency `xml:"dependencyManagement>dependencies>dependency"`
-	Plugins              []mavenPlugin     `xml:"build>plugins>plugin"`
+type mavenDep struct {
+	GroupId    string `xml:"groupId"`
+	ArtifactId string `xml:"artifactId"`
+	Version    string `xml:"version"`
 }
 
-func (md *mavenDependency) collectMavenDependencies(foundInDependencyManagement bool) []gavCoordinate {
-	var result []gavCoordinate
-	if !md.isEmpty() {
-		md.foundInDependencyManagement = foundInDependencyManagement
-		result = append(result, *md.trimSpaces())
-	}
-	for _, dependency := range md.Dependencies {
-		result = append(result, dependency.collectMavenDependencies(foundInDependencyManagement)...)
-	}
-	for _, dependency := range md.DependencyManagement {
-		result = append(result, dependency.collectMavenDependencies(true)...)
-	}
-	for _, plugin := range md.Plugins {
-		result = append(result, plugin.collectMavenPlugins()...)
-	}
-
-	return result
+type mavenDepManagement struct {
+	Dependencies []mavenDep `xml:"dependencies>dependency"`
 }
 
-type mavenPlugin struct {
-	gavCoordinate
-	NestedPlugins []mavenPlugin `xml:"configuration>plugins>plugin"`
-}
-
-func (mp *mavenPlugin) collectMavenPlugins() []gavCoordinate {
-	var result []gavCoordinate
-	if !mp.isEmpty() {
-		result = append(result, *mp.trimSpaces())
-	}
-	for _, plugin := range mp.NestedPlugins {
-		result = append(result, plugin.collectMavenPlugins()...)
-	}
-	return result
-}
-
-// fillDependenciesMap collects direct dependencies from the pomPath pom.xml file.
-// If the version of a dependency is set in another property section, it is added as its value in the map.
-func (mph *MavenPackageUpdater) fillDependenciesMap(pomPath string) error {
-	contentBytes, err := os.ReadFile(filepath.Clean(pomPath))
-	if err != nil {
-		return errors.New("couldn't read pom.xml file: " + err.Error())
-	}
-	mavenDependencies, err := getMavenDependencies(contentBytes)
-	if err != nil {
-		return err
-	}
-	for _, dependency := range mavenDependencies {
-		if dependency.Version == "" {
-			continue
-		}
-		depName := fmt.Sprintf("%s:%s", dependency.GroupId, dependency.ArtifactId)
-		if _, exist := mph.pomDependencies[depName]; !exist {
-			mph.pomDependencies[depName] = pomDependencyDetails{foundInDependencyManagement: dependency.foundInDependencyManagement, currentVersion: dependency.Version}
-		}
-		if strings.HasPrefix(dependency.Version, "${") {
-			trimmedVersion := strings.Trim(dependency.Version, "${}")
-			if !slices.Contains(mph.pomDependencies[depName].properties, trimmedVersion) {
-				mph.pomDependencies[depName] = pomDependencyDetails{
-					properties:                  append(mph.pomDependencies[depName].properties, trimmedVersion),
-					currentVersion:              dependency.Version,
-					foundInDependencyManagement: dependency.foundInDependencyManagement,
-				}
-			}
-		}
-	}
-	return nil
-}
-
-// Extract all dependencies from the input pom.xml
-// pomXmlContent - The pom.xml content
-func getMavenDependencies(pomXmlContent []byte) (result []gavCoordinate, err error) {
-	var dependencies mavenDependency
-	if err = xml.Unmarshal(pomXmlContent, &dependencies); err != nil {
-		err = fmt.Errorf("failed to unmarshal the current pom.xml:\n%s, error received:\n%w"+string(pomXmlContent), err)
-		return
-	}
-	result = append(result, dependencies.collectMavenDependencies(false)...)
-	return
-}
-
-type pomPath struct {
-	PomPath string `json:"pomPath"`
-}
-
-type pomDependencyDetails struct {
-	properties                  []string
-	currentVersion              string
-	foundInDependencyManagement bool
-}
-
-func NewMavenPackageUpdater(scanDetails *utils.ScanDetails) *MavenPackageUpdater {
-	depTreeParams := &java.DepTreeParams{
-		Server:                  scanDetails.ServerDetails,
-		IsMavenDepTreeInstalled: true,
-	}
-	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,
-	// Therefore, we set the `isDepTreeInstalled` flag to true
-	mavenDepTreeManager := java.NewMavenDepTreeManager(depTreeParams, java.Projects)
-	return &MavenPackageUpdater{MavenDepTreeManager: mavenDepTreeManager}
-}
-
-type MavenPackageUpdater struct {
-	CommonPackageUpdater
-	// pomDependencies holds a map of direct dependencies found in pom.xml.
-	pomDependencies map[string]pomDependencyDetails
-	// pomPaths holds the paths to all the pom.xml files that are related to the current project.
-	pomPaths []pomPath
-	// mavenDepTreeManager handles the installation and execution of the maven-dep-tree to obtain all the project poms and running mvn commands
-	*java.MavenDepTreeManager
-}
-
-func (mph *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// When resolution from an Artifactory server is necessary, a settings.xml file will be generated, and its path will be set in mph.
-	if mph.GetDepsRepo() != "" {
-		var clearMavenDepTreeRun func() error
-		_, clearMavenDepTreeRun, err = mph.CreateTempDirWithSettingsXmlIfNeeded()
-		if err != nil {
-			return
-		}
-		defer func() {
-			err = errors.Join(err, clearMavenDepTreeRun())
-		}()
-	}
-
-	err = mph.getProjectPoms()
-	if err != nil {
-		return err
-	}
-
-	// Get direct dependencies for each pom.xml file
-	if mph.pomDependencies == nil {
-		mph.pomDependencies = make(map[string]pomDependencyDetails)
-	}
-	for _, pp := range mph.pomPaths {
-		if err = mph.fillDependenciesMap(pp.PomPath); err != nil {
-			return err
-		}
-	}
-
-	var depDetails pomDependencyDetails
-	var exists bool
-	// Check if the impacted package is a direct dependency
-	impactedDependency := vulnDetails.ImpactedDependencyName
-	if depDetails, exists = mph.pomDependencies[impactedDependency]; !exists {
+func (mpu *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	if !vulnDetails.IsDirectDependency {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
 			FixedVersion: vulnDetails.SuggestedFixedVersion,
 			ErrorType:    utils.IndirectDependencyFixNotSupported,
 		}
 	}
-	if len(depDetails.properties) > 0 {
-		return mph.updateProperties(&depDetails, vulnDetails.SuggestedFixedVersion)
-	}
 
-	return mph.updatePackageVersion(vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, depDetails.foundInDependencyManagement)
-}
-
-// Returns project's Pom paths. This function requires an execution of maven-dep-tree 'project' command prior to its execution
-func (mph *MavenPackageUpdater) getProjectPoms() (err error) {
-	// Check if we already scanned the project pom.xml locations
-	if len(mph.pomPaths) > 0 {
-		return
-	}
-
-	oldSettingsXmlPath := mph.GetSettingsXmlPath()
-
-	var depTreeOutput string
-	var clearMavenDepTreeRun func() error
-	if depTreeOutput, clearMavenDepTreeRun, err = mph.RunMavenDepTree(); err != nil {
-		err = fmt.Errorf("failed to get project poms while running maven-dep-tree: %s", err.Error())
-		if clearMavenDepTreeRun != nil {
-			err = errors.Join(err, clearMavenDepTreeRun())
-		}
-		return
-	}
-	defer func() {
-		err = clearMavenDepTreeRun()
-		mph.SetSettingsXmlPath(oldSettingsXmlPath)
-	}()
-
-	for _, jsonContent := range strings.Split(depTreeOutput, "\n") {
-		if jsonContent == "" {
-			continue
-		}
-		// Escape backslashes in the pomPath field, to fix windows backslash parsing issues
-		escapedContent := strings.ReplaceAll(jsonContent, `\`, `\\`)
-		var pp pomPath
-		if err = json.Unmarshal([]byte(escapedContent), &pp); err != nil {
-			err = fmt.Errorf("failed to unmarshal the maven-dep-tree output. Full maven-dep-tree output:\n%s\nCurrent line:\n%s\nError details:\n%w", depTreeOutput, escapedContent, err)
-			return
-		}
-		mph.pomPaths = append(mph.pomPaths, pp)
-	}
-	if len(mph.pomPaths) == 0 {
-		err = errors.New("couldn't find any pom.xml files in the current project")
-	}
-	return
-}
-
-// Update the package version. Updates it only if the version is not a reference to a property.
-func (mph *MavenPackageUpdater) updatePackageVersion(impactedPackage, fixedVersion string, foundInDependencyManagement bool) error {
-	updateVersionArgs := []string{
-		"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:use-dep-version", "-Dincludes=" + impactedPackage,
-		"-DdepVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
-		fmt.Sprintf("-DprocessDependencies=%t", !foundInDependencyManagement),
-		fmt.Sprintf("-DprocessDependencyManagement=%t", foundInDependencyManagement)}
-	updateVersionCmd := fmt.Sprintf("mvn %s", strings.Join(updateVersionArgs, " "))
-	log.Debug(fmt.Sprintf("Running '%s'", updateVersionCmd))
-	output, err := mph.RunMvnCmd(updateVersionArgs)
+	groupId, artifactId, err := parseDependencyName(vulnDetails.ImpactedDependencyName)
 	if err != nil {
-		versionNotAvailableString := fmt.Sprintf(MavenVersionNotAvailableErrorFormat, fixedVersion)
-		// Replace Maven's 'version not available' error with more readable error message
-		if strings.Contains(string(output), versionNotAvailableString) {
-			err = fmt.Errorf("couldn't update %q to suggested fix version: %s", impactedPackage, versionNotAvailableString)
+		return err
+	}
+
+	pomPaths := mpu.getPomPaths(vulnDetails)
+	if len(pomPaths) == 0 {
+		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data", vulnDetails.ImpactedDependencyName)
+	}
+
+	var errors []string
+	for _, pomPath := range pomPaths {
+		if err := mpu.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); err != nil {
+			errors = append(errors, fmt.Sprintf("%s: %v", pomPath, err))
 		}
 	}
-	return err
-}
 
-// Update properties that represent this package's version.
-func (mph *MavenPackageUpdater) updateProperties(depDetails *pomDependencyDetails, fixedVersion string) error {
-	for _, property := range depDetails.properties {
-		updatePropertyArgs := []string{
-			"-U", "-B", "org.codehaus.mojo:versions-maven-plugin:set-property", "-Dproperty=" + property,
-			"-DnewVersion=" + fixedVersion, "-DgenerateBackupPoms=false",
-			fmt.Sprintf("-DprocessDependencies=%t", !depDetails.foundInDependencyManagement),
-			fmt.Sprintf("-DprocessDependencyManagement=%t", depDetails.foundInDependencyManagement)}
-		updatePropertyCmd := fmt.Sprintf("mvn %s", strings.Join(updatePropertyArgs, " "))
-		log.Debug(fmt.Sprintf("Running '%s'", updatePropertyCmd))
-		if _, err := mph.RunMvnCmd(updatePropertyArgs); err != nil { // #nosec G204
-			return fmt.Errorf("failed updating %s property: %s", property, err.Error())
-		}
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to update pom.xml files:\n%s", strings.Join(errors, "\n"))
 	}
 	return nil
+}
+
+func (mpu *MavenPackageUpdater) getPomPaths(vulnDetails *utils.VulnerabilityDetails) []string {
+	var pomPaths []string
+	for _, component := range vulnDetails.Components {
+		if component.Location != nil && component.Location.File != "" {
+			pomPaths = append(pomPaths, component.Location.File)
+		}
+	}
+	return pomPaths
+}
+
+func (mpu *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", pomPath, err)
+	}
+
+	var project mavenProject
+	if err := xml.Unmarshal(content, &project); err != nil {
+		return fmt.Errorf("failed to parse %s: %w", pomPath, err)
+	}
+
+	updated := false
+	newContent := content
+
+	if updated, newContent = mpu.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
+		if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", pomPath, err)
+		}
+		log.Debug("Successfully updated", pomPath)
+		return nil
+	}
+
+	if updated, newContent = mpu.updateInDependencies(&project, project.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
+		if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", pomPath, err)
+		}
+		log.Debug("Successfully updated", pomPath)
+		return nil
+	}
+
+	if project.DependencyManagement != nil {
+		if updated, newContent = mpu.updateInDependencies(&project, project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
+			if err := os.WriteFile(pomPath, newContent, 0644); err != nil {
+				return fmt.Errorf("failed to write %s: %w", pomPath, err)
+			}
+			log.Debug("Successfully updated", pomPath)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
+}
+
+func parseDependencyName(dependencyName string) (groupId, artifactId string, err error) {
+	parts := strings.Split(dependencyName, mavenCoordinateSeparator)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid Maven dependency name: %s. Expected format 'groupId:artifactId'", dependencyName)
+	}
+	return parts[0], parts[1], nil
+}
+
+func toDependencyName(groupId, artifactId string) string {
+	return groupId + mavenCoordinateSeparator + artifactId
+}
+
+func (mpu *MavenPackageUpdater) updateInParent(project *mavenProject, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
+	if project.Parent == nil {
+		return false, content
+	}
+
+	if project.Parent.GroupId == groupId && project.Parent.ArtifactId == artifactId {
+		pattern := regexp.MustCompile(`(?s)(<parent>\s*<groupId>` + regexp.QuoteMeta(groupId) + `</groupId>\s*<artifactId>` + regexp.QuoteMeta(artifactId) + `</artifactId>\s*<version>)[^<]+(</version>)`)
+		newContent := pattern.ReplaceAll(content, []byte("${1}"+fixedVersion+"${2}"))
+		if !bytes.Equal(content, newContent) {
+			log.Debug("Updated parent", toDependencyName(groupId, artifactId), "to", fixedVersion)
+			return true, newContent
+		}
+	}
+	return false, content
+}
+
+func (mpu *MavenPackageUpdater) updateInDependencies(project *mavenProject, deps []mavenDep, groupId, artifactId, fixedVersion string, content []byte) (bool, []byte) {
+	for _, dep := range deps {
+		if dep.GroupId == groupId && dep.ArtifactId == artifactId {
+			if propertyName, isProperty := extractPropertyName(dep.Version); isProperty {
+				return mpu.updateProperty(project, propertyName, fixedVersion, content)
+			}
+
+			pattern := regexp.MustCompile(`(?s)(<groupId>` + regexp.QuoteMeta(groupId) + `</groupId>\s*<artifactId>` + regexp.QuoteMeta(artifactId) + `</artifactId>\s*<version>)[^<]+(</version>)`)
+			newContent := pattern.ReplaceAll(content, []byte("${1}"+fixedVersion+"${2}"))
+			if !bytes.Equal(content, newContent) {
+				log.Debug("Updated dependency", toDependencyName(groupId, artifactId), "to", fixedVersion)
+				return true, newContent
+			}
+		}
+	}
+	return false, content
+}
+
+func extractPropertyName(version string) (string, bool) {
+	if strings.HasPrefix(version, propertyPrefix) && strings.HasSuffix(version, propertySuffix) {
+		return strings.TrimSuffix(strings.TrimPrefix(version, propertyPrefix), propertySuffix), true
+	}
+	return "", false
+}
+
+func (mpu *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName, newValue string, content []byte) (bool, []byte) {
+	if project.Properties == nil {
+		return false, content
+	}
+
+	for _, prop := range project.Properties.Props {
+		if prop.XMLName.Local == propertyName {
+			pattern := regexp.MustCompile(`(<` + regexp.QuoteMeta(propertyName) + `>)[^<]+(</` + regexp.QuoteMeta(propertyName) + `>)`)
+			newContent := pattern.ReplaceAll(content, []byte("${1}"+newValue+"${2}"))
+			if !bytes.Equal(content, newContent) {
+				log.Debug("Updated property", propertyName, "to", newValue)
+				return true, newContent
+			}
+		}
+	}
+	return false, content
 }
