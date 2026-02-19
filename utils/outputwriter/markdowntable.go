@@ -161,9 +161,9 @@ func (t *MarkdownTableBuilder) Build() string {
 			continue
 		}
 		if isFirstCol {
-			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
+			fmt.Fprintf(&tableBuilder, firstCellPlaceholder, column.Name)
 		} else {
-			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
+			fmt.Fprintf(&tableBuilder, cellPlaceholder, column.Name)
 		}
 		isFirstCol = false
 	}
@@ -263,9 +263,9 @@ func buildRowContent(content ...string) string {
 	rowBuilder.WriteString("\n")
 	for c, cell := range content {
 		if c == 0 {
-			rowBuilder.WriteString(fmt.Sprintf("| %s |", cell))
+			fmt.Fprintf(&rowBuilder, "| %s |", cell)
 		} else {
-			rowBuilder.WriteString(fmt.Sprintf(" %s |", cell))
+			fmt.Fprintf(&rowBuilder, " %s |", cell)
 		}
 	}
 	return rowBuilder.String()

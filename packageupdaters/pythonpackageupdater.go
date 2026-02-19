@@ -65,8 +65,7 @@ func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetail
 	if err != nil {
 		return errors.New("failed to read pip requirements file: " + err.Error())
 	}
-	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + vulnDetails.ImpactedDependencyName + "|" +
-		strings.ToLower(vulnDetails.ImpactedDependencyName) + ")" + PythonPackageRegexSuffix)
+	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + vulnDetails.ImpactedDependencyName + "|" + strings.ToLower(vulnDetails.ImpactedDependencyName) + ")" + PythonPackageRegexSuffix)
 	if packageToReplace := re.FindString(currentFile); packageToReplace != "" {
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
 	}
@@ -74,8 +73,7 @@ func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetail
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
-		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s",
-			vulnDetails.SuggestedFixedVersion, err.Error())
+		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}
 	return
 }
