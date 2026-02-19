@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/packageupdaters"
 
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
@@ -44,16 +45,17 @@ var supportedAutoFixTechnologies = []techutils.Technology{
 
 type ScanRepositoryCmd struct {
 	outputwriter.OutputWriter
-	dryRun          bool
-	dryRunRepoPath  string
-	scanDetails     *utils.ScanDetails
-	baseWd          string
-	gitManager      *utils.GitManager
-	projectTech     []techutils.Technology
-	updaters        map[techutils.Technology]packageupdaters.PackageUpdater
-	customTemplates utils.CustomTemplates
-	XrayVersion     string
-	XscVersion      string
+	dryRun           bool
+	dryRunRepoPath   string
+	scanDetails      *utils.ScanDetails
+	baseWd           string
+	workingDirectory string
+	gitManager       *utils.GitManager
+	projectTech      []techutils.Technology
+	updaters         map[techutils.Technology]packageupdaters.PackageUpdater
+	customTemplates  utils.CustomTemplates
+	XrayVersion      string
+	XscVersion       string
 }
 
 func (sr *ScanRepositoryCmd) Run(repository utils.Repository, client vcsclient.VcsClient) (err error) {
@@ -118,6 +120,7 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 		SetJfrogVersions(sr.XrayVersion, sr.XscVersion).
 		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repository.Params.ConfigProfile)
+	sr.workingDirectory = repository.Params.WorkingDirectory
 
 	sr.OutputWriter = repository.OutputWriter
 	sr.OutputWriter.SetSizeLimit(client)
@@ -201,7 +204,9 @@ func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository 
 
 // Audit the dependencies of the current commit.
 func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
-	auditResults := sr.scanDetails.Audit(sr.baseWd)
+	scanWd := utils.ResolveScanWorkingDir(sr.baseWd, sr.workingDirectory)
+	log.Info(fmt.Sprintf("Working directory: %s", sr.workingDirectory))
+	auditResults := sr.scanDetails.Audit(scanWd)
 	if err := auditResults.GetErrors(); err != nil {
 		return nil, err
 	}

@@ -49,6 +49,7 @@ type Params struct {
 	*services.ConfigProfile
 	Git
 	JFrogPlatform
+	WorkingDirectory string
 }
 
 type JFrogPlatform struct {
@@ -190,6 +191,7 @@ func BuildRepositoryFromEnv(xrayVersion, xscVersion string, gitClient vcsclient.
 	if err = repository.Params.Git.setDefaultsIfNeeded(gitParamsFromEnv, commandName); err != nil {
 		return
 	}
+	repository.Params.WorkingDirectory = getTrimmedEnv(WorkingDirectoryEnv)
 
 	repository.setOutputWriterDetails()
 	repository.OutputWriter.SetSizeLimit(gitClient)

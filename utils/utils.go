@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -264,6 +265,18 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	}
 	log.Debug("Repository download completed")
 	return
+}
+
+func ResolveScanWorkingDir(repoRoot, workingDir string) string {
+	workingDir = strings.TrimSpace(workingDir)
+	if workingDir == "" || workingDir == "." {
+		return repoRoot
+	}
+	workingDir = strings.TrimPrefix(filepath.Clean(workingDir), "."+string(filepath.Separator))
+	if workingDir == "" || workingDir == "." {
+		return repoRoot
+	}
+	return filepath.Join(repoRoot, workingDir)
 }
 
 // GetRelativeWd receive a base working directory along with a full path containing the base working directory, and the relative part is returned without the base prefix.

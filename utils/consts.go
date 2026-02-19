@@ -47,6 +47,8 @@ const (
 	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
 
+	WorkingDirectoryEnv = "JF_WORKING_DIRECTORY"
+
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
 	FixVersionPlaceHolder = "{FIX_VERSION}"
