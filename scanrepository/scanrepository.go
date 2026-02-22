@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,6 +39,7 @@ const (
 // TODO add to this map every tech that we support fixing in V3
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
+	techutils.Pip,
 	techutils.Go,
 }
 
