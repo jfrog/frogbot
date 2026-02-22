@@ -421,12 +421,60 @@ func getScaLicenseViolationDetails(violation formats.LicenseViolationRow, writer
 
 // Sca Vulnerabilities
 
+func vulnerabilitySummaryKey(v formats.VulnerabilityOrViolationRow) string {
+	ids := make([]string, 0, len(v.Cves)+1)
+	for _, cve := range v.Cves {
+		ids = append(ids, cve.Id)
+	}
+	sort.Strings(ids)
+	return v.IssueId + "|" + strings.Join(ids, ",")
+}
+
+func aggregateVulnerabilitiesByCve(vulnerabilities []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
+	if len(vulnerabilities) == 0 {
+		return vulnerabilities
+	}
+	byKey := make(map[string]*formats.VulnerabilityOrViolationRow)
+	for i := range vulnerabilities {
+		v := &vulnerabilities[i]
+		key := vulnerabilitySummaryKey(*v)
+		if existing, ok := byKey[key]; ok {
+			existing.ImpactPaths = append(existing.ImpactPaths, v.ImpactPaths...)
+			if len(v.FixedVersions) > 0 {
+				existing.FixedVersions = append(existing.FixedVersions, v.FixedVersions...)
+			}
+		} else {
+			agg := *v
+			agg.ImpactPaths = append([][]formats.ComponentRow(nil), v.ImpactPaths...)
+			agg.FixedVersions = append([]string(nil), v.FixedVersions...)
+			byKey[key] = &agg
+		}
+	}
+	result := make([]formats.VulnerabilityOrViolationRow, 0, len(byKey))
+	for _, v := range byKey {
+		result = append(result, *v)
+	}
+	// Preserve relative order by first occurrence
+	order := make(map[string]int)
+	for i, v := range vulnerabilities {
+		key := vulnerabilitySummaryKey(v)
+		if _, ok := order[key]; !ok {
+			order[key] = i
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return order[vulnerabilitySummaryKey(result[i])] < order[vulnerabilitySummaryKey(result[j])]
+	})
+	return result
+}
+
 func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
-	content = append(content, getVulnerabilitiesSummaryTable(vulnerabilities, writer))
-	content = append(content, getScaSecurityIssueDetailsContent(vulnerabilities, false, writer)...)
+	aggregated := aggregateVulnerabilitiesByCve(vulnerabilities)
+	content = append(content, getVulnerabilitiesSummaryTable(aggregated, writer))
+	content = append(content, getScaSecurityIssueDetailsContent(aggregated, false, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
 }
 

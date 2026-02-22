@@ -2,6 +2,7 @@ package outputwriter
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -429,6 +430,43 @@ func TestVulnerabilitiesContent(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestVulnerabilitiesContent_aggregatesSameCveIntoOneRow(t *testing.T) {
+	sameCve := "CVE-2017-1000487"
+	vulnerabilities := []formats.VulnerabilityOrViolationRow{
+		{
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+				ImpactedDependencyName:    "org.codehaus.plexus:plexus-utils",
+				ImpactedDependencyVersion: "1.5.15",
+			},
+			Applicable: "Not Applicable",
+			ImpactPaths: [][]formats.ComponentRow{
+				{{Name: "root", Version: "1.0.0"}, {Name: "some-dep", Version: "1.0.0"}, {Name: "org.codehaus.plexus:plexus-utils", Version: "1.5.15"}},
+			},
+			Cves: []formats.CveRow{{Id: sameCve}},
+		},
+		{
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+				ImpactedDependencyName:    "org.codehaus.plexus:plexus-utils",
+				ImpactedDependencyVersion: "1.5.1",
+			},
+			Applicable: "Not Applicable",
+			ImpactPaths: [][]formats.ComponentRow{
+				{{Name: "root", Version: "1.0.0"}, {Name: "other-dep", Version: "1.0.0"}, {Name: "org.codehaus.plexus:plexus-utils", Version: "1.5.1"}},
+			},
+			Cves: []formats.CveRow{{Id: sameCve}},
+		},
+	}
+	content := GetVulnerabilitiesContent(vulnerabilities, &SimplifiedOutput{})
+	assert.NotEmpty(t, content)
+	tableSection := content[0]
+	assert.Contains(t, tableSection, sameCve, "output should mention the CVE")
+	assert.Contains(t, tableSection, "2 Transitive", "same CVE in two transitive paths should be aggregated and show 2 Transitive")
+	// CVE should appear only once in the table (one row), not twice
+	assert.Equal(t, 1, strings.Count(tableSection, sameCve), "CVE should appear once in the summary table (one aggregated row)")
 }
 
 func TestSecurityViolationsContent(t *testing.T) {
