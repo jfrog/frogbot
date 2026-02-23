@@ -263,9 +263,9 @@ func buildRowContent(content ...string) string {
 	rowBuilder.WriteString("\n")
 	for c, cell := range content {
 		if c == 0 {
-			rowBuilder.WriteString(fmt.Sprintf("| %s |", cell))
+			fmt.Fprintf(&rowBuilder, "| %s |", cell)
 		} else {
-			rowBuilder.WriteString(fmt.Sprintf(" %s |", cell))
+			fmt.Fprintf(&rowBuilder, " %s |", cell)
 		}
 	}
 	return rowBuilder.String()
@@ -281,7 +281,7 @@ func (t *MarkdownTableBuilder) getCellContent(data CellData, defaultValue string
 		if value == "" {
 			continue
 		}
-		cellBuilder.WriteString(fmt.Sprintf("%s%s", value, t.delimiter))
+		fmt.Fprintf(&cellBuilder, "%s%s", value, t.delimiter)
 	}
 	value := strings.TrimSuffix(cellBuilder.String(), t.delimiter)
 	if value == "" {
