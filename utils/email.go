@@ -59,12 +59,11 @@ func AlertSecretsExposed(secretsDetails *SecretsEmailDetails) (err error) {
 func getSecretsEmailContent(secrets []formats.SourceCodeRow, gitProvider vcsutils.VcsProvider, pullRequestLink string) string {
 	var tableContent strings.Builder
 	for _, secret := range secrets {
-		tableContent.WriteString(
-			fmt.Sprintf(outputwriter.SecretsEmailTableRow,
-				secret.File,
-				secret.StartLine,
-				secret.StartColumn,
-				secret.Snippet))
+		fmt.Fprintf(&tableContent, outputwriter.SecretsEmailTableRow,
+			secret.File,
+			secret.StartLine,
+			secret.StartColumn,
+			secret.Snippet)
 	}
 	pullOrMergeRequest := "pull request"
 	if gitProvider == vcsutils.GitLab {

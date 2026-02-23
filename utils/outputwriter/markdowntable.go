@@ -161,9 +161,9 @@ func (t *MarkdownTableBuilder) Build() string {
 			continue
 		}
 		if isFirstCol {
-			tableBuilder.WriteString(fmt.Sprintf(firstCellPlaceholder, column.Name))
+			fmt.Fprintf(&tableBuilder, firstCellPlaceholder, column.Name)
 		} else {
-			tableBuilder.WriteString(fmt.Sprintf(cellPlaceholder, column.Name))
+			fmt.Fprintf(&tableBuilder, cellPlaceholder, column.Name)
 		}
 		isFirstCol = false
 	}
