@@ -185,7 +185,7 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 		gitManager GitManager
 		expected   string
 	}{
-		{gitManager: GitManager{}, expected: "[🐸 Frogbot] Update Python dependencies"},
+		{gitManager: GitManager{}, expected: "[🐸 Frogbot] Update Pipenv dependencies"},
 		{gitManager: GitManager{customTemplates: CustomTemplates{commitMessageTemplate: "custom_template"}}, expected: "custom_template"},
 	}
 	for _, test := range testCases {
