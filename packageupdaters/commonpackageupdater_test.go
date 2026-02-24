@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
+	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"

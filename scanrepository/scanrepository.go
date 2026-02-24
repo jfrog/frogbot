@@ -41,6 +41,7 @@ const (
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
 	techutils.Maven,
+	techutils.Pip,
 }
 
 type ScanRepositoryCmd struct {
