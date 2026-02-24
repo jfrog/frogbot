@@ -98,33 +98,34 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 		return fmt.Errorf("failed to parse %s: %w", pomPath, err)
 	}
 
-	var updated bool
-	newContent := content
+	// Working buffer for the update chain. Each update returns a new slice (e.g. regexp.ReplaceAll),
+	// so we never mutate the original content. No backup or revert—we only write to the file on success.
+	currentContent := content
+	var updatedAny bool
 
-	if updated, newContent = m.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
-		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
-			return fmt.Errorf("failed to write %s: %w", pomPath, err)
-		}
-		return nil
+	if updated, c := m.updateInParent(&project, groupId, artifactId, fixedVersion, currentContent); updated {
+		currentContent = c
+		updatedAny = true
 	}
-
-	if updated, newContent = m.updateInDependencies(&project, project.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
-		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
-			return fmt.Errorf("failed to write %s: %w", pomPath, err)
-		}
-		return nil
+	if updated, c := m.updateInDependencies(&project, project.Dependencies, groupId, artifactId, fixedVersion, currentContent); updated {
+		currentContent = c
+		updatedAny = true
 	}
-
 	if project.DependencyManagement != nil {
-		if updated, newContent = m.updateInDependencies(&project, project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, newContent); updated {
-			if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
-				return fmt.Errorf("failed to write %s: %w", pomPath, err)
-			}
-			return nil
+		if updated, c := m.updateInDependencies(&project, project.DependencyManagement.Dependencies, groupId, artifactId, fixedVersion, currentContent); updated {
+			currentContent = c
+			updatedAny = true
 		}
 	}
 
-	return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
+	if !updatedAny {
+		return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
+	}
+
+	if err = os.WriteFile(pomPath, currentContent, 0644); err != nil {
+		return fmt.Errorf("failed to write %s: %w", pomPath, err)
+	}
+	return nil
 }
 
 func parseDependencyName(dependencyName string) (groupId, artifactId string, err error) {
