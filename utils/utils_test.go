@@ -350,10 +350,10 @@ func TestTechArrayToString(t *testing.T) {
 		separator: pullRequestTitleTechSeparator, expected: "Go",
 	}, {
 		techArray: []techutils.Technology{techutils.Go, techutils.Pip, techutils.Npm},
-		separator: pullRequestTitleTechSeparator, expected: "Go,Python,npm",
+		separator: pullRequestTitleTechSeparator, expected: "Go,Pip,npm",
 	}, {
 		techArray: []techutils.Technology{techutils.Go, techutils.Pip, techutils.Npm},
-		separator: fixBranchTechSeparator, expected: "Go-Python-npm",
+		separator: fixBranchTechSeparator, expected: "Go-Pip-npm",
 	}}
 	for _, tc := range testCases {
 		t.Run(tc.expected, func(t *testing.T) {
