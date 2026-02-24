@@ -281,7 +281,7 @@ func (t *MarkdownTableBuilder) getCellContent(data CellData, defaultValue string
 		if value == "" {
 			continue
 		}
-		cellBuilder.WriteString(fmt.Sprintf("%s%s", value, t.delimiter))
+		fmt.Fprintf(&cellBuilder, "%s%s", value, t.delimiter)
 	}
 	value := strings.TrimSuffix(cellBuilder.String(), t.delimiter)
 	if value == "" {

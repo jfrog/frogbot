@@ -3,6 +3,7 @@ package packageupdaters
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -17,6 +18,7 @@ const (
 	mavenDependencySeparator = ":"
 	propertyPrefix           = "${"
 	propertySuffix           = "}"
+	pomFileName              = "pom.xml"
 )
 
 type MavenPackageUpdater struct{}
@@ -62,44 +64,38 @@ func (m *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 		return err
 	}
 
-	pomPaths := m.getVulnerabilityOccurrences(vulnDetails)
+	pomPaths := GetVulnerabilityLocations(vulnDetails, []string{pomFileName}, []string{})
 	if len(pomPaths) == 0 {
 		return fmt.Errorf("no pom.xml locations found for %s - Components array is empty or missing Location data", vulnDetails.ImpactedDependencyName)
 	}
+	log.Verbose(fmt.Sprintf("Found vulnerability %s occurrences for component %s in %s", vulnDetails.IssueId, vulnDetails.ImpactedDependencyVersion, strings.Join(pomPaths, ", ")))
 
-	var errors []string
+	var failingDescriptors []string
 	for _, pomPath := range pomPaths {
-		if err := m.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); err != nil {
-			errors = append(errors, fmt.Sprintf("%s: %v", pomPath, err))
+		if fixErr := m.updatePomFile(pomPath, groupId, artifactId, vulnDetails.SuggestedFixedVersion); fixErr != nil {
+			log.Warn(fixErr.Error())
+			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, pomPath, fixErr)
+			err = errors.Join(err, failedFixErrorMsg)
+			failingDescriptors = append(failingDescriptors, pomPath)
 		}
+		log.Debug("Updated successfully " + pomPath)
 	}
 
-	if len(errors) > 0 {
-		return fmt.Errorf("failed to update pom.xml files:\n%s", strings.Join(errors, "\n"))
+	if err != nil {
+		return fmt.Errorf("encountered errors while fixing '%s' vulnerability in descriptors [%s]: %w", vulnDetails.ImpactedDependencyName, strings.Join(failingDescriptors, ", "), err)
 	}
 	return nil
-}
-
-func (m *MavenPackageUpdater) getVulnerabilityOccurrences(vulnDetails *utils.VulnerabilityDetails) []string {
-	var pomPaths []string
-	for _, component := range vulnDetails.Components {
-		if component.PreferredLocation != nil && component.PreferredLocation.File != "" {
-			pomPaths = append(pomPaths, component.PreferredLocation.File)
-		}
-
-	}
-	return pomPaths
 }
 
 func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
-		return fmt.Errorf("failed to update Pom file: failed to read %s: %w", pomPath, err)
+		return fmt.Errorf("failed to read %s: %w", pomPath, err)
 	}
 
 	var project mavenProject
 	if err = xml.Unmarshal(content, &project); err != nil {
-		return fmt.Errorf("failed to update Pom file: failed to parse %s: %w", pomPath, err)
+		return fmt.Errorf("failed to parse %s: %w", pomPath, err)
 	}
 
 	var updated bool
@@ -107,9 +103,8 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 
 	if updated, newContent = m.updateInParent(&project, groupId, artifactId, fixedVersion, newContent); updated {
 		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
-			return fmt.Errorf("failed to update Pom file: failed to write %s: %w", pomPath, err)
+			return fmt.Errorf("failed to write %s: %w", pomPath, err)
 		}
-		log.Debug("Successfully updated Pom Parent", pomPath)
 		return nil
 	}
 
@@ -117,7 +112,6 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 		if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", pomPath, err)
 		}
-		log.Debug("Successfully updated dependency", pomPath)
 		return nil
 	}
 
@@ -126,7 +120,6 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 			if err = os.WriteFile(pomPath, newContent, 0644); err != nil {
 				return fmt.Errorf("failed to write %s: %w", pomPath, err)
 			}
-			log.Debug("Successfully updated Dependency Management", pomPath)
 			return nil
 		}
 	}
@@ -197,7 +190,6 @@ func (m *MavenPackageUpdater) updateProperty(project *mavenProject, propertyName
 			pattern := regexp.MustCompile(`(<` + regexp.QuoteMeta(propertyName) + `>)[^<]+(</` + regexp.QuoteMeta(propertyName) + `>)`)
 			newContent := pattern.ReplaceAll(content, []byte("${1}"+newValue+"${2}"))
 			if !bytes.Equal(content, newContent) {
-				log.Debug("Updated property", propertyName, "to", newValue)
 				return true, newContent
 			}
 		}

@@ -15,99 +15,12 @@ import (
 	"github.com/jfrog/frogbot/v2/utils"
 )
 
-func TestMavenUpdateRegularDependency(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
+func TestMavenUpdateDependency(t *testing.T) {
+	testProjectPath := filepath.Join("..", "testdata", "packageupdaters")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "maven-test-*")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
 
-	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "1.1.5",
-		IsDirectDependency:    true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "org.jfrog.filespecs:file-specs-java",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
-				},
-			},
-		},
-	}
-
-	err = updater.UpdateDependency(vulnDetails)
-	assert.NoError(t, err)
-
-	modifiedPom, err := os.ReadFile("pom.xml")
-	assert.NoError(t, err)
-	assert.Contains(t, string(modifiedPom), "<version>1.1.5</version>")
-	assert.NotContains(t, string(modifiedPom), "<version>1.1.1</version>")
-}
-
-func TestMavenUpdateDependencyManagement(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
-	currDir, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "maven-test-*")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-
-	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "2.15.0",
-		IsDirectDependency:    true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-core",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
-				},
-			},
-		},
-	}
-
-	err = updater.UpdateDependency(vulnDetails)
-	assert.NoError(t, err)
-
-	modifiedPom, err := os.ReadFile("pom.xml")
-	assert.NoError(t, err)
-	assert.Contains(t, string(modifiedPom), "<version>2.15.0</version>")
-	assert.NotContains(t, string(modifiedPom), "<version>2.13.4</version>")
-}
-
-func TestMavenUpdatePropertyVersion(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
-	currDir, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "maven-test-*")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-
-	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
-
-	pomContent := `<?xml version="1.0" encoding="UTF-8"?>
+	propertyPOM := `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <groupId>test</groupId>
@@ -127,49 +40,7 @@ func TestMavenUpdatePropertyVersion(t *testing.T) {
     </dependencies>
 </project>`
 
-	assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pom.xml"), []byte(pomContent), 0644))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "2.13.0",
-		IsDirectDependency:    true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-databind",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
-				},
-			},
-		},
-	}
-
-	err = updater.UpdateDependency(vulnDetails)
-	assert.NoError(t, err)
-
-	modifiedPom, err := os.ReadFile("pom.xml")
-	assert.NoError(t, err)
-	assert.Contains(t, string(modifiedPom), "2.13.0")
-	assert.NotContains(t, string(modifiedPom), "2.9.8")
-}
-
-func TestMavenUpdateParentPOM(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
-	currDir, err := os.Getwd()
-	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "maven-test-*")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-
-	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
-
-	pomContent := `<?xml version="1.0" encoding="UTF-8"?>
+	parentPOM := `<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0">
     <modelVersion>4.0.0</modelVersion>
     <parent>
@@ -183,92 +54,185 @@ func TestMavenUpdateParentPOM(t *testing.T) {
     <version>1.0</version>
 </project>`
 
-	assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pom.xml"), []byte(pomContent), 0644))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "2.7.0",
-		IsDirectDependency:    true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "org.springframework.boot:spring-boot-starter-parent",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
+	testCases := []struct {
+		name               string
+		customPOM          string // if non-empty, overwrites pom.xml after copying testdata
+		vulnDetails        *utils.VulnerabilityDetails
+		expectedContains   []string
+		expectedNotContain []string
+	}{
+		{
+			name: "RegularDependency",
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "1.1.5",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "org.jfrog.filespecs:file-specs-java",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
 				},
 			},
+			expectedContains:   []string{"<version>1.1.5</version>"},
+			expectedNotContain: []string{"<version>1.1.1</version>"},
+		},
+		{
+			name: "DependencyManagement",
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "2.15.0",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-core",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
+				},
+			},
+			expectedContains:   []string{"<version>2.15.0</version>"},
+			expectedNotContain: []string{"<version>2.13.4</version>"},
+		},
+		{
+			name:      "PropertyVersion",
+			customPOM: propertyPOM,
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "2.13.0",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "com.fasterxml.jackson.core:jackson-databind",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
+				},
+			},
+			expectedContains:   []string{"2.13.0"},
+			expectedNotContain: []string{"2.9.8"},
+		},
+		{
+			name:      "ParentPOM",
+			customPOM: parentPOM,
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "2.7.0",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "org.springframework.boot:spring-boot-starter-parent",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
+				},
+			},
+			expectedContains:   []string{"<version>2.7.0</version>"},
+			expectedNotContain: []string{"<version>2.5.0</version>"},
 		},
 	}
 
-	err = updater.UpdateDependency(vulnDetails)
-	assert.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmpDir, err := os.MkdirTemp("", "maven-test-*")
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+			}()
 
-	modifiedPom, err := os.ReadFile("pom.xml")
-	assert.NoError(t, err)
-	assert.Contains(t, string(modifiedPom), "<version>2.7.0</version>")
-	assert.NotContains(t, string(modifiedPom), "<version>2.5.0</version>")
+			assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
+			if tc.customPOM != "" {
+				assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "pom.xml"), []byte(tc.customPOM), 0644))
+			}
+			assert.NoError(t, os.Chdir(tmpDir))
+			defer func() {
+				assert.NoError(t, os.Chdir(currDir))
+			}()
+
+			updater := &MavenPackageUpdater{}
+			err = updater.UpdateDependency(tc.vulnDetails)
+			assert.NoError(t, err)
+
+			modifiedPom, err := os.ReadFile("pom.xml")
+			assert.NoError(t, err)
+			content := string(modifiedPom)
+			for _, s := range tc.expectedContains {
+				assert.Contains(t, content, s)
+			}
+			for _, s := range tc.expectedNotContain {
+				assert.NotContains(t, content, s)
+			}
+		})
+	}
 }
 
-func TestMavenDependencyNotFound(t *testing.T) {
-	testProjectPath := filepath.Join("..", "testdata", "packagehandlers")
+func TestMavenUpdateDependencyErrors(t *testing.T) {
+	testProjectPath := filepath.Join("..", "testdata", "packageupdaters")
 	currDir, err := os.Getwd()
 	assert.NoError(t, err)
-	tmpDir, err := os.MkdirTemp("", "maven-test-*")
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
 
-	assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(currDir))
-	}()
-
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "1.0.0",
-		IsDirectDependency:    true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "com.nonexistent:package",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
+	testCases := []struct {
+		name        string
+		vulnDetails *utils.VulnerabilityDetails
+		useTestData bool
+		assertErr   func(t *testing.T, err error)
+	}{
+		{
+			name: "DependencyNotFound",
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "1.0.0",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "com.nonexistent:package",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
 				},
+			},
+			useTestData: true,
+			assertErr: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), "com.nonexistent:package")
+			},
+		},
+		{
+			name: "IndirectDependencyNotSupported",
+			vulnDetails: &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "1.0.0",
+				IsDirectDependency:    false,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Maven,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "org.springframework:spring-core",
+						Components:             []formats.ComponentRow{{Evidences: []formats.Location{{File: "pom.xml"}}}},
+					},
+				},
+			},
+			useTestData: false,
+			assertErr: func(t *testing.T, err error) {
+				assert.Error(t, err)
+				var unsupportedErr *utils.ErrUnsupportedFix
+				assert.True(t, errors.As(err, &unsupportedErr))
+				assert.Equal(t, utils.IndirectDependencyFixNotSupported, unsupportedErr.ErrorType)
 			},
 		},
 	}
 
-	err = updater.UpdateDependency(vulnDetails)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "not found")
-}
-
-func TestMavenIndirectDependencyNotSupported(t *testing.T) {
-	updater := &MavenPackageUpdater{}
-	vulnDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion: "1.0.0",
-		IsDirectDependency:    false,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			Technology: techutils.Maven,
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				ImpactedDependencyName: "org.springframework:spring-core",
-				Components: []formats.ComponentRow{
-					{PreferredLocation: &formats.Location{File: "pom.xml"}},
-				},
-			},
-		},
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.useTestData {
+				tmpDir, err := os.MkdirTemp("", "maven-test-*")
+				assert.NoError(t, err)
+				defer func() {
+					assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+				}()
+				assert.NoError(t, biutils.CopyDir(testProjectPath, tmpDir, true, nil))
+				assert.NoError(t, os.Chdir(tmpDir))
+				defer func() {
+					assert.NoError(t, os.Chdir(currDir))
+				}()
+			}
+			updater := &MavenPackageUpdater{}
+			err := updater.UpdateDependency(tc.vulnDetails)
+			tc.assertErr(t, err)
+		})
 	}
-
-	err := updater.UpdateDependency(vulnDetails)
-	assert.Error(t, err)
-
-	var unsupportedErr *utils.ErrUnsupportedFix
-	assert.True(t, errors.As(err, &unsupportedErr))
-	assert.Equal(t, utils.IndirectDependencyFixNotSupported, unsupportedErr.ErrorType)
 }
