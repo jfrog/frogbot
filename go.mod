@@ -12,8 +12,8 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260218070105-39c72c2c8214
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260218080258-3bf55ed18973
-	github.com/jfrog/jfrog-cli-security v1.26.1
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260217143009-567a837445b2
+	github.com/jfrog/jfrog-cli-security v1.26.2
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260225080504-17057750d47b
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
