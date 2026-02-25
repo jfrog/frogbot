@@ -12,8 +12,8 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260220110856-b6523f01f9c7
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260218080258-3bf55ed18973
-	github.com/jfrog/jfrog-cli-security v1.26.1
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260217143009-567a837445b2
+	github.com/jfrog/jfrog-cli-security v1.26.2
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260225080504-17057750d47b
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
