@@ -254,7 +254,7 @@ func toSeverityDetails(severities map[severityutils.Severity]int, writer OutputW
 			if contentBuilder.Len() > 0 {
 				contentBuilder.WriteString(writer.Separator())
 			}
-			contentBuilder.WriteString(fmt.Sprintf("%s %d %s", writer.SeverityIcon(severity), count, severity.String()))
+			fmt.Fprintf(&contentBuilder, "%s %d %s", writer.SeverityIcon(severity), count, severity.String())
 		}
 	}
 	return contentBuilder.String()
