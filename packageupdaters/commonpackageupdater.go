@@ -138,14 +138,13 @@ func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineF
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
+func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
-		if len(component.Evidences) == 0 {
-			continue
-		}
-		evidence := component.Evidences[0]
-		if evidence.File != "" {
+		for _, evidence := range component.Evidences {
+			if evidence.File == "" || techutils.IsTechnologyDescriptor(evidence.File) == techutils.NoTech || slices.ContainsFunc(ignoreFilters, func(pattern string) bool { return strings.Contains(evidence.File, pattern) }) {
+				continue
+			}
 			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
 				pathsSet.Add(evidence.File)
 			}
