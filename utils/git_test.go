@@ -191,7 +191,7 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage([]techutils.Technology{techutils.Pipenv})
-			assert.Equal(t, commit, test.expected)
+			assert.Equal(t, test.expected, commit)
 		})
 	}
 }
@@ -265,10 +265,8 @@ func TestGitManager_Checkout(t *testing.T) {
 }
 
 func createFakeDotGit(t *testing.T, testPath string) *GitManager {
-	// Initialize a new in-memory repository
 	repo, err := git.PlainInit(testPath, false)
 	assert.NoError(t, err)
-	// Create a new file and add it to the worktree
 	filename := "README.md"
 	content := []byte("# My New Repository\n\nThis is a sample repository created using go-git.")
 	err = os.WriteFile(filename, content, 0644)
