@@ -234,7 +234,7 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 	}
 
 	locToComp := make(map[key]formats.ComponentRow)
-	locToOrigin := make(map[key]string)
+	locToOrigin := make(map[key][]string)
 	licensesBySnippet := make(map[key][]formats.LicenseViolationRow, len(issues.LicensesViolations))
 	for _, lic := range issues.LicensesViolations {
 		if lic.ImpactedDependencyVersion != "snippet" {
@@ -264,7 +264,7 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 			}
 			licensesBySnippet[k] = append(licensesBySnippet[k], lic)
 
-			locToOrigin[k] = evidence.ExternalReference
+			locToOrigin[k] = evidence.ExternalReferences
 
 		}
 	}
@@ -359,7 +359,7 @@ func generateComponentReviewContent(
 	writer outputwriter.OutputWriter,
 	component formats.ComponentRow,
 	licenses []formats.LicenseViolationRow,
-	externalReference string,
+	externalReferences []string,
 ) (content string) {
 	switch commentType {
 	case SnippetComment:
@@ -368,7 +368,7 @@ func generateComponentReviewContent(
 			writer,
 			component,
 			licenses,
-			externalReference,
+			externalReferences,
 		), writer)
 	}
 	return

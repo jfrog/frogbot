@@ -529,12 +529,12 @@ func SnippetReviewContent(
 	writer OutputWriter,
 	component formats.ComponentRow,
 	licenses []formats.LicenseViolationRow,
-	externalReference string,
+	externalReferences []string,
 ) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(fmt.Sprintf("%s %s", snippetsTitle, getIssueType(violation)), 2),
-		getSnippetDescription(violation, writer, licenses, externalReference),
+		getSnippetDescription(violation, writer, licenses, externalReferences),
 		writer.MarkInCenter(getSnippetsDescriptionTable(writer, licenses)),
 	)
 	return contentBuilder.String()
@@ -894,10 +894,12 @@ func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCo
 	return table.Build()
 }
 
-func getSnippetDescription(violations bool, writer OutputWriter, licenses []formats.LicenseViolationRow, externalReference string) string {
+func getSnippetDescription(violations bool, writer OutputWriter, licenses []formats.LicenseViolationRow, externalReferences []string) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder, "The highlighted snippet was coppied from:")
-	WriteContent(&contentBuilder, fmt.Sprintf("[%s](%s)", externalReference, externalReference))
+	for _, ref := range externalReferences {
+		WriteContent(&contentBuilder, fmt.Sprintf("[%s](%s)", ref, ref))
+	}
 	return contentBuilder.String()
 }
 
