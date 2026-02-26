@@ -2,9 +2,6 @@ package outputwriter
 
 import (
 	"fmt"
-	"sort"
-	"strings"
-
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils"
@@ -13,6 +10,9 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"golang.org/x/exp/maps"
+	"golang.org/x/mod/semver"
+	"sort"
+	"strings"
 )
 
 const (
@@ -471,7 +471,7 @@ func getVulnerabilitiesSummaryTable(vulnerabilities []formats.VulnerabilityOrVio
 		row = append(row,
 			getDirectDependenciesCellData(vulnerability.Components),
 			NewCellData(fmt.Sprintf("%s %s", vulnerability.ImpactedDependencyName, vulnerability.ImpactedDependencyVersion)),
-			NewCellData(vulnerability.FixedVersions...),
+			NewCellData(sortedFixedVersions(vulnerability.FixedVersions)...),
 		)
 		table.AddRowWithCellData(row...)
 	}
@@ -678,7 +678,7 @@ func getScaSecurityIssueDetails(issue formats.VulnerabilityOrViolationRow, viola
 	}
 	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Direct Dependencies:")), NewCellData(directComponent...))
 	noHeaderTable.AddRow(MarkAsBold("Impacted Dependency:"), results.GetDependencyId(issue.ImpactedDependencyName, issue.ImpactedDependencyVersion))
-	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Fixed Versions:")), NewCellData(issue.FixedVersions...))
+	noHeaderTable.AddRowWithCellData(NewCellData(MarkAsBold("Fixed Versions:")), NewCellData(sortedFixedVersions(issue.FixedVersions)...))
 
 	cvss := []string{}
 	for _, cve := range issue.Cves {
@@ -812,6 +812,24 @@ func codeFlowsReviewContent(codeFlows [][]formats.Location, writer OutputWriter)
 		WriteContent(&contentBuilder, writer.MarkAsDetails("Vulnerable data flow analysis result", 4, dataFlowLocationsReviewContent(flow)))
 	}
 	return writer.MarkAsDetails("Code Flows", 3, contentBuilder.String())
+}
+
+func sortedFixedVersions(versions []string) []string {
+	hasBrackets := len(versions) > 0 && strings.HasPrefix(versions[0], "[")
+	sorted := make([]string, len(versions))
+	for i, v := range versions {
+		sorted[i] = "v" + strings.Trim(v, "[]")
+	}
+	semver.Sort(sorted)
+	for i, v := range sorted {
+		raw := strings.TrimPrefix(v, "v")
+		if hasBrackets {
+			sorted[i] = "[" + raw + "]"
+		} else {
+			sorted[i] = raw
+		}
+	}
+	return sorted
 }
 
 func dataFlowLocationsReviewContent(flow []formats.Location) string {
