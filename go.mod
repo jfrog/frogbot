@@ -129,7 +129,7 @@ require (
 )
 
 // talz:feature/snippet-code-decoration
-replace github.com/jfrog/jfrog-cli-security => github.com/talz/jfrog-cli-security v0.0.0-20260226150559-72082eae4de6
+replace github.com/jfrog/jfrog-cli-security => github.com/talz/jfrog-cli-security v0.0.0-20260226171207-fc37f5aa040f
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
