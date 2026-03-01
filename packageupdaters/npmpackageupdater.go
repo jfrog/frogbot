@@ -137,7 +137,11 @@ func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityD
 		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
-	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
+	safePath, err := getAbsolutePathUnderWd(descriptorPath)
+	if err != nil {
+		return nil, err
+	}
+	if err = os.WriteFile(safePath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
 	return backupContent, nil
@@ -156,7 +160,11 @@ func (npm *NpmPackageUpdater) RegenerateLockfile(vulnDetails *utils.Vulnerabilit
 
 	if err = npm.regenerateLockFileWithRetry(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
-		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
+		safePath, pathErr := getAbsolutePathUnderWd(descriptorPath)
+		if pathErr != nil {
+			return fmt.Errorf("failed to rollback descriptor: %w (original error: %v)", pathErr, err)
+		}
+		if rollbackErr := os.WriteFile(safePath, backupContent, 0644); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
 		}
 		return err
