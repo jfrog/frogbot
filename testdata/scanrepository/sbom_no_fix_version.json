@@ -1,0 +1,78 @@
+{
+  "$schema" : "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat" : "CycloneDX",
+  "specVersion" : "1.6",
+  "version" : 1,
+  "metadata" : {
+    "component" : {
+      "bom-ref" : "file:test-root",
+      "type" : "file",
+      "name" : "test-project",
+      "version" : "1.0.0"
+    }
+  },
+  "components" : [ {
+    "bom-ref" : "pkg:npm/test-project@1.0.0",
+    "type" : "library",
+    "name" : "test-project",
+    "version" : "1.0.0",
+    "purl" : "pkg:npm/test-project@1.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "root"
+    } ]
+  }, {
+    "bom-ref" : "pkg:npm/no-fix-pkg@1.0.0",
+    "type" : "library",
+    "name" : "no-fix-pkg",
+    "version" : "1.0.0",
+    "purl" : "pkg:npm/no-fix-pkg@1.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "direct"
+    } ]
+  }, {
+    "bom-ref" : "pkg:npm/has-fix-pkg@2.0.0",
+    "type" : "library",
+    "name" : "has-fix-pkg",
+    "version" : "2.0.0",
+    "purl" : "pkg:npm/has-fix-pkg@2.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "direct"
+    } ]
+  } ],
+  "dependencies" : [ {
+    "ref" : "file:test-root",
+    "dependsOn" : [ "pkg:npm/test-project@1.0.0" ]
+  }, {
+    "ref" : "pkg:npm/test-project@1.0.0",
+    "dependsOn" : [ "pkg:npm/no-fix-pkg@1.0.0", "pkg:npm/has-fix-pkg@2.0.0" ]
+  }, {
+    "ref" : "pkg:npm/no-fix-pkg@1.0.0"
+  }, {
+    "ref" : "pkg:npm/has-fix-pkg@2.0.0"
+  } ],
+  "vulnerabilities" : [ {
+    "bom-ref" : "CVE-2023-9999",
+    "id" : "CVE-2023-9999",
+    "source" : { "name" : "JFrog Catalog" },
+    "ratings" : [ { "severity" : "high" } ],
+    "cwes" : [ 79 ],
+    "description" : "Vulnerability with NO fix version - should not be added to map",
+    "affects" : [ {
+      "ref" : "pkg:npm/no-fix-pkg@1.0.0"
+    } ]
+  }, {
+    "bom-ref" : "CVE-2023-8888",
+    "id" : "CVE-2023-8888",
+    "source" : { "name" : "JFrog Catalog" },
+    "ratings" : [ { "severity" : "medium" } ],
+    "cwes" : [ 89 ],
+    "description" : "Vulnerability WITH fix version - should be added to map",
+    "affects" : [ {
+      "ref" : "pkg:npm/has-fix-pkg@2.0.0",
+      "versions" : [ { "version" : "2.5.0", "status" : "unaffected" } ]
+    } ]
+  } ]
+}
