@@ -286,8 +286,9 @@ func getSecurityViolationsContent(issues issues.ScansIssuesCollection, writer Ou
 	if len(issues.ScaViolations) == 0 {
 		return []string{}
 	}
-	content = append(content, getSecurityViolationsSummaryTable(issues.ScaViolations, writer))
-	content = append(content, getScaSecurityIssueDetailsContent(issues.ScaViolations, true, writer)...)
+	aggregated := aggregateVulnerabilitiesOrViolationsByCve(issues.ScaViolations)
+	content = append(content, getSecurityViolationsSummaryTable(aggregated, writer))
+	content = append(content, getScaSecurityIssueDetailsContent(aggregated, true, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithSecurityViolationTitle(writer))
 }
 
@@ -422,15 +423,31 @@ func getScaLicenseViolationDetails(violation formats.LicenseViolationRow, writer
 // Sca Vulnerabilities
 
 func vulnerabilitySummaryKey(v formats.VulnerabilityOrViolationRow) string {
-	ids := make([]string, 0, len(v.Cves)+1)
+	ids := make([]string, 0, len(v.Cves))
 	for _, cve := range v.Cves {
 		ids = append(ids, cve.Id)
 	}
 	sort.Strings(ids)
-	return v.IssueId + "|" + strings.Join(ids, ",")
+	if len(ids) == 0 {
+		return v.IssueId
+	}
+	return strings.Join(ids, ",")
 }
 
-func aggregateVulnerabilitiesByCve(vulnerabilities []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
+func uniqueStrings(s []string) []string {
+	seen := make(map[string]struct{}, len(s))
+	out := make([]string, 0, len(s))
+	for _, v := range s {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+func aggregateVulnerabilitiesOrViolationsByCve(vulnerabilities []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
 	if len(vulnerabilities) == 0 {
 		return vulnerabilities
 	}
@@ -441,7 +458,7 @@ func aggregateVulnerabilitiesByCve(vulnerabilities []formats.VulnerabilityOrViol
 		if existing, ok := byKey[key]; ok {
 			existing.ImpactPaths = append(existing.ImpactPaths, v.ImpactPaths...)
 			if len(v.FixedVersions) > 0 {
-				existing.FixedVersions = append(existing.FixedVersions, v.FixedVersions...)
+				existing.FixedVersions = uniqueStrings(append(existing.FixedVersions, v.FixedVersions...))
 			}
 		} else {
 			agg := *v
@@ -472,7 +489,7 @@ func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolatio
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
-	aggregated := aggregateVulnerabilitiesByCve(vulnerabilities)
+	aggregated := aggregateVulnerabilitiesOrViolationsByCve(vulnerabilities)
 	content = append(content, getVulnerabilitiesSummaryTable(aggregated, writer))
 	content = append(content, getScaSecurityIssueDetailsContent(aggregated, false, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
