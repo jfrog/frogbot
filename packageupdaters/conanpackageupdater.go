@@ -72,6 +72,7 @@ func (conan *ConanPackageUpdater) updateConanFile(conanFilePath string, vulnDeta
 	if err != nil {
 		return false, err
 	}
+	// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
 	if err = os.WriteFile(safePath, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", vulnDetails.ImpactedDependencyName, conanFilePath, err.Error())
 	}

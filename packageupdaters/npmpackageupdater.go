@@ -141,6 +141,7 @@ func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityD
 	if err != nil {
 		return nil, err
 	}
+	// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
 	if err = os.WriteFile(safePath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
@@ -164,6 +165,7 @@ func (npm *NpmPackageUpdater) RegenerateLockfile(vulnDetails *utils.Vulnerabilit
 		if pathErr != nil {
 			return fmt.Errorf("failed to rollback descriptor: %w (original error: %v)", pathErr, err)
 		}
+		// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
 		if rollbackErr := os.WriteFile(safePath, backupContent, 0644); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
 		}

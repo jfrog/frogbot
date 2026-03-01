@@ -154,6 +154,7 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 	if err != nil {
 		return err
 	}
+	// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
 	err = os.WriteFile(safePath, []byte(fileContent), fileInfo.Mode())
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
