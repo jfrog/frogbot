@@ -464,7 +464,9 @@ func aggregateVulnerabilitiesOrViolationsByCve(vulnerabilities []formats.Vulnera
 			agg := *v
 			agg.ImpactPaths = append([][]formats.ComponentRow(nil), v.ImpactPaths...)
 			agg.FixedVersions = append([]string(nil), v.FixedVersions...)
-			byKey[key] = &agg
+			heapCopy := new(formats.VulnerabilityOrViolationRow)
+			*heapCopy = agg
+			byKey[key] = heapCopy
 		}
 	}
 	result := make([]formats.VulnerabilityOrViolationRow, 0, len(byKey))
