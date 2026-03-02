@@ -181,7 +181,7 @@ func TestUpdateDependency(t *testing.T) {
 				fixSupported: false,
 			},
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Maven, "commons-io:commons-io", "", "2.7", true, ""),
+				vulnDetails:        createVulnerabilityDetails(techutils.Maven, "commons-io:commons-io", "", "2.7", true, filepath.Join("multi1", "pom.xml")),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{filepath.Join("multi1", "pom.xml")},
