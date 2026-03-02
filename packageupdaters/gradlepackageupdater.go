@@ -149,6 +149,7 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 		return
 	}
 
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	err = os.WriteFile(filePath, []byte(fileContent), fileInfo.Mode())
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
