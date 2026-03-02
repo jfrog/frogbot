@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
@@ -10,7 +10,7 @@ require (
 	github.com/jfrog/build-info-go v1.13.1-0.20260216093441-40a4dc563294
 	github.com/jfrog/froggit-go v1.21.0
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260220110856-b6523f01f9c7
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260227101327-7478579b5f25
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260218080258-3bf55ed18973
 	github.com/jfrog/jfrog-cli-security v1.26.2
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260225080504-17057750d47b
