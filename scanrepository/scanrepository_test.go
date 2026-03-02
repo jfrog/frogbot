@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -26,6 +27,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -480,19 +482,58 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{},
-					JasResults: &results.JasScansResults{},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
+					},
+				}},
+			},
+			// The highest severity CVE (CVE-2024-57965, critical, fix 1.7.8) is the first entry created.
+			// Subsequent CVEs update the fix version to the maximum: 1.12.0 (from CVE-2025-58754, high).
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"axios": {
+					SuggestedFixedVersion: "1.12.0",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2024-57965"},
+				},
+			},
+		},
+		{
+			name: "Multiple vulnerabilities on the same package select the maximum fix version",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_multiple_vulns_same_pkg.json"),
+					},
 				}},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
-				"vuln1": {
-					SuggestedFixedVersion: "1.9.1",
+				"shared-pkg": {
+					SuggestedFixedVersion: "1.8.0",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
+					Cves:                  []string{"CVE-2023-2222"},
 				},
-				"vuln2": {
-					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+			},
+		},
+		{
+			name: "Vulnerability with no fix version should not be added to the map",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_no_fix_version.json"),
+					},
+				}},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"has-fix-pkg": {
+					SuggestedFixedVersion: "2.5.0",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-8888"},
 				},
 			},
 		},
@@ -500,22 +541,51 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &results.SecurityCommandResults{
 				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
+					ResultContext: results.ResultContext{Watches: []string{"w1"}}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{},
-					JasResults: &results.JasScansResults{},
 				}},
+				Violations: &violationutils.Violations{
+					Sca: []violationutils.CveViolation{
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol1@1.0.0",
+									PackageURL: "pkg:npm/viol1@1.0.0",
+								},
+								ImpactPaths: [][]formats.ComponentRow{
+									{{Id: "root"}, {Id: "pkg:npm/viol1@1.0.0"}},
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
+							FixedVersions:    &[]cyclonedx.AffectedVersions{{Version: "1.9.1"}},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol2@2.0.0",
+									PackageURL: "pkg:npm/viol2@2.0.0",
+								},
+								ImpactPaths: [][]formats.ComponentRow{
+									{{Id: "root"}, {Id: "pkg:npm/intermediate@1.0.0"}, {Id: "pkg:npm/viol2@2.0.0"}},
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
+							FixedVersions:    &[]cyclonedx.AffectedVersions{{Version: "2.4.1"}},
+						},
+					},
+				},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
 					SuggestedFixedVersion: "1.9.1",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
+					Cves:                  []string{"CVE-2023-1234"},
 				},
 				"viol2": {
 					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+					IsDirectDependency:    false,
+					Cves:                  []string{"CVE-2022-1234"},
 				},
 			},
 		},
@@ -525,15 +595,29 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
+			assert.Len(t, fixVersionsMap, len(testCase.expectedMap))
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
-				require.True(t, exists)
+				require.True(t, exists, "Expected package '%s' to be in the vulnerabilities map", name)
 				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
 				assert.Equal(t, expectedVuln.SuggestedFixedVersion, actualVuln.SuggestedFixedVersion)
 				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
 			}
 		})
 	}
+}
+
+func loadTestSBOM(t *testing.T, filename string) *cyclonedx.BOM {
+	f, err := os.Open(filepath.Join("..", "testdata", "scanrepository", "sbom", filename)) // #nosec G304
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	bom := &cyclonedx.BOM{}
+	decoder := cyclonedx.NewBOMDecoder(f, cyclonedx.BOMFileFormatJSON)
+	require.NoError(t, decoder.Decode(bom))
+	return bom
 }
 
 // Verifies unsupported packages return specific error
