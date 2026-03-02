@@ -122,6 +122,7 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 		return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
 	}
 
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(pomPath, currentContent, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pomPath, err)
 	}
