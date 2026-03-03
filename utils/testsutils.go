@@ -74,7 +74,15 @@ func CopyTestdataProjectsToTemp(t *testing.T, testDir string) (tmpDir string, re
 	err = biutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 	restoreFunc = func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+		var removeErr error
+		for attempt := range 5 {
+			if removeErr = fileutils.RemoveTempDir(tmpDir); removeErr == nil {
+				return
+			}
+			// On Windows, child processes (e.g. npm) may briefly hold file handles after returning.
+			time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
+		}
+		assert.NoError(t, removeErr)
 	}
 	return
 }
