@@ -188,8 +188,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			repository.ConfigProfile = &configProfile
 
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
+			defer func() { assert.NoError(t, os.Chdir(baseDir)) }()
 			err = cmd.Run(repository, client)
-			// Restore CWD immediately so Windows releases the directory handle before the next subtest.
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest runs.
 			assert.NoError(t, os.Chdir(baseDir))
 
 			// Validate
@@ -316,8 +317,9 @@ pr body
 			repository.ConfigProfile = &configProfile
 
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
+			defer func() { assert.NoError(t, os.Chdir(baseDir)) }()
 			err = cmd.Run(repository, client)
-			// Restore CWD immediately so Windows releases the directory handle before the next subtest.
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest runs.
 			assert.NoError(t, os.Chdir(baseDir))
 			assert.NoError(t, err)
 		})
