@@ -36,9 +36,9 @@ const (
 	createAutoFixPrConfigNameInProfile = "Create automated fixes"
 )
 
-// TODO add to this map every tech that we support fixing in V3
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
+	techutils.Maven,
 	techutils.Pip,
 	techutils.Go,
 }

@@ -72,6 +72,7 @@ func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetail
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}

@@ -46,19 +46,19 @@ const (
 	testTargetBranchName = "master"
 )
 
-var emptyConfigProfile = services2.ConfigProfile{
+var basicConfigProfile = services2.ConfigProfile{
 	ProfileName:   "test-profile",
 	GeneralConfig: services2.GeneralConfig{},
-	FrogbotConfig: services2.FrogbotConfig{
-		BranchNameTemplate:    "",
-		PrTitleTemplate:       "",
-		CommitMessageTemplate: "",
-	},
+	FrogbotConfig: services2.FrogbotConfig{},
 	Modules: []services2.Module{
 		{
 			ModuleId:     0,
 			ModuleName:   "test-module",
 			PathFromRoot: ".",
+			ScanConfig: services2.ScanConfig{
+				ScaScannerConfig:  services2.ScaScannerConfig{EnableScaScan: true},
+				SastScannerConfig: services2.SastScannerConfig{EnableSastScan: true},
+			},
 		},
 	},
 }
@@ -291,7 +291,7 @@ func prepareConfigAndClient(t *testing.T, xrayVersion, xscVersion string, server
 	assert.NoError(t, err)
 
 	// We must set a non-nil config profile to avoid panic
-	repository.ConfigProfile = &emptyConfigProfile
+	repository.ConfigProfile = &basicConfigProfile
 
 	return repository, client
 }

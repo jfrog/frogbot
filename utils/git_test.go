@@ -191,7 +191,7 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage([]techutils.Technology{techutils.Pipenv})
-			assert.Equal(t, commit, test.expected)
+			assert.Equal(t, test.expected, commit)
 		})
 	}
 }
