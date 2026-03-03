@@ -450,20 +450,23 @@ func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vuln
 
 func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir func() error, err error) {
 	if sr.dryRun {
+		// In dry-run (test) mode the test directory is already populated with the target repo content.
+		// Copying the current working directory into it would flood it with frogbot source files,
+		// causing Windows file-lock issues during cleanup.
 		tempWd = filepath.Join(sr.dryRunRepoPath, sr.scanDetails.RepoName)
+		log.Debug("Working directory:", tempWd)
 	} else {
 		if tempWd, err = fileutils.CreateTempDir(); err != nil {
 			return
 		}
-	}
-	log.Debug("Created temp working directory:", tempWd)
-
-	var curDir string
-	if curDir, err = os.Getwd(); err != nil {
-		return
-	}
-	if err = biutils.CopyDir(curDir, tempWd, true, nil); err != nil {
-		return
+		log.Debug("Created temp working directory:", tempWd)
+		var curDir string
+		if curDir, err = os.Getwd(); err != nil {
+			return
+		}
+		if err = biutils.CopyDir(curDir, tempWd, true, nil); err != nil {
+			return
+		}
 	}
 	// 'CD' into the temp working directory
 	restoreDir, err = utils.Chdir(tempWd)
