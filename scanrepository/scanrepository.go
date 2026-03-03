@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
