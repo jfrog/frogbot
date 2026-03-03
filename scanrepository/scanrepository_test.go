@@ -764,16 +764,18 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	var args []string
+	var cmd *exec.Cmd
 	if coreutils.IsWindows() {
-		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
-		args = append(args, packageDescriptorPaths...)
-		output, err = exec.Command("cmd", args...).Output()
+		args := append([]string{"/c", "git", "diff", baseBranch, fixBranch}, packageDescriptorPaths...)
+		cmd = exec.Command("cmd", args...)
 	} else {
-		args = []string{"diff", baseBranch, fixBranch}
-		args = append(args, packageDescriptorPaths...)
-		output, err = exec.Command("git", args...).Output()
+		args := append([]string{"diff", baseBranch, fixBranch}, packageDescriptorPaths...)
+		cmd = exec.Command("git", args...)
 	}
+	// GIT_OPTIONAL_LOCKS=0 prevents git from spawning background gc/maintenance processes
+	// that would hold a handle to the cwd and block cleanup on Windows.
+	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
 		err = errors.New("git error: " + string(exitError.Stderr))
@@ -785,16 +787,17 @@ func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []b
 	log.Debug(fmt.Sprintf("Checking lock files differences in %s between branches 'master' and '%s'", lockFiles, branchToInspect))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	var args []string
+	var cmd *exec.Cmd
 	if coreutils.IsWindows() {
-		args = []string{"/c", "git", "ls-tree", branchToInspect, "--"}
-		args = append(args, lockFiles...)
-		output, err = exec.Command("cmd", args...).Output()
+		args := append([]string{"/c", "git", "ls-tree", branchToInspect, "--"}, lockFiles...)
+		cmd = exec.Command("cmd", args...)
 	} else {
-		args = []string{"ls-tree", branchToInspect, "--"}
-		args = append(args, lockFiles...)
-		output, err = exec.Command("git", args...).Output()
+		args := append([]string{"ls-tree", branchToInspect, "--"}, lockFiles...)
+		cmd = exec.Command("git", args...)
 	}
+	// GIT_OPTIONAL_LOCKS=0 prevents git from spawning background gc/maintenance processes, which would hold a handle to the cwd and block cleanup on Windows.
+	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
 		err = errors.New("git error: " + string(exitError.Stderr))
