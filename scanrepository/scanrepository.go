@@ -451,8 +451,7 @@ func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vuln
 func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir func() error, err error) {
 	if sr.dryRun {
 		// In dry-run (test) mode the test directory is already populated with the target repo content.
-		// Copying the current working directory into it would flood it with frogbot source files,
-		// causing Windows file-lock issues during cleanup.
+		// Copying the current wd into it would flood it with frogbot source files, causing Windows file-lock issues during cleanup.
 		tempWd = filepath.Join(sr.dryRunRepoPath, sr.scanDetails.RepoName)
 		log.Debug("Working directory:", tempWd)
 	} else {
