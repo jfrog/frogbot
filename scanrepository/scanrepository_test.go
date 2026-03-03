@@ -42,23 +42,6 @@ import (
 
 const rootTestDir = "scanrepository"
 
-var emptyConfigProfile = services2.ConfigProfile{
-	ProfileName:   "test-profile",
-	GeneralConfig: services2.GeneralConfig{},
-	FrogbotConfig: services2.FrogbotConfig{
-		BranchNameTemplate:    "",
-		PrTitleTemplate:       "",
-		CommitMessageTemplate: "",
-	},
-	Modules: []services2.Module{
-		{
-			ModuleId:     0,
-			ModuleName:   "test-module",
-			PathFromRoot: ".",
-		},
-	},
-}
-
 var testPackagesData = []struct {
 	packageType string
 	commandName string
@@ -117,20 +100,19 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		expectedMissingFilesInBranch   map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
-		allowPartialResults            bool
+		failUponAnyScannerError        bool
 	}{
 		{
 			testName:                       "aggregate",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
 		},
@@ -154,7 +136,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:                       "non-aggregate",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"^1.2.6"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"1.2.6"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
 		},
@@ -165,7 +147,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
-			allowPartialResults:            true,
+			failUponAnyScannerError:        false,
 		},
 	}
 	baseDir, err := os.Getwd()
@@ -202,10 +184,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 
-			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			configProfile := createTestConfigProfile(test.aggregateFixes, test.failUponAnyScannerError)
+			repository.ConfigProfile = &configProfile
 
-			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(repository, client)
 			defer func() {
@@ -331,10 +312,9 @@ pr body
 			gitTestParams.Branches = []string{"master"}
 			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
-			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			configProfile := createTestConfigProfile(true, false)
+			repository.ConfigProfile = &configProfile
 
-			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(repository, client)
 			defer func() {
@@ -426,11 +406,12 @@ func TestPackageTypeFromScan(t *testing.T) {
 			for _, file := range files {
 				log.Info(file)
 			}
+			configProfile := createTestConfigProfile(false, false)
 			scanSetup := utils.ScanDetails{
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
 				ServerDetails: &frogbotParams.Server,
-				ConfigProfile: &emptyConfigProfile,
+				ConfigProfile: &configProfile,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan()
@@ -890,5 +871,28 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 				return
 			}
 		}
+	}
+}
+
+func createTestConfigProfile(aggregateFixes, failUponAnyScannerError bool) services2.ConfigProfile {
+	return services2.ConfigProfile{
+		ProfileName: "test-profile",
+		FrogbotConfig: services2.FrogbotConfig{
+			CreateAutoFixPr: true,
+			AggregateFixes:  aggregateFixes,
+		},
+		GeneralConfig: services2.GeneralConfig{
+			FailUponAnyScannerError: failUponAnyScannerError,
+		},
+		Modules: []services2.Module{{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+			ScanConfig: services2.ScanConfig{
+				ScaScannerConfig: services2.ScaScannerConfig{
+					EnableScaScan: true,
+				},
+			},
+		}},
 	}
 }
