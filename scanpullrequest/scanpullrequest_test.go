@@ -56,8 +56,11 @@ var basicConfigProfile = services2.ConfigProfile{
 			ModuleName:   "test-module",
 			PathFromRoot: ".",
 			ScanConfig: services2.ScanConfig{
-				ScaScannerConfig:  services2.ScaScannerConfig{EnableScaScan: true},
-				SastScannerConfig: services2.SastScannerConfig{EnableSastScan: true},
+				ScaScannerConfig:                services2.ScaScannerConfig{EnableScaScan: true},
+				SastScannerConfig:               services2.SastScannerConfig{EnableSastScan: true},
+				ContextualAnalysisScannerConfig: services2.CaScannerConfig{EnableCaScan: true},
+				SecretsScannerConfig:            services2.SecretsScannerConfig{EnableSecretsScan: true},
+				IacScannerConfig:                services2.IacScannerConfig{EnableIacScan: true},
 			},
 		},
 	},
