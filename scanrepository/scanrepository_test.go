@@ -189,14 +189,14 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(repository, client)
-			defer func() {
-				assert.NoError(t, os.Chdir(baseDir))
-			}()
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest.
+			assert.NoError(t, os.Chdir(baseDir))
 
 			// Validate
+			repoDir := filepath.Join(testDir, test.testName)
 			assert.NoError(t, err)
 			for branch, packages := range test.expectedPackagesInBranch {
-				resultDiff, err := verifyDependencyFileDiff("master", branch, test.packageDescriptorPaths...)
+				resultDiff, err := verifyDependencyFileDiff(repoDir, "master", branch, test.packageDescriptorPaths...)
 				assert.NoError(t, err)
 				if len(packages) > 0 {
 					assert.NotEmpty(t, resultDiff)
@@ -212,7 +212,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 
 			if len(test.expectedMissingFilesInBranch) > 0 {
 				for branch, expectedMissingFiles := range test.expectedMissingFilesInBranch {
-					resultDiff, err := verifyLockFileDiff(branch, expectedMissingFiles...)
+					resultDiff, err := verifyLockFileDiff(repoDir, branch, expectedMissingFiles...)
 					assert.NoError(t, err)
 					assert.Empty(t, resultDiff)
 				}
@@ -317,9 +317,8 @@ pr body
 
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
 			err = cmd.Run(repository, client)
-			defer func() {
-				assert.NoError(t, os.Chdir(baseDir))
-			}()
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest.
+			assert.NoError(t, os.Chdir(baseDir))
 			assert.NoError(t, err)
 		})
 	}
@@ -760,7 +759,7 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
+func verifyDependencyFileDiff(repoDir string, baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
@@ -772,9 +771,7 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 		args := append([]string{"diff", baseBranch, fixBranch}, packageDescriptorPaths...)
 		cmd = exec.Command("git", args...)
 	}
-	// GIT_OPTIONAL_LOCKS=0 prevents git from spawning background gc/maintenance processes
-	// that would hold a handle to the cwd and block cleanup on Windows.
-	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	cmd.Dir = repoDir
 	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
@@ -783,7 +780,7 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	return
 }
 
-func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []byte, err error) {
+func verifyLockFileDiff(repoDir string, branchToInspect string, lockFiles ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking lock files differences in %s between branches 'master' and '%s'", lockFiles, branchToInspect))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
@@ -795,8 +792,7 @@ func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []b
 		args := append([]string{"ls-tree", branchToInspect, "--"}, lockFiles...)
 		cmd = exec.Command("git", args...)
 	}
-	// GIT_OPTIONAL_LOCKS=0 prevents git from spawning background gc/maintenance processes, which would hold a handle to the cwd and block cleanup on Windows.
-	cmd.Env = append(os.Environ(), "GIT_OPTIONAL_LOCKS=0")
+	cmd.Dir = repoDir
 	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
