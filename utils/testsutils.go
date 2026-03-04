@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -198,6 +197,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
@@ -207,6 +207,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 			assert.Equal(t, http.MethodPost, r.Method)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write(content)
 			assert.NoError(t, err)
@@ -246,14 +247,8 @@ func CreateMockServerForDependencySubmission(t *testing.T, owner, repo string) *
 		}
 
 		// Read request body and parse it to ensure all mandatory fields exist
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("Failed to read request body: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 		var snapshot map[string]interface{}
-		if err := json.Unmarshal(body, &snapshot); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&snapshot); err != nil {
 			t.Errorf("Failed to parse request body as JSON: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return

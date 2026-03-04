@@ -836,6 +836,7 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 			if r.RequestURI == fmt.Sprintf("/%s", projectName) {
 				file, err := os.ReadFile(fmt.Sprintf("%s.tar.gz", projectName))
 				assert.NoError(t, err)
+				w.Header().Set("Content-Type", "application/octet-stream")
 				_, err = w.Write(file)
 				assert.NoError(t, err)
 				return
