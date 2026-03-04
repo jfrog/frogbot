@@ -111,7 +111,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^10.2.1"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^10.2.3"}},
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
@@ -120,7 +120,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:                       "aggregate-multi-project",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^9.0.0", "^0.8.4", "^10.2.1"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"2.4.0"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^9.0.0", "^0.8.4", "^10.2.3"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"2.4.0"}},
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
