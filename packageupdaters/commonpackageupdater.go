@@ -8,12 +8,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 // PackageUpdater interface to hold operations on packages
@@ -36,7 +36,7 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 	case techutils.Pip:
 		handler = &PythonPackageUpdater{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
-		handler = NewMavenPackageUpdater(details)
+		handler = &MavenPackageUpdater{}
 	case techutils.Nuget:
 		handler = &NugetPackageUpdater{}
 	case techutils.Gradle:
@@ -51,11 +51,8 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 	return
 }
 
-// TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
-type CommonPackageUpdater struct {
-	serverDetails *config.ServerDetails
-	depsRepo      string
-}
+// TODO can be deleted if not needed after refactoring all package updaters
+type CommonPackageUpdater struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
