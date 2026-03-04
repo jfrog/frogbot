@@ -15,6 +15,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-security/policy"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -73,18 +74,25 @@ func (cfp *ScanRepositoryCmd) scanAndFixRepository(repository *utils.Repository,
 		return
 	}
 	log.Debug(fmt.Sprintf("Detected branches for scan: %s", strings.Join(repository.Branches, ", ")))
+	anyHasFailBuild := false
 	for _, branch := range repository.Branches {
 		log.Debug(fmt.Sprintf("Scanning '%s' branch...", branch))
 		cfp.scanDetails.SetBaseBranch(branch)
 		cfp.scanDetails.SetXscGitInfoContext(branch, repository.Project, client)
-		if err = cfp.scanAndFixBranch(repository); err != nil {
-			return
+		hadFailBuild, e := cfp.scanAndFixBranch(repository)
+		if e != nil {
+			return e
 		}
+		anyHasFailBuild = anyHasFailBuild || hadFailBuild
+	}
+	// Check if we need to output error due to fail the build flag on violations if repository configuration requires it
+	if repository.FailBuildOnViolations != nil && *repository.FailBuildOnViolations && anyHasFailBuild {
+		return policy.NewFailBuildError()
 	}
 	return
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (err error) {
+func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (hasFailBuild bool, err error) {
 	repoDir, restoreBaseDir, err := cfp.cloneRepositoryOrUseLocalAndCheckoutToBranch()
 	if err != nil {
 		return
@@ -115,10 +123,11 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (er
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
-		if findings, e := cfp.scanAndFixProject(repository); e != nil {
-			return e
+		if hasFailBuildInProject, findings, e := cfp.scanAndFixProject(repository); e != nil {
+			return false, e
 		} else {
 			totalFindings += findings
+			hasFailBuild = hasFailBuild || hasFailBuildInProject
 		}
 	}
 
@@ -161,8 +170,9 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	return
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (int, error) {
+func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (bool, int, error) {
 	var isFixNeeded bool
+	shouldFailBuild := false
 	totalFindings := 0
 	// A map that contains the full project paths as a keys
 	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
@@ -173,24 +183,16 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 		scanResults, err := cfp.scan(fullPathWd)
 		if err != nil {
 			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
-				return totalFindings, err
+				return shouldFailBuild, totalFindings, err
 			}
 			continue
 		}
-		if summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults); err != nil {
-			return totalFindings, err
-		} else {
-			findingCount := summary.GetTotalViolations()
-			if findingCount == 0 {
-				findingCount = summary.GetTotalVulnerabilities()
-			}
-			totalFindings += findingCount
-		}
-
+		totalFindings += getTotalFindingsFromScanResults(scanResults)
+		shouldFailBuild = shouldFailBuild || (scanResults.Violations != nil && scanResults.Violations.ShouldFailBuild())
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only
-			if err = utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
+			if err = utils.UploadRepoSarifResultsToGithubSecurityTab(scanResults, repository, cfp.scanDetails.BaseBranch(), cfp.scanDetails.Client()); err != nil {
 				log.Warn(err)
 			}
 
@@ -203,42 +205,56 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (i
 		if repository.DetectionOnly {
 			continue
 		}
-
 		for _, target := range scanResults.Targets {
-			targetPath := target.Target
-			convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-				IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
-				HasViolationContext:    scanResults.HasViolationContext(),
-				IncludeTargets:         []string{targetPath},
-			})
-			simpleJsonResult, err := convertor.ConvertToSimpleJson(scanResults)
+			currPathVulnerabilities, err := cfp.populateTargetResultsInVulnMap(target, scanResults)
 			if err != nil {
-				if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", targetPath), err); err != nil {
-					return totalFindings, err
-				}
-				continue
-			}
-
-			currPathVulnerabilities, err := cfp.createVulnerabilitiesMapFromSimpleJson(simpleJsonResult)
-			if err != nil {
-				if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", targetPath), err); err != nil {
-					return totalFindings, err
+				if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred while preparing the vulnerabilities map for '%s' working directory. Fixes will be skipped for this working directory", target.Target), err); err != nil {
+					return shouldFailBuild, totalFindings, err
 				}
 				continue
 			}
 			if len(currPathVulnerabilities) > 0 {
 				isFixNeeded = true
-				log.Debug(fmt.Sprintf("Found %d fixable vulnerabilities in '%s': %s", len(currPathVulnerabilities), targetPath, strings.Join(maps.Keys(currPathVulnerabilities), ", ")))
+				log.Debug(fmt.Sprintf("Found %d fixable vulnerabilities in '%s': %s", len(currPathVulnerabilities), target.Target, strings.Join(maps.Keys(currPathVulnerabilities), ", ")))
 			}
-			vulnerabilitiesByPathMap[targetPath] = currPathVulnerabilities
+			vulnerabilitiesByPathMap[target.Target] = currPathVulnerabilities
 		}
 	}
 	if repository.DetectionOnly {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' environment variable to 'false'.", utils.DetectionOnlyEnv))
 	} else if isFixNeeded {
-		return totalFindings, cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+		return shouldFailBuild, totalFindings, cfp.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
 	}
-	return totalFindings, nil
+	return shouldFailBuild, totalFindings, nil
+}
+
+func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
+	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
+	if err != nil {
+		return 0
+	}
+	findingCount := summary.GetTotalViolations()
+	if findingCount == 0 {
+		findingCount = summary.GetTotalVulnerabilities()
+	}
+	return findingCount
+}
+
+func (cfp *ScanRepositoryCmd) populateTargetResultsInVulnMap(target *results.TargetResults, scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
+	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
+		HasViolationContext:    scanResults.HasViolationContext(),
+		IncludeTargets:         []string{target.Target},
+	})
+	simpleJsonResult, err := convertor.ConvertToSimpleJson(scanResults)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurred while converting scan results to simple json for target '%s': %w", target.Target, err)
+	}
+	currPathVulnerabilities, err := cfp.createVulnerabilitiesMapFromSimpleJson(simpleJsonResult)
+	if err != nil {
+		return nil, fmt.Errorf("an error occurred while creating vulnerabilities map from simple json for target '%s': %w", target.Target, err)
+	}
+	return currPathVulnerabilities, nil
 }
 
 // Audit the dependencies of the current commit.
@@ -292,8 +308,9 @@ func (cfp *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Reposi
 	}
 
 	// Fix every vulnerability in a separate pull request and branch
+	projectPathFromRoot := projectWorkingDir
 	for _, vulnerability := range vulnerabilities {
-		if e := cfp.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
+		if e := cfp.fixSinglePackageAndCreatePR(repository, projectPathFromRoot, vulnerability); e != nil {
 			err = errors.Join(err, cfp.handleUpdatePackageErrors(e))
 		}
 
@@ -370,10 +387,11 @@ func (cfp *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, vulnDetails *utils.VulnerabilityDetails) (err error) {
+// projectPathFromRoot is the relative path of the project from the repository root (used for branch name uniqueness).
+func (cfp *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, projectPathFromRoot string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
-	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
+	fixBranchName, err := cfp.gitManager.GenerateFixBranchName(cfp.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion, projectPathFromRoot)
 	if err != nil {
 		return
 	}

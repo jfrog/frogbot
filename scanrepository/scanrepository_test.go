@@ -15,8 +15,6 @@ import (
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/google/go-github/v45/github"
 	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
@@ -31,6 +29,9 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"
@@ -110,7 +111,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^10.2.3"}},
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
@@ -119,7 +120,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		{
 			testName:                       "aggregate-multi-project",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"pyjwt", "pexpect"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^9.0.0", "^0.8.4", "^3.0.5"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"2.4.0"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^9.0.0", "^0.8.4", "^10.2.3"}, "frogbot-update-e8fa179873704bb1362147aff9c40040-dependencies-master": {"2.4.0"}},
 			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm/package-lock.json"}},
 			packageDescriptorPaths:         []string{"npm/package.json", "pip/requirements.txt"},
 			aggregateFixes:                 true,
@@ -392,16 +393,20 @@ func TestGenerateFixBranchName(t *testing.T) {
 		baseBranch      string
 		impactedPackage string
 		fixVersion      string
+		projectPath     string
 		expectedName    string
 	}{
-		{"dev", "gopkg.in/yaml.v3", "3.0.0", "frogbot-gopkg.in/yaml.v3-d61bde82dc594e5ccc5a042fe224bf7c"},
-		{"master", "gopkg.in/yaml.v3", "3.0.0", "frogbot-gopkg.in/yaml.v3-41405528994061bd108e3bbd4c039a03"},
-		{"dev", "replace:colons:colons", "3.0.0", "frogbot-replace_colons_colons-89e555131b4a70a32fe9d9c44d6ff0fc"},
+		{"dev", "gopkg.in/yaml.v3", "3.0.0", "", "frogbot-gopkg.in/yaml.v3-d61bde82dc594e5ccc5a042fe224bf7c"},
+		{"master", "gopkg.in/yaml.v3", "3.0.0", "", "frogbot-gopkg.in/yaml.v3-41405528994061bd108e3bbd4c039a03"},
+		{"dev", "replace:colons:colons", "3.0.0", "", "frogbot-replace_colons_colons-89e555131b4a70a32fe9d9c44d6ff0fc"},
+		{"main", "requests", "2.25.3", "", "frogbot-requests-ae6fef399c0fdd96441b0215f28147d2"},
+		{"main", "requests", "2.25.3", "subfolder", "frogbot-requests-28662794aa63a6250dd9a80f7618f841"},
+		{"main", "requests", "2.25.3", "other/project", "frogbot-requests-61eeddf6eda4b867a2b75fa5630875e8"},
 	}
 	gitManager := utils.GitManager{}
 	for _, test := range tests {
 		t.Run(test.expectedName, func(t *testing.T) {
-			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion)
+			branchName, err := gitManager.GenerateFixBranchName(test.baseBranch, test.impactedPackage, test.fixVersion, test.projectPath)
 			assert.NoError(t, err)
 			assert.Equal(t, test.expectedName, branchName)
 		})
@@ -699,7 +704,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 
 func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 	cfp := &ScanRepositoryCmd{}
-	
+
 	scanResults := &results.SecurityCommandResults{
 		ResultsMetaData: results.ResultsMetaData{ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 		Targets: []*results.TargetResults{
@@ -739,7 +744,7 @@ func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 			},
 		},
 	}
-	
+
 	convertor1 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: true,
 		IncludeTargets:         []string{"project1"},
@@ -751,7 +756,7 @@ func TestMultiTargetVulnerabilitiesMap(t *testing.T) {
 	assert.Len(t, vulnsMap1, 1)
 	assert.Contains(t, vulnsMap1, "pkg1")
 	assert.NotContains(t, vulnsMap1, "pkg2")
-	
+
 	convertor2 := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: true,
 		IncludeTargets:         []string{"project2"},

@@ -19,9 +19,10 @@ import (
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
+
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 
 	"github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -164,6 +165,7 @@ type Scan struct {
 	FixableOnly                     bool      `yaml:"fixableOnly,omitempty"`
 	DetectionOnly                   bool      `yaml:"skipAutoFix,omitempty"`
 	FailOnSecurityIssues            *bool     `yaml:"failOnSecurityIssues,omitempty"`
+	FailBuildOnViolations           *bool     `yaml:"failBuildOnViolations,omitempty"`
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	DisableJas                      bool      `yaml:"disableJas,omitempty"`
@@ -249,6 +251,14 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 			return
 		}
 		s.FailOnSecurityIssues = &failOnSecurityIssues
+	}
+	if s.FailBuildOnViolations == nil {
+		var failBuildOnViolations bool
+		// Default is false for backward compatibility
+		if failBuildOnViolations, err = getBoolEnv(FailBuildOnViolationsEnv, false); err != nil {
+			return
+		}
+		s.FailBuildOnViolations = &failBuildOnViolations
 	}
 	if s.MinSeverity == "" {
 		if err = readParamFromEnv(MinSeverityEnv, &s.MinSeverity); err != nil && !e.IsMissingEnvErr(err) {
@@ -338,6 +348,7 @@ type Git struct {
 	RepositoryCloneUrl            string
 	UseLocalRepository            bool
 	UploadSbomToVcs               *bool `yaml:"uploadSbomToVcs,omitempty"`
+	UploadPrSecurityResultsToVcs  bool  `yaml:"uploadPrSecurityResultsToVcs,omitempty"`
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -387,6 +398,13 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 			return err
 		}
 		g.UploadSbomToVcs = &envValue
+	}
+	if !g.UploadPrSecurityResultsToVcs {
+		envValue, err := getBoolEnv(UploadPrSecurityResultsToVcsEnv, false)
+		if err != nil {
+			return err
+		}
+		g.UploadPrSecurityResultsToVcs = envValue
 	}
 
 	return

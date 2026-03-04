@@ -1,25 +1,26 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20251230063402-e9f0a3564df1
-	github.com/jfrog/froggit-go v1.20.6
+	github.com/jfrog/build-info-go v1.13.1-0.20260216093441-40a4dc563294
+	github.com/jfrog/froggit-go v1.21.0
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260102083738-35bd3de75e6c
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20251223102649-e659f6937251
-	github.com/jfrog/jfrog-cli-security v1.25.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20251230061734-d954605bdb23
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260303101540-67cc7f55724b
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260225195817-bc599cec3973
+	github.com/jfrog/jfrog-cli-security v1.26.3
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260225080504-17057750d47b
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xeipuuv/gojsonschema v1.2.0
 	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39
+	golang.org/x/mod v0.30.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -35,7 +36,7 @@ require (
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -111,7 +112,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect

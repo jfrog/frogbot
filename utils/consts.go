@@ -46,6 +46,7 @@ const (
 	GitUseLocalRepositoryEnv         = "JF_USE_LOCAL_REPOSITORY"
 	UseMostCommonAncestorAsTargetEnv = "JF_USE_MOST_COMMON_ANCESTOR_AS_TARGET"
 	GitDependencyGraphSubmissionEnv  = "JF_UPLOAD_SBOM_TO_VCS"
+	UploadPrSecurityResultsToVcsEnv  = "JF_UPLOAD_PR_SECURITY_RESULTS_TO_VCS"
 
 	// Git naming template environment variables
 	BranchNameTemplateEnv       = "JF_BRANCH_NAME_TEMPLATE"
@@ -70,6 +71,7 @@ const (
 	AvoidPreviousPrCommentsDeletionEnv = "JF_AVOID_PREVIOUS_PR_COMMENTS_DELETION"
 	AddPrCommentOnSuccessEnv           = "JF_PR_ADD_SUCCESS_COMMENT"
 	FailOnSecurityIssuesEnv            = "JF_FAIL"
+	FailBuildOnViolationsEnv           = "JF_REPO_SCAN_FAIL_BUILD"
 	UseWrapperEnv                      = "JF_USE_WRAPPER"
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"

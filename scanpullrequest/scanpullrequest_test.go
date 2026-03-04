@@ -478,7 +478,7 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			defer cleanUpTest()
 
 			assert.Len(t, repoConfig, 1)
-			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig[0], client)
+			issuesCollection, _, _, err := auditPullRequestAndReport(&repoConfig[0], client)
 			assert.NoError(t, err)
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)
