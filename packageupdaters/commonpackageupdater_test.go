@@ -33,8 +33,7 @@ type dependencyFixTest struct {
 }
 
 const (
-	requirementsFile    = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
-	GoPackageDescriptor = "go.mod"
+	requirementsFile = "oslo.config>=1.12.1,<1.13\noslo.utils<5.0,>=4.0.0\nparamiko==2.7.2\npasslib<=1.7.4\nprance>=0.9.0\nprompt-toolkit~=1.0.15\npyinotify>0.9.6\nPyJWT>1.7.1\nurllib3 > 1.1.9, < 1.5.*"
 )
 
 type pipPackageRegexTest struct {
@@ -54,22 +53,25 @@ func TestUpdateDependency(t *testing.T) {
 		// Go test cases
 		{
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Go, "golang.org/x/crypto", "", "0.0.0-20201216223049-8b5274cf687f", false, ""),
-				scanDetails:        scanDetails,
-				fixSupported:       true,
-				descriptorsToCheck: []string{GoPackageDescriptor},
+				vulnDetails:               createVulnerabilityDetails(techutils.Go, "golang.org/x/crypto", "", "0.0.0-20201216223049-8b5274cf687f", false, "go.mod"),
+				scanDetails:               scanDetails,
+				fixSupported:              true,
+				descriptorsToCheck:        []string{"go.mod"},
+				lockFileToVerifyItsChange: "go.sum",
 			},
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/gin-gonic/gin", "", "1.7.7", true, ""),
-				scanDetails:        scanDetails,
-				fixSupported:       true,
-				descriptorsToCheck: []string{GoPackageDescriptor},
+				vulnDetails:               createVulnerabilityDetails(techutils.Go, "github.com/google/uuid", "", "1.3.0", true, "go.mod"),
+				scanDetails:               scanDetails,
+				fixSupported:              true,
+				descriptorsToCheck:        []string{"go.mod"},
+				lockFileToVerifyItsChange: "go.sum",
 			},
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Go, "github.com/google/uuid", "", "1.3.0", true, ""),
-				scanDetails:        scanDetails,
-				fixSupported:       true,
-				descriptorsToCheck: []string{GoPackageDescriptor},
+				testcaseInfo:  "no-location-evidence",
+				vulnDetails:   createVulnerabilityDetails(techutils.Go, "github.com/google/uuid", "", "1.3.0", true),
+				scanDetails:   scanDetails,
+				fixSupported:  true,
+				errorExpected: true,
 			},
 		},
 

@@ -31,7 +31,6 @@ import (
 	coreconfig "github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -56,8 +55,11 @@ var basicConfigProfile = services2.ConfigProfile{
 			ModuleName:   "test-module",
 			PathFromRoot: ".",
 			ScanConfig: services2.ScanConfig{
-				ScaScannerConfig:  services2.ScaScannerConfig{EnableScaScan: true},
-				SastScannerConfig: services2.SastScannerConfig{EnableSastScan: true},
+				ScaScannerConfig:                services2.ScaScannerConfig{EnableScaScan: true},
+				SastScannerConfig:               services2.SastScannerConfig{EnableSastScan: true},
+				ContextualAnalysisScannerConfig: services2.CaScannerConfig{EnableCaScan: true},
+				SecretsScannerConfig:            services2.SecretsScannerConfig{EnableSecretsScan: true},
+				IacScannerConfig:                services2.IacScannerConfig{EnableIacScan: true},
 			},
 		},
 	},
@@ -1353,19 +1355,11 @@ func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository,
 			Target: vcsclient.BranchInfo{Name: testTargetBranchName, Repository: projectName, Owner: owner},
 		},
 	}
-	server := httptest.NewServer(createGitLabHandler(t, gitServerParams))
-
 	testDir, cleanUp := utils.CopyTestdataProjectsToTemp(t, "scanpullrequest")
+	server := httptest.NewServer(createGitLabHandler(t, testDir, gitServerParams))
 	config, client := prepareConfigAndClient(t, xrayVersion, xscVersion, server, params, gitServerParams)
 
-	// Renames test git folder to .git
-	currentDir := filepath.Join(testDir, projectName)
-	restoreDir, err := utils.Chdir(currentDir)
-	assert.NoError(t, err)
-
 	return config, client, func() {
-		assert.NoError(t, restoreDir())
-		assert.NoError(t, fileutils.RemoveTempDir(currentDir))
 		cleanUp()
 		server.Close()
 		restoreEnv()
@@ -1379,7 +1373,7 @@ type GitServerParams struct {
 }
 
 // Create HTTP handler to mock GitLab server
-func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc {
+func createGitLabHandler(t *testing.T, testDir string, params GitServerParams) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		repoInfo := params.RepoOwner + "%2F" + params.RepoName
 		switch {
@@ -1389,28 +1383,26 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 		// Mimic get pull request by ID
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/%d", repoInfo, params.prDetails.ID):
 			w.WriteHeader(http.StatusOK)
-			// expectedResponse, err := os.ReadFile(filepath.Join("..", "expectedPullRequestDetailsResponse.json"))
-			// assert.NoError(t, err)
 			_, err := fmt.Fprintf(w, `{ "id": %d, "iid": 133, "project_id": 15513260, "title": "Dummy pull request", "description": "this is pr description", "state": "opened", "target_branch": "%s", "source_branch": "%s", "author": {"username": "testuser"}}`, params.prDetails.ID, params.prDetails.Target.Name, params.prDetails.Source.Name)
 			assert.NoError(t, err)
 		// Mimic download specific branch to scan
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Source.Name):
 			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "sourceBranch.gz"))
+			repoFile, err := os.ReadFile(filepath.Join(testDir, params.RepoName, "sourceBranch.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 		// Download repository mock
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/repository/archive.tar.gz?sha=%s", repoInfo, params.prDetails.Target.Name):
 			w.WriteHeader(http.StatusOK)
-			repoFile, err := os.ReadFile(filepath.Join("..", params.RepoName, "targetBranch.gz"))
+			repoFile, err := os.ReadFile(filepath.Join(testDir, params.RepoName, "targetBranch.gz"))
 			assert.NoError(t, err)
 			_, err = w.Write(repoFile)
 			assert.NoError(t, err)
 			return
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/notes", repoInfo) && r.Method == http.MethodGet:
 			w.WriteHeader(http.StatusOK)
-			comments, err := os.ReadFile(filepath.Join("..", "commits.json"))
+			comments, err := os.ReadFile(filepath.Join(testDir, "commits.json"))
 			assert.NoError(t, err)
 			_, err = w.Write(comments)
 			assert.NoError(t, err)
@@ -1430,11 +1422,10 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 
 			var expectedResponse []byte
 			if strings.Contains(params.RepoName, "multi-dir") {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response_multi_dir.md"))
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response_multi_dir.md"))
 			} else {
-				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join("..", "expected_response.md"))
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response.md"))
 			}
-			assert.NoError(t, err)
 			assert.JSONEq(t, string(expectedResponse), buf.String())
 
 			w.WriteHeader(http.StatusOK)
@@ -1445,7 +1436,7 @@ func createGitLabHandler(t *testing.T, params GitServerParams) http.HandlerFunc 
 			_, err := w.Write([]byte(jsonResponse))
 			assert.NoError(t, err)
 		case r.RequestURI == fmt.Sprintf("/api/v4/projects/%s/merge_requests/133/discussions", repoInfo):
-			discussions, err := os.ReadFile(filepath.Join("..", "list_merge_request_discussion_items.json"))
+			discussions, err := os.ReadFile(filepath.Join(testDir, "list_merge_request_discussion_items.json"))
 			assert.NoError(t, err)
 			_, err = w.Write(discussions)
 			assert.NoError(t, err)
