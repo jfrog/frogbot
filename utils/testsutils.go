@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -74,7 +75,20 @@ func CopyTestdataProjectsToTemp(t *testing.T, testDir string) (tmpDir string, re
 	err = biutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 	restoreFunc = func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+		err := fileutils.RemoveTempDir(tmpDir)
+		if err == nil {
+			return
+		}
+		// On Windows, directory cleanup can fail due to OS file-system locks held by
+		// background services (e.g., Windows Defender Real-time Protection, Search Indexer).
+		// This is a known issue: https://github.com/golang/go/issues/30789
+		// jfrog-client-go's RemoveTempDir already falls back to RemoveDirContents for this case,
+		// and CleanOldDirs() will remove the leftover empty directory on the next run.
+		if runtime.GOOS == "windows" {
+			t.Logf("Warning: temp dir cleanup failed on Windows (will be retried by CleanOldDirs): %v", err)
+			return
+		}
+		assert.NoError(t, err)
 	}
 	return
 }
