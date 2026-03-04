@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.25.5
+go 1.25.7
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.9.3
@@ -10,9 +10,9 @@ require (
 	github.com/jfrog/build-info-go v1.13.1-0.20260216093441-40a4dc563294
 	github.com/jfrog/froggit-go v1.21.0
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260218070105-39c72c2c8214
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260218080258-3bf55ed18973
-	github.com/jfrog/jfrog-cli-security v1.26.2
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260303101540-67cc7f55724b
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260225195817-bc599cec3973
+	github.com/jfrog/jfrog-cli-security v1.26.3
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260225080504-17057750d47b
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
@@ -36,7 +36,7 @@ require (
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/clipperhouse/stringish v0.1.1 // indirect
 	github.com/clipperhouse/uax29/v2 v2.3.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -126,7 +126,7 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20260224124116-b7910a66147c
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
