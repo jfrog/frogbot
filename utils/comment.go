@@ -379,7 +379,6 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bo
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
-	case SnippetComment:
 	}
 	return
 }
@@ -391,8 +390,7 @@ func generateComponentReviewContent(
 	licenses []formats.LicenseViolationRow,
 	externalReferences []string,
 ) (content string) {
-	switch commentType {
-	case SnippetComment:
+	if commentType == SnippetComment {
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
 			violation,
 			writer,
