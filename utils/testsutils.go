@@ -197,20 +197,22 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
+			var responseProfile services.ConfigProfile
+			assert.NoError(t, json.Unmarshal(content, &responseProfile))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
-			assert.NoError(t, err)
+			assert.NoError(t, json.NewEncoder(w).Encode(responseProfile))
 
 		// Endpoint to profile by URL
 		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
 			assert.Equal(t, http.MethodPost, r.Method)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
+			var responseProfile services.ConfigProfile
+			assert.NoError(t, json.Unmarshal(content, &responseProfile))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
-			assert.NoError(t, err)
+			assert.NoError(t, json.NewEncoder(w).Encode(responseProfile))
 
 		case r.RequestURI == fmt.Sprintf("/%s/%ssystem/version", apiUrlPart, "xsc"):
 			_, err := fmt.Fprintf(w, `{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)

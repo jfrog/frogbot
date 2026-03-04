@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
+	"io"
+	"net
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -837,7 +839,7 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 				file, err := os.ReadFile(fmt.Sprintf("%s.tar.gz", projectName))
 				assert.NoError(t, err)
 				w.Header().Set("Content-Type", "application/octet-stream")
-				_, err = w.Write(file)
+				_, err = io.Copy(w, bytes.NewReader(file))
 				assert.NoError(t, err)
 				return
 			}
