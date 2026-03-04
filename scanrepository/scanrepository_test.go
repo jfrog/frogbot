@@ -7,7 +7,6 @@ import (
 	"fmt"
 	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"io"
-	"net
 	"net/http"
 	"net/http/httptest"
 	"os"
