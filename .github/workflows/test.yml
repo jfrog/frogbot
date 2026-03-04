@@ -175,11 +175,6 @@ jobs:
       - name: Generate mocks
         run: go generate ./...
 
-      - name: Exclude temp directory from Windows Defender scanning
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: Add-MpPreference -ExclusionPath "$env:TEMP"
-
       - name: Run Tests
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
         run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 50m -cover

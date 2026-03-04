@@ -108,6 +108,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
@@ -115,6 +116,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName: "aggregate-no-vul",
@@ -123,6 +125,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName: "aggregate-cant-fix",
@@ -130,8 +133,9 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedPackagesInBranch:       map[string][]string{"master": {}},
 			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
 			// This is a build tool dependency which should not be fixed.
-			packageDescriptorPaths: []string{"setup.py"},
-			aggregateFixes:         true,
+			packageDescriptorPaths:  []string{"setup.py"},
+			aggregateFixes:          true,
+			failUponAnyScannerError: true,
 		},
 		{
 			testName:                       "non-aggregate",
@@ -139,6 +143,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"1.2.6"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
+			failUponAnyScannerError:        true,
 		},
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
