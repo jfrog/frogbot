@@ -33,6 +33,7 @@ const (
 	SecretComment     ReviewCommentType = "Secrets"
 	SnippetComment    ReviewCommentType = "Snippet"
 
+	snippetVersionMarker   = "snippet"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
@@ -239,7 +240,7 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 	locToOrigin := make(map[key]*datastructures.Set[string])
 	licensesBySnippet := make(map[key][]formats.LicenseViolationRow)
 	for _, lic := range issues.LicensesViolations {
-		if lic.ImpactedDependencyVersion != "snippet" {
+		if lic.ImpactedDependencyVersion != snippetVersionMarker {
 			continue
 		}
 		// Extract license violation information that are related to a snippet
@@ -276,20 +277,20 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 	// Generate review comments for each snippet location
 	for _, loc := range sortedKeys {
 		licenses := licensesBySnippet[loc]
-		refs := locToOrigin[loc]
+		refSlice := locToOrigin[loc].ToSlice()
 		commentsToAdd = append(commentsToAdd, generateReviewComment(
 			SnippetComment,
 			formats.Location{
 				File:      loc.File,
 				StartLine: loc.Line,
-				EndLine:   loc.Line + snippetLineCountFromRef(refs.ToSlice()),
+				EndLine:   loc.Line + snippetLineDeltaFromRef(refSlice),
 			},
 			generateComponentReviewContent(
 				SnippetComment,
 				true,
 				writer,
 				licenses,
-				refs.ToSlice()),
+				refSlice),
 		))
 	}
 	return
@@ -297,12 +298,13 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 
 var snippetLineRangeRe = regexp.MustCompile(`#L(\d+)-L(\d+)$`)
 
-const defaultSnippetLineCount = 20
+const defaultSnippetLineDelta = 20
 
-// snippetLineCountFromRef parses a GitHub-style line range fragment (#L<start>-L<end>)
-// from the first matching external reference URL and returns the line span.
-// Falls back to defaultSnippetLineCount when no URL contains a parseable range.
-func snippetLineCountFromRef(refs []string) int {
+// snippetLineDeltaFromRef parses a GitHub-style line range fragment (#L<start>-L<end>)
+// from the first matching external reference URL and returns end−start (the delta to
+// add to a start line to compute the end line).
+// Falls back to defaultSnippetLineDelta when no URL contains a parseable range.
+func snippetLineDeltaFromRef(refs []string) int {
 	for _, ref := range refs {
 		m := snippetLineRangeRe.FindStringSubmatch(ref)
 		if len(m) != 3 {
@@ -315,7 +317,7 @@ func snippetLineCountFromRef(refs []string) int {
 		}
 		return end - start
 	}
-	return defaultSnippetLineCount
+	return defaultSnippetLineDelta
 }
 
 type jasCommentIssues struct {
@@ -377,6 +379,7 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bo
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
+	case SnippetComment:
 	}
 	return
 }

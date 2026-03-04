@@ -720,7 +720,7 @@ func TestGetNewReviewComments(t *testing.T) {
 	}
 }
 
-func TestSnippetLineCountFromRef(t *testing.T) {
+func TestSnippetLineDeltaFromRef(t *testing.T) {
 	testCases := []struct {
 		name     string
 		refs     []string
@@ -729,12 +729,12 @@ func TestSnippetLineCountFromRef(t *testing.T) {
 		{
 			name:     "No refs",
 			refs:     nil,
-			expected: defaultSnippetLineCount,
+			expected: defaultSnippetLineDelta,
 		},
 		{
 			name:     "Empty refs",
 			refs:     []string{},
-			expected: defaultSnippetLineCount,
+			expected: defaultSnippetLineDelta,
 		},
 		{
 			name:     "Valid line range",
@@ -744,17 +744,17 @@ func TestSnippetLineCountFromRef(t *testing.T) {
 		{
 			name:     "No matching pattern",
 			refs:     []string{"https://github.com/org/repo/blob/main/file.go"},
-			expected: defaultSnippetLineCount,
+			expected: defaultSnippetLineDelta,
 		},
 		{
 			name:     "End less than start",
 			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L30-L10"},
-			expected: defaultSnippetLineCount,
+			expected: defaultSnippetLineDelta,
 		},
 		{
 			name:     "Equal start and end",
 			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L10-L10"},
-			expected: defaultSnippetLineCount,
+			expected: defaultSnippetLineDelta,
 		},
 		{
 			name:     "First ref invalid, second valid",
@@ -769,7 +769,7 @@ func TestSnippetLineCountFromRef(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, snippetLineCountFromRef(tc.refs))
+			assert.Equal(t, tc.expected, snippetLineDeltaFromRef(tc.refs))
 		})
 	}
 }
