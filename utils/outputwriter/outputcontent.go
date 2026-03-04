@@ -38,6 +38,7 @@ const (
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE"
 	iacTitle                = "🛠️ Infrastructure as Code"
 	sastTitle               = "🎯 Static Application Security Testing (SAST)"
+	snippetsTitle           = "📜 Public Code Snippet"
 )
 
 var (
@@ -522,6 +523,41 @@ func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.
 	return contentBuilder.String()
 }
 
+func SnippetReviewContent(
+	violation bool,
+	writer OutputWriter,
+	licenses []formats.LicenseViolationRow,
+	externalReferences []string,
+) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(fmt.Sprintf("%s %s", snippetsTitle, getIssueType(violation)), 2),
+		getSnippetDescription(externalReferences),
+		writer.MarkInCenter(getSnippetsDescriptionTable(writer, licenses)),
+	)
+	return contentBuilder.String()
+}
+
+func getSnippetsDescriptionTable(writer OutputWriter, licenses []formats.LicenseViolationRow) string {
+	// Construct table
+	table := NewMarkdownTable("Severity", "License", "Watch Name", "Policies").SetDelimiter(writer.Separator())
+	// Hide optional columns if all empty (violations/no status)
+	table.GetColumnInfo("License").OmitEmpty = true
+	table.GetColumnInfo("Watch Name").OmitEmpty = true
+	table.GetColumnInfo("Policies").OmitEmpty = true
+	// Construct rows
+	for _, issue := range licenses {
+		// Determine the issue applicable status
+		table.AddRowWithCellData(
+			NewCellData(writer.FormattedSeverity(issue.Severity, jasutils.Applicable.String())),
+			NewCellData(issue.LicenseKey),
+			NewCellData(issue.Watch),
+			NewCellData(issue.Policies...),
+		)
+	}
+	return table.Build()
+}
+
 func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
 	// Construct table
 	table := NewMarkdownTable("Severity", "ID", "Status", "Origin", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
@@ -850,6 +886,15 @@ func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCo
 		)
 	}
 	return table.Build()
+}
+
+func getSnippetDescription(externalReferences []string) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder, "The highlighted snippet was copied from:")
+	for _, ref := range externalReferences {
+		WriteContent(&contentBuilder, fmt.Sprintf("[%s](%s)", ref, ref))
+	}
+	return contentBuilder.String()
 }
 
 // For Jas we show description for each unique rule
