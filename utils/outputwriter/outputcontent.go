@@ -1,7 +1,6 @@
 package outputwriter
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -527,14 +526,13 @@ func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.
 func SnippetReviewContent(
 	violation bool,
 	writer OutputWriter,
-	component formats.ComponentRow,
 	licenses []formats.LicenseViolationRow,
 	externalReferences []string,
 ) string {
 	var contentBuilder strings.Builder
 	WriteContent(&contentBuilder,
 		writer.MarkAsTitle(fmt.Sprintf("%s %s", snippetsTitle, getIssueType(violation)), 2),
-		getSnippetDescription(violation, writer, licenses, externalReferences),
+		getSnippetDescription(externalReferences),
 		writer.MarkInCenter(getSnippetsDescriptionTable(writer, licenses)),
 	)
 	return contentBuilder.String()
@@ -548,14 +546,10 @@ func getSnippetsDescriptionTable(writer OutputWriter, licenses []formats.License
 	table.GetColumnInfo("Watch Name").OmitEmpty = true
 	table.GetColumnInfo("Policies").OmitEmpty = true
 	// Construct rows
-	pretty, err := json.MarshalIndent(licenses, "", "  ")
-	if err == nil {
-		fmt.Println(string(pretty))
-	}
 	for _, issue := range licenses {
 		// Determine the issue applicable status
 		table.AddRowWithCellData(
-			NewCellData(issue.Severity),
+			NewCellData(writer.FormattedSeverity(issue.Severity, jasutils.Applicable.String())),
 			NewCellData(issue.LicenseKey),
 			NewCellData(issue.Watch),
 			NewCellData(issue.Policies...),
@@ -894,9 +888,9 @@ func getJasIssueDescriptionTable(writer OutputWriter, issues ...formats.SourceCo
 	return table.Build()
 }
 
-func getSnippetDescription(violations bool, writer OutputWriter, licenses []formats.LicenseViolationRow, externalReferences []string) string {
+func getSnippetDescription(externalReferences []string) string {
 	var contentBuilder strings.Builder
-	WriteContent(&contentBuilder, "The highlighted snippet was coppied from:")
+	WriteContent(&contentBuilder, "The highlighted snippet was copied from:")
 	for _, ref := range externalReferences {
 		WriteContent(&contentBuilder, fmt.Sprintf("[%s](%s)", ref, ref))
 	}

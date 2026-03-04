@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -233,61 +236,86 @@ func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer o
 		Line int
 	}
 
-	locToComp := make(map[key]formats.ComponentRow)
-	locToOrigin := make(map[key][]string)
-	licensesBySnippet := make(map[key][]formats.LicenseViolationRow, len(issues.LicensesViolations))
+	locToOrigin := make(map[key]*datastructures.Set[string])
+	licensesBySnippet := make(map[key][]formats.LicenseViolationRow)
 	for _, lic := range issues.LicensesViolations {
 		if lic.ImpactedDependencyVersion != "snippet" {
 			continue
 		}
-
+		// Extract license violation information that are related to a snippet
 		for _, ipath := range lic.ImpactPaths {
 			if len(ipath) == 0 {
 				continue
 			}
 
-			snippet := ipath[0]
+			// Leaf node of the impact path is the snippet location
+			snippet := ipath[len(ipath)-1]
 
-			if len(snippet.Evidences) == 0 {
-				continue
+			// Map evidence to snippet location
+			for _, evidence := range snippet.Evidences {
+				k := key{File: evidence.File, Line: evidence.StartLine}
+				licensesBySnippet[k] = append(licensesBySnippet[k], lic)
+				if locToOrigin[k] == nil {
+					locToOrigin[k] = datastructures.MakeSet[string]()
+				}
+				locToOrigin[k].AddElements(evidence.ExternalReferences...)
 			}
-
-			evidence := snippet.Evidences[0]
-
-			k := key{File: evidence.File, Line: evidence.StartLine}
-
-			if _, exists := locToComp[k]; !exists {
-				locToComp[k] = snippet
-			}
-			if _, exists := licensesBySnippet[k]; !exists {
-				licensesBySnippet[k] = []formats.LicenseViolationRow{}
-			}
-			licensesBySnippet[k] = append(licensesBySnippet[k], lic)
-
-			locToOrigin[k] = evidence.ExternalReferences
-
 		}
 	}
-
-	for loc, snippet := range locToComp {
+	// Sort snippet locations by file and line
+	sortedKeys := make([]key, 0, len(licensesBySnippet))
+	for k := range licensesBySnippet {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Slice(sortedKeys, func(i, j int) bool {
+		if sortedKeys[i].File != sortedKeys[j].File {
+			return sortedKeys[i].File < sortedKeys[j].File
+		}
+		return sortedKeys[i].Line < sortedKeys[j].Line
+	})
+	// Generate review comments for each snippet location
+	for _, loc := range sortedKeys {
 		licenses := licensesBySnippet[loc]
+		refs := locToOrigin[loc]
 		commentsToAdd = append(commentsToAdd, generateReviewComment(
 			SnippetComment,
 			formats.Location{
 				File:      loc.File,
 				StartLine: loc.Line,
-				EndLine:   loc.Line + 20,
+				EndLine:   loc.Line + snippetLineCountFromRef(refs.ToSlice()),
 			},
 			generateComponentReviewContent(
 				SnippetComment,
 				true,
 				writer,
-				snippet,
 				licenses,
-				locToOrigin[loc]),
+				refs.ToSlice()),
 		))
 	}
 	return
+}
+
+var snippetLineRangeRe = regexp.MustCompile(`#L(\d+)-L(\d+)$`)
+
+const defaultSnippetLineCount = 20
+
+// snippetLineCountFromRef parses a GitHub-style line range fragment (#L<start>-L<end>)
+// from the first matching external reference URL and returns the line span.
+// Falls back to defaultSnippetLineCount when no URL contains a parseable range.
+func snippetLineCountFromRef(refs []string) int {
+	for _, ref := range refs {
+		m := snippetLineRangeRe.FindStringSubmatch(ref)
+		if len(m) != 3 {
+			continue
+		}
+		start, err1 := strconv.Atoi(m[1])
+		end, err2 := strconv.Atoi(m[2])
+		if err1 != nil || err2 != nil || end <= start {
+			continue
+		}
+		return end - start
+	}
+	return defaultSnippetLineCount
 }
 
 type jasCommentIssues struct {
@@ -357,7 +385,6 @@ func generateComponentReviewContent(
 	commentType ReviewCommentType,
 	violation bool,
 	writer outputwriter.OutputWriter,
-	component formats.ComponentRow,
 	licenses []formats.LicenseViolationRow,
 	externalReferences []string,
 ) (content string) {
@@ -366,7 +393,6 @@ func generateComponentReviewContent(
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
 			violation,
 			writer,
-			component,
 			licenses,
 			externalReferences,
 		), writer)
