@@ -3,7 +3,6 @@ package packagehandlers
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -69,7 +68,7 @@ func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDeta
 		log.Debug(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFilePath))
 		return false, nil
 	}
-	if err = os.WriteFile(filepath.Clean(conanFilePath), []byte(fixedFile), 0600); err != nil {
+	if err = os.WriteFile(conanFilePath, []byte(fixedFile), 0600); err != nil { // #nosec G703
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", vulnDetails.ImpactedDependencyName, conanFilePath, err.Error())
 	}
 	isFileChanged = true

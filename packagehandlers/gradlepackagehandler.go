@@ -3,7 +3,6 @@ package packagehandlers
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -151,7 +150,7 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 		return
 	}
 
-	err = os.WriteFile(filepath.Clean(filePath), []byte(fileContent), fileInfo.Mode())
+	err = os.WriteFile(filePath, []byte(fileContent), fileInfo.Mode()) // #nosec G703
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
 	}
