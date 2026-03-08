@@ -936,6 +936,55 @@ func TestApplicableReviewContent(t *testing.T) {
 	}
 }
 
+func TestSnippetReviewContent(t *testing.T) {
+	testCases := []struct {
+		name               string
+		licenses           []formats.LicenseViolationRow
+		externalReferences []string
+		cases              []OutputTestCase
+	}{
+		{
+			name: "Snippet review comment content",
+			licenses: []formats.LicenseViolationRow{
+				{
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "MIT",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							SeverityDetails: formats.SeverityDetails{Severity: "High"},
+						},
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch1",
+						Policies: []string{"policy1"},
+					},
+				},
+			},
+			externalReferences: []string{"https://github.com/example/repo/blob/main/file.go#L10-L30"},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "snippet", "snippet_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "snippet", "snippet_review_content_simplified.md")},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				assert.Equal(t, expectedOutput, SnippetReviewContent(true, test.writer, tc.licenses, tc.externalReferences))
+			})
+		}
+	}
+}
+
 func TestSecretsReviewContent(t *testing.T) {
 	testCases := []struct {
 		name   string

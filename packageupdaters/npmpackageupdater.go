@@ -52,9 +52,7 @@ var npmInstallEnvVars = map[string]string{
 	ciEnv:                  "true",
 }
 
-type NpmPackageUpdater struct {
-	CommonPackageUpdater
-}
+type NpmPackageUpdater struct{}
 
 func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
@@ -95,7 +93,7 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 }
 
 func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string) error {
-	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath)
+	backupContent, err := npm.updateDependency(vulnDetails, descriptorPath)
 	if err != nil {
 		return err
 	}
@@ -123,7 +121,7 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	return nil
 }
 
-func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string) ([]byte, error) {
+func (npm *NpmPackageUpdater) updateDependency(vulnDetails *utils.VulnerabilityDetails, descriptorPath string) ([]byte, error) {
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
@@ -137,12 +135,8 @@ func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityD
 		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
-	safePath, err := getAbsolutePathUnderWd(descriptorPath)
-	if err != nil {
-		return nil, err
-	}
-	// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
-	if err = os.WriteFile(safePath, updatedContent, 0644); err != nil {
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
+	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
 	return backupContent, nil

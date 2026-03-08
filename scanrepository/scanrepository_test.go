@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
@@ -26,6 +28,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -39,23 +42,6 @@ import (
 )
 
 const rootTestDir = "scanrepository"
-
-var emptyConfigProfile = services2.ConfigProfile{
-	ProfileName:   "test-profile",
-	GeneralConfig: services2.GeneralConfig{},
-	FrogbotConfig: services2.FrogbotConfig{
-		BranchNameTemplate:    "",
-		PrTitleTemplate:       "",
-		CommitMessageTemplate: "",
-	},
-	Modules: []services2.Module{
-		{
-			ModuleId:     0,
-			ModuleName:   "test-module",
-			PathFromRoot: ".",
-		},
-	},
-}
 
 var testPackagesData = []struct {
 	packageType string
@@ -115,22 +101,23 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		expectedMissingFilesInBranch   map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
-		allowPartialResults            bool
+		failUponAnyScannerError        bool
 	}{
 		{
 			testName:                       "aggregate",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimist", "mpath"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName:                       "aggregate-multi-dir",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"uuid", "minimatch", "mpath", "minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"^1.2.6", "^9.0.0", "^0.8.4", "^3.0.5"}},
-			expectedMissingFilesInBranch:   map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"npm1/package-lock.json", "npm2/package-lock.json"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "^9.0.0", "0.8.4"}},
 			packageDescriptorPaths:         []string{"npm1/package.json", "npm2/package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName: "aggregate-no-vul",
@@ -139,6 +126,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 true,
+			failUponAnyScannerError:        true,
 		},
 		{
 			testName: "aggregate-cant-fix",
@@ -146,15 +134,17 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedPackagesInBranch:       map[string][]string{"master": {}},
 			expectedVersionUpdatesInBranch: map[string][]string{"master": {}},
 			// This is a build tool dependency which should not be fixed.
-			packageDescriptorPaths: []string{"setup.py"},
-			aggregateFixes:         true,
+			packageDescriptorPaths:  []string{"setup.py"},
+			aggregateFixes:          true,
+			failUponAnyScannerError: true,
 		},
 		{
 			testName:                       "non-aggregate",
 			expectedPackagesInBranch:       map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"minimist"}},
-			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"^1.2.6"}},
+			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"1.2.6"}},
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
+			failUponAnyScannerError:        true,
 		},
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
@@ -163,7 +153,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			expectedVersionUpdatesInBranch: map[string][]string{"frogbot-update-68d9dee2475e5986e783d85dfa11baa0-dependencies-master": {"1.2.6", "0.8.4"}},
 			packageDescriptorPaths:         []string{"package.json", "inner-project/package.json"},
 			aggregateFixes:                 true,
-			allowPartialResults:            true,
+			failUponAnyScannerError:        false,
 		},
 	}
 	baseDir, err := os.Getwd()
@@ -200,20 +190,20 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, &gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
 
-			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			configProfile := createTestConfigProfile(test.aggregateFixes, test.failUponAnyScannerError)
+			repository.ConfigProfile = &configProfile
 
-			// Run
 			var cmd = ScanRepositoryCmd{XrayVersion: xrayVersion, XscVersion: xscVersion, dryRun: true, dryRunRepoPath: testDir}
+			defer func() { assert.NoError(t, os.Chdir(baseDir)) }()
 			err = cmd.Run(repository, client)
-			defer func() {
-				assert.NoError(t, os.Chdir(baseDir))
-			}()
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest runs.
+			assert.NoError(t, os.Chdir(baseDir))
 
 			// Validate
+			repoDir := filepath.Join(testDir, test.testName)
 			assert.NoError(t, err)
 			for branch, packages := range test.expectedPackagesInBranch {
-				resultDiff, err := verifyDependencyFileDiff("master", branch, test.packageDescriptorPaths...)
+				resultDiff, err := verifyDependencyFileDiff(repoDir, "master", branch, test.packageDescriptorPaths...)
 				assert.NoError(t, err)
 				if len(packages) > 0 {
 					assert.NotEmpty(t, resultDiff)
@@ -229,7 +219,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 
 			if len(test.expectedMissingFilesInBranch) > 0 {
 				for branch, expectedMissingFiles := range test.expectedMissingFilesInBranch {
-					resultDiff, err := verifyLockFileDiff(branch, expectedMissingFiles...)
+					resultDiff, err := verifyLockFileDiff(repoDir, branch, expectedMissingFiles...)
 					assert.NoError(t, err)
 					assert.Empty(t, resultDiff)
 				}
@@ -329,15 +319,14 @@ pr body
 			gitTestParams.Branches = []string{"master"}
 			repository, err := utils.BuildRepositoryFromEnv(xrayVersion, xscVersion, client, gitTestParams, &serverParams, utils.ScanRepository)
 			assert.NoError(t, err)
-			// We must set a non-nil config profile to avoid panic
-			repository.ConfigProfile = &emptyConfigProfile
+			configProfile := createTestConfigProfile(true, false)
+			repository.ConfigProfile = &configProfile
 
-			// Run
 			var cmd = ScanRepositoryCmd{dryRun: true, dryRunRepoPath: testDir}
+			defer func() { assert.NoError(t, os.Chdir(baseDir)) }()
 			err = cmd.Run(repository, client)
-			defer func() {
-				assert.NoError(t, os.Chdir(baseDir))
-			}()
+			// Restore CWD immediately so Windows releases the directory handle before the next subtest runs.
+			assert.NoError(t, os.Chdir(baseDir))
 			assert.NoError(t, err)
 		})
 	}
@@ -424,11 +413,12 @@ func TestPackageTypeFromScan(t *testing.T) {
 			for _, file := range files {
 				log.Info(file)
 			}
+			configProfile := createTestConfigProfile(false, false)
 			scanSetup := utils.ScanDetails{
 				XrayVersion:   xrayVersion,
 				XscVersion:    xscVersion,
 				ServerDetails: &frogbotParams.Server,
-				ConfigProfile: &emptyConfigProfile,
+				ConfigProfile: &configProfile,
 			}
 			testScan.scanDetails = &scanSetup
 			scanResponse, err := testScan.scan()
@@ -480,19 +470,58 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{},
-					JasResults: &results.JasScansResults{},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
+					},
+				}},
+			},
+			// The highest severity CVE (CVE-2024-57965, critical, fix 1.7.8) is the first entry created.
+			// Subsequent CVEs update the fix version to the maximum: 1.12.0 (from CVE-2025-58754, high).
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"axios": {
+					SuggestedFixedVersion: "1.12.0",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2024-57965"},
+				},
+			},
+		},
+		{
+			name: "Multiple vulnerabilities on the same package select the maximum fix version",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_multiple_vulns_same_pkg.json"),
+					},
 				}},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
-				"vuln1": {
-					SuggestedFixedVersion: "1.9.1",
+				"shared-pkg": {
+					SuggestedFixedVersion: "1.8.0",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
+					Cves:                  []string{"CVE-2023-2222"},
 				},
-				"vuln2": {
-					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+			},
+		},
+		{
+			name: "Vulnerability with no fix version should not be added to the map",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1"},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_no_fix_version.json"),
+					},
+				}},
+			},
+			expectedMap: map[string]*utils.VulnerabilityDetails{
+				"has-fix-pkg": {
+					SuggestedFixedVersion: "2.5.0",
+					IsDirectDependency:    true,
+					Cves:                  []string{"CVE-2023-8888"},
 				},
 			},
 		},
@@ -500,22 +529,51 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 			name: "Scan results with violations and no vulnerabilities",
 			scanResults: &results.SecurityCommandResults{
 				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
+					ResultContext: results.ResultContext{Watches: []string{"w1"}}},
 				Targets: []*results.TargetResults{{
 					ScanTarget: results.ScanTarget{Target: "target1"},
-					ScaResults: &results.ScaScanResults{},
-					JasResults: &results.JasScansResults{},
 				}},
+				Violations: &violationutils.Violations{
+					Sca: []violationutils.CveViolation{
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol1@1.0.0",
+									PackageURL: "pkg:npm/viol1@1.0.0",
+								},
+								ImpactPaths: [][]formats.ComponentRow{
+									{{Id: "root"}, {Id: "pkg:npm/viol1@1.0.0"}},
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
+							FixedVersions:    &[]cyclonedx.AffectedVersions{{Version: "1.9.1"}},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol2@2.0.0",
+									PackageURL: "pkg:npm/viol2@2.0.0",
+								},
+								ImpactPaths: [][]formats.ComponentRow{
+									{{Id: "root"}, {Id: "pkg:npm/intermediate@1.0.0"}, {Id: "pkg:npm/viol2@2.0.0"}},
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
+							FixedVersions:    &[]cyclonedx.AffectedVersions{{Version: "2.4.1"}},
+						},
+					},
+				},
 			},
 			expectedMap: map[string]*utils.VulnerabilityDetails{
 				"viol1": {
 					SuggestedFixedVersion: "1.9.1",
 					IsDirectDependency:    true,
-					Cves:                  []string{"CVE-2023-1234", "CVE-2023-4321"},
+					Cves:                  []string{"CVE-2023-1234"},
 				},
 				"viol2": {
 					SuggestedFixedVersion: "2.4.1",
-					Cves:                  []string{"CVE-2022-1234", "CVE-2022-4321"},
+					IsDirectDependency:    false,
+					Cves:                  []string{"CVE-2022-1234"},
 				},
 			},
 		},
@@ -525,15 +583,29 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			fixVersionsMap, err := cfp.createVulnerabilitiesMap(false, testCase.scanResults)
 			assert.NoError(t, err)
+			assert.Len(t, fixVersionsMap, len(testCase.expectedMap))
 			for name, expectedVuln := range testCase.expectedMap {
 				actualVuln, exists := fixVersionsMap[name]
-				require.True(t, exists)
+				require.True(t, exists, "Expected package '%s' to be in the vulnerabilities map", name)
 				assert.Equal(t, expectedVuln.IsDirectDependency, actualVuln.IsDirectDependency)
 				assert.Equal(t, expectedVuln.SuggestedFixedVersion, actualVuln.SuggestedFixedVersion)
 				assert.ElementsMatch(t, expectedVuln.Cves, actualVuln.Cves)
 			}
 		})
 	}
+}
+
+func loadTestSBOM(t *testing.T, filename string) *cyclonedx.BOM {
+	f, err := os.Open(filepath.Join("..", "testdata", "scanrepository", "sbom", filename)) // #nosec G304
+	require.NoError(t, err)
+	defer func() {
+		err = f.Close()
+		require.NoError(t, err)
+	}()
+	bom := &cyclonedx.BOM{}
+	decoder := cyclonedx.NewBOMDecoder(f, cyclonedx.BOMFileFormatJSON)
+	require.NoError(t, decoder.Decode(bom))
+	return bom
 }
 
 // Verifies unsupported packages return specific error
@@ -695,20 +767,20 @@ func verifyTechnologyNaming(t *testing.T, scanResponse []services.ScanResponse, 
 }
 
 // Executing git diff to ensure that the intended changes to the dependent file have been made
-func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
+func verifyDependencyFileDiff(repoDir string, baseBranch string, fixBranch string, packageDescriptorPaths ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking differences in %s between branches %s and %s", packageDescriptorPaths, baseBranch, fixBranch))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	var args []string
+	var cmd *exec.Cmd
 	if coreutils.IsWindows() {
-		args = []string{"/c", "git", "diff", baseBranch, fixBranch}
-		args = append(args, packageDescriptorPaths...)
-		output, err = exec.Command("cmd", args...).Output()
+		args := append([]string{"/c", "git", "diff", baseBranch, fixBranch}, packageDescriptorPaths...)
+		cmd = exec.Command("cmd", args...)
 	} else {
-		args = []string{"diff", baseBranch, fixBranch}
-		args = append(args, packageDescriptorPaths...)
-		output, err = exec.Command("git", args...).Output()
+		args := append([]string{"diff", baseBranch, fixBranch}, packageDescriptorPaths...)
+		cmd = exec.Command("git", args...)
 	}
+	cmd.Dir = repoDir
+	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
 		err = errors.New("git error: " + string(exitError.Stderr))
@@ -716,20 +788,20 @@ func verifyDependencyFileDiff(baseBranch string, fixBranch string, packageDescri
 	return
 }
 
-func verifyLockFileDiff(branchToInspect string, lockFiles ...string) (output []byte, err error) {
+func verifyLockFileDiff(repoDir string, branchToInspect string, lockFiles ...string) (output []byte, err error) {
 	log.Debug(fmt.Sprintf("Checking lock files differences in %s between branches 'master' and '%s'", lockFiles, branchToInspect))
 	// Suppress condition always false warning
 	//goland:noinspection ALL
-	var args []string
+	var cmd *exec.Cmd
 	if coreutils.IsWindows() {
-		args = []string{"/c", "git", "ls-tree", branchToInspect, "--"}
-		args = append(args, lockFiles...)
-		output, err = exec.Command("cmd", args...).Output()
+		args := append([]string{"/c", "git", "ls-tree", branchToInspect, "--"}, lockFiles...)
+		cmd = exec.Command("cmd", args...)
 	} else {
-		args = []string{"ls-tree", branchToInspect, "--"}
-		args = append(args, lockFiles...)
-		output, err = exec.Command("git", args...).Output()
+		args := append([]string{"ls-tree", branchToInspect, "--"}, lockFiles...)
+		cmd = exec.Command("git", args...)
 	}
+	cmd.Dir = repoDir
+	output, err = cmd.Output()
 	var exitError *exec.ExitError
 	if errors.As(err, &exitError) {
 		err = errors.New("git error: " + string(exitError.Stderr))
@@ -765,7 +837,8 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 			if r.RequestURI == fmt.Sprintf("/%s", projectName) {
 				file, err := os.ReadFile(fmt.Sprintf("%s.tar.gz", projectName))
 				assert.NoError(t, err)
-				_, err = w.Write(file)
+				w.Header().Set("Content-Type", "application/octet-stream")
+				_, err = io.Copy(w, bytes.NewReader(file))
 				assert.NoError(t, err)
 				return
 			}
@@ -806,5 +879,28 @@ func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{
 				return
 			}
 		}
+	}
+}
+
+func createTestConfigProfile(aggregateFixes, failUponAnyScannerError bool) services2.ConfigProfile {
+	return services2.ConfigProfile{
+		ProfileName: "test-profile",
+		FrogbotConfig: services2.FrogbotConfig{
+			CreateAutoFixPr: true,
+			AggregateFixes:  aggregateFixes,
+		},
+		GeneralConfig: services2.GeneralConfig{
+			FailUponAnyScannerError: failUponAnyScannerError,
+		},
+		Modules: []services2.Module{{
+			ModuleId:     0,
+			ModuleName:   "test-module",
+			PathFromRoot: ".",
+			ScanConfig: services2.ScanConfig{
+				ScaScannerConfig: services2.ScaScannerConfig{
+					EnableScaScan: true,
+				},
+			},
+		}},
 	}
 }

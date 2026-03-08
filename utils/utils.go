@@ -90,15 +90,11 @@ func (err *ErrNothingToCommit) Error() string {
 		"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes", err.PackageName)
 }
 
-// VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
 type VulnerabilityDetails struct {
 	formats.VulnerabilityOrViolationRow
-	// Suggested fix version
 	SuggestedFixedVersion string
-	// States whether the dependency is direct or transitive
-	IsDirectDependency bool
-	// Cves as a list of string
-	Cves []string
+	IsDirectDependency    bool
+	Cves                  []string
 }
 
 func NewVulnerabilityDetails(vulnerability formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {

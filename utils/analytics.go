@@ -10,7 +10,7 @@ import (
 )
 
 func CreateScanEvent(serviceDetails *config.ServerDetails, gitInfo *xscservices.XscGitInfoContext, scanType string) *xscservices.XscAnalyticsGeneralEvent {
-	event := xsc.CreateAnalyticsEvent(xscservices.FrogbotProduct, xscservices.FrogbotType, serviceDetails)
+	event := xsc.CreateAnalyticsEvent(xscservices.FrogbotProduct, xscservices.FrogbotType, serviceDetails, "")
 	event.ProductVersion = FrogbotVersion
 	event.FrogbotScanType = scanType
 	event.FrogbotCiProvider = resolveCi()

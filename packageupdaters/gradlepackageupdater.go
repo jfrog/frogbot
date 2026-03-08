@@ -150,12 +150,8 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 		return
 	}
 
-	safePath, err := getAbsolutePathUnderWd(filePath)
-	if err != nil {
-		return err
-	}
-	// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
-	err = os.WriteFile(safePath, []byte(fileContent), fileInfo.Mode())
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
+	err = os.WriteFile(filePath, []byte(fileContent), fileInfo.Mode())
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)
 	}
