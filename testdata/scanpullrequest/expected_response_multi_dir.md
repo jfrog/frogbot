@@ -25,7 +25,7 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Dependency Path                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | ----------------------------------- |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2026-27904 | Not Covered | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
@@ -38,7 +38,7 @@
 ### Vulnerability Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Not Covered |
+| **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
 | **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
 
