@@ -242,6 +242,11 @@ func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Reposit
 		if e := sr.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
 			err = errors.Join(err, sr.handleUpdatePackageErrors(e))
 		}
+		// Checkout back to the base branch after each fix so the next fix branch is created
+		// from the original descriptor state and not from the previous fix branch.
+		if checkoutErr := sr.gitManager.Checkout(sr.scanDetails.BaseBranch()); checkoutErr != nil {
+			return errors.Join(err, checkoutErr)
+		}
 	}
 	return
 }
