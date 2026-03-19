@@ -99,6 +99,7 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 		expectedPackagesInBranch       map[string][]string
 		expectedVersionUpdatesInBranch map[string][]string
 		expectedMissingFilesInBranch   map[string][]string
+		unexpectedPackagesInBranch     map[string][]string
 		packageDescriptorPaths         []string
 		aggregateFixes                 bool
 		failUponAnyScannerError        bool
@@ -145,6 +146,25 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 			packageDescriptorPaths:         []string{"package.json"},
 			aggregateFixes:                 false,
 			failUponAnyScannerError:        true,
+		},
+		{
+			// Verifies that each fix branch is based on the original descriptor and not on a previously created fix branch.
+			testName: "non-aggregate-multi-vuln",
+			expectedPackagesInBranch: map[string][]string{
+				"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"minimist"},
+				"frogbot-mpath-d1d2c3ff3e591c4cf9a8a4968ada05d7":    {"mpath"},
+			},
+			expectedVersionUpdatesInBranch: map[string][]string{
+				"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"1.2.6"},
+				"frogbot-mpath-d1d2c3ff3e591c4cf9a8a4968ada05d7":    {"0.8.4"},
+			},
+			unexpectedPackagesInBranch: map[string][]string{
+				"frogbot-minimist-258ad6a538b5ba800f18ae4f6d660302": {"mpath"},
+				"frogbot-mpath-d1d2c3ff3e591c4cf9a8a4968ada05d7":    {"minimist"},
+			},
+			packageDescriptorPaths:  []string{"package.json"},
+			aggregateFixes:          false,
+			failUponAnyScannerError: true,
 		},
 		{
 			// This testcase checks the partial results feature. It simulates a failure in the dependency tree construction in the test's project inner module
@@ -222,6 +242,16 @@ func TestScanRepositoryCmd_Run(t *testing.T) {
 					resultDiff, err := verifyLockFileDiff(repoDir, branch, expectedMissingFiles...)
 					assert.NoError(t, err)
 					assert.Empty(t, resultDiff)
+				}
+			}
+
+			for branch, unexpectedPkgs := range test.unexpectedPackagesInBranch {
+				resultDiff, err := verifyDependencyFileDiff(repoDir, "master", branch, test.packageDescriptorPaths...)
+				assert.NoError(t, err)
+				// Only inspect added/removed lines — context lines legitimately contain neighbour package names.
+				changedLines := extractChangedLinesFromDiff(string(resultDiff))
+				for _, pkg := range unexpectedPkgs {
+					assert.NotContains(t, changedLines, pkg, "branch %s should not contain changes for package %s", branch, pkg)
 				}
 			}
 		})
@@ -807,6 +837,23 @@ func verifyLockFileDiff(repoDir string, branchToInspect string, lockFiles ...str
 		err = errors.New("git error: " + string(exitError.Stderr))
 	}
 	return
+}
+
+// extractChangedLinesFromDiff returns only the added (+) and removed (-) lines from a unified diff,
+// excluding the file header lines (--- / +++). This is used to assert on actual changes without
+// false positives from unchanged context lines that git diff includes for readability.
+func extractChangedLinesFromDiff(diff string) string {
+	var changed strings.Builder
+	for _, line := range strings.Split(diff, "\n") {
+		if len(line) == 0 {
+			continue
+		}
+		if (line[0] == '+' || line[0] == '-') && !strings.HasPrefix(line, "+++") && !strings.HasPrefix(line, "---") {
+			changed.WriteString(line)
+			changed.WriteString("\n")
+		}
+	}
+	return changed.String()
 }
 
 func createScanRepoGitHubHandler(t *testing.T, port *string, response interface{}, projectNames ...string) http.HandlerFunc {
