@@ -542,9 +542,9 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []
 		return "", err
 	}
 	if branchFormat != AggregatedBranchNameTemplate {
-		return formatStringWithPlaceHolders(branchFormat, "", "", hash, "", false), nil // custom: no suffix
+		return formatStringWithPlaceHolders(branchFormat, "", "", hash, "", false), nil
 	} else {
-		return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil // default: append base branch
+		return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
 	}
 }
 
