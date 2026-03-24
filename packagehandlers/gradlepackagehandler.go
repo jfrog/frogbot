@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -144,7 +145,8 @@ func getVulnerabilityGroupAndName(impactedDependencyName string) (depGroup strin
 
 // Writes the updated content of the descriptor's file into the file
 func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
-	fileInfo, err := os.Stat(filePath)
+	cleanPath := filepath.Clean(filePath)
+	fileInfo, err := os.Stat(cleanPath)
 	if err != nil {
 		err = fmt.Errorf("couldn't get file info for file '%s': %s", filePath, err.Error())
 		return

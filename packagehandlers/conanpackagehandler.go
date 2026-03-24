@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -55,7 +56,8 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 }
 
 func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
-	data, err := os.ReadFile(conanFilePath)
+	cleanPath := filepath.Clean(conanFilePath)
+	data, err := os.ReadFile(cleanPath)
 	if err != nil {
 		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s", conanFilePath, err.Error())
 	}

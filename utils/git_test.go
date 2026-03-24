@@ -160,15 +160,21 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 			gitManager: GitManager{},
 		},
 		{
-			expected:   "[feature]-e4e1fa318f12b3bed84b13ae5c293108-main",
+			expected:   "[feature]-e4e1fa318f12b3bed84b13ae5c293108",
 			baseBranch: "main",
-			desc:       "Custom template hash only",
+			desc:       "Custom template hash only - no base branch suffix",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		}, {
-			expected:   "[feature]-697bdb58caaed95527fc709da59ca47f-master",
+			expected:   "[feature]-697bdb58caaed95527fc709da59ca47f",
 			baseBranch: "master",
-			desc:       "Custom template hash only",
+			desc:       "Custom template hash only - no base branch suffix",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
+		},
+		{
+			expected:   "bugfix/FRGBT-000_e4e1fa318f12b3bed84b13ae5c293108-",
+			baseBranch: "main",
+			desc:       "Custom template with IMPACTED_PACKAGE empty (aggregated) - no forced suffix",
+			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "bugfix/FRGBT-000_{BRANCH_NAME_HASH}-{IMPACTED_PACKAGE}"}},
 		},
 	}
 	for _, test := range testCases {
