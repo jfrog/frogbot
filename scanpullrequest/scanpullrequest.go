@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -28,6 +29,7 @@ const (
 		"Note that even if failOnSecurityIssues/" + utils.FailOnSecurityIssuesEnv + " are set to false, but a security violation with 'fail-pull-request' rule is found, Frogbot scan will fail as well"
 	noGitHubEnvErr                       = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
 	noGitHubEnvReviewersErr              = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvInWorkflowErr             = "frogbot did not scan this PR, because the workflow file does not set 'environment: frogbot'. Please refer to the Frogbot documentation for instructions on how to configure the Environment"
 	analyticsScanPrScanType              = "PR"
 	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
@@ -87,6 +89,57 @@ func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *util
 	}
 	if len(repoEnvInfo.Reviewers) == 0 {
 		return errors.New(noGitHubEnvReviewersErr)
+	}
+
+	return verifyWorkflowContainsFrogbotEnvironment(client)
+}
+
+// Fetches the workflow file that triggered Frogbot
+// (via GITHUB_WORKFLOW_REF) and verifies it contains 'environment: frogbot'.
+func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error {
+	workflowRef := os.Getenv(utils.GitHubWorkflowRefEnv)
+	if workflowRef == "" {
+		return nil
+	}
+
+	// GITHUB_WORKFLOW_REF format: {owner}/{repo}/{path}@{ref}
+	// e.g. eranturgeman/jfrog-security-test-app/.github/workflows/frogbot-scan-pull-request.yml@refs/heads/main
+	// Note: the owner/repo here is the workflow's repo, which may differ from the scanned repo.
+	atIdx := strings.LastIndex(workflowRef, "@")
+	if atIdx == -1 {
+		return nil
+	}
+	pathPart := workflowRef[:atIdx]
+	ref := workflowRef[atIdx+1:]
+
+	// Parse owner, repo, and file path from "{owner}/{repo}/{path}"
+	parts := strings.SplitN(pathPart, "/", 3)
+	if len(parts) < 3 {
+		return nil
+	}
+	owner, repo, filePath := parts[0], parts[1], parts[2]
+
+	// Extract branch name from ref (e.g. "refs/heads/main" → "main")
+	branch := ref
+	if b, ok := strings.CutPrefix(ref, "refs/heads/"); ok {
+		branch = b
+	} else if b, ok := strings.CutPrefix(ref, "refs/tags/"); ok {
+		branch = b
+	}
+
+	fileContent, _, err := client.DownloadFileFromRepo(context.Background(), owner, repo, branch, filePath)
+	if err != nil {
+		// Can't fetch the file — skip this check rather than blocking the scan
+		log.Warn(fmt.Sprintf("Failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error()))
+		return nil
+	}
+
+	matched, err := regexp.MatchString(`\n\s*environment\s*:\s*frogbot`, string(fileContent))
+	if err != nil {
+		return err
+	}
+	if !matched {
+		return errors.New(noGitHubEnvInWorkflowErr)
 	}
 
 	return nil

@@ -15,7 +15,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/commands/audit"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
@@ -152,41 +151,6 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-// Python techs are not supported in Frogbot and are blocked from scanning.
-var pythonTechnologies = map[string]bool{
-	techutils.Pip.String():    true,
-	techutils.Pipenv.String(): true,
-	techutils.Poetry.String(): true,
-}
-
-// Returns all technologies supported by Frogbot,
-// excluding Python technologies (Pip, Pipenv, Poetry).
-func frogbotSupportedTechnologies() []string {
-	supported := []string{}
-	for _, tech := range techutils.AllTechnologiesStrings {
-		if !pythonTechnologies[tech] {
-			supported = append(supported, tech)
-		}
-	}
-	return supported
-}
-
-// Removes technologies not supported by Frogbot from the given list.
-// If the result is empty (no install command given, or it implied only Python techs),
-// falls back to the full supported list so auto-detection still runs without Python.
-func filterUnsupportedTechnologies(techs []string) []string {
-	filtered := []string{}
-	for _, tech := range techs {
-		if !pythonTechnologies[tech] {
-			filtered = append(filtered, tech)
-		}
-	}
-	if len(filtered) == 0 {
-		return frogbotSupportedTechnologies()
-	}
-	return filtered
-}
-
 func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
@@ -199,7 +163,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetServerDetails(sc.ServerDetails).
 		SetInstallCommandName(sc.InstallCommandName).
 		SetInstallCommandArgs(sc.InstallCommandArgs).
-		SetTechnologies(filterUnsupportedTechnologies(sc.GetTechFromInstallCmdIfExists())).
+		SetTechnologies(sc.GetTechFromInstallCmdIfExists()).
 		SetSkipAutoInstall(sc.skipAutoInstall).
 		SetAllowPartialResults(sc.allowPartialResults).
 		SetExclusions(sc.PathExclusions).
