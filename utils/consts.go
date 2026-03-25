@@ -103,6 +103,8 @@ const (
 
 	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
 	GitHubActionsEnv = "GITHUB_ACTIONS"
+	// The 'GITHUB_WORKFLOW_REF' environment variable contains the ref path to the workflow file, e.g. owner/repo/.github/workflows/frogbot.yml@refs/heads/main
+	GitHubWorkflowRefEnv = "GITHUB_WORKFLOW_REF"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
