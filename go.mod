@@ -10,10 +10,10 @@ require (
 	github.com/jfrog/build-info-go v1.13.1-0.20260313042712-238e6dca3dce
 	github.com/jfrog/froggit-go v1.21.1
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260318085819-0e384f625afc
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260225195817-bc599cec3973
-	github.com/jfrog/jfrog-cli-security v1.26.5
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260310073256-b6a77f9c75e5
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260324142725-abee4f72970c
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260324124720-40db37833f61
+	github.com/jfrog/jfrog-cli-security v1.26.6
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260324122134-fd869d582859
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
