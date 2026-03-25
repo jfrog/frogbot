@@ -54,6 +54,7 @@ class Utils {
                 major = '2';
             }
             else {
+                Utils.validateMinimumVersion(version);
                 if (this.loadFromCache(version)) {
                     // Download is not needed
                     return;
@@ -204,6 +205,25 @@ class Utils {
     static isWindows() {
         return (0, os_1.platform)().startsWith('win');
     }
+    /**
+     * Validates that the requested Frogbot version meets the minimum required version.
+     * Throws an error if the version is below the minimum.
+     * @param version - The requested Frogbot version string (e.g. '2.32.0')
+     */
+    static validateMinimumVersion(version) {
+        const minParts = Utils.MIN_FROGBOT_VERSION.split('.').map(Number);
+        const versionParts = version.split('.').map(Number);
+        for (let i = 0; i < minParts.length; i++) {
+            const v = versionParts[i] !== null && versionParts[i] !== void 0 ? versionParts[i] : 0;
+            if (v > minParts[i]) {
+                return;
+            }
+            if (v < minParts[i]) {
+                throw new Error(`Frogbot version ${version} is below the minimum required version ${Utils.MIN_FROGBOT_VERSION}. ` +
+                    `Please use version ${Utils.MIN_FROGBOT_VERSION} or above.`);
+            }
+        }
+    }
     static getJfrogPlatformUrl() {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -283,6 +303,8 @@ Utils.LATEST_RELEASE_VERSION = '[RELEASE]';
 Utils.LATEST_CLI_VERSION_ARG = 'latest';
 Utils.VERSION_ARG = 'version';
 Utils.TOOL_NAME = 'frogbot';
+// Minimum Frogbot version allowed to run - enforced for security
+Utils.MIN_FROGBOT_VERSION = '2.32.0';
 // OpenID Connect audience input
 Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
 // OpenID Connect provider_name input

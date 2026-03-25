@@ -14,6 +14,8 @@ export class Utils {
     private static readonly LATEST_CLI_VERSION_ARG: string = 'latest';
     private static readonly VERSION_ARG: string = 'version';
     private static readonly TOOL_NAME: string = 'frogbot';
+    // Minimum Frogbot version allowed to run - enforced for security
+    public static readonly MIN_FROGBOT_VERSION: string = '2.32.0';
     // OpenID Connect audience input
     private static readonly OIDC_AUDIENCE_ARG: string = 'oidc-audience';
     // OpenID Connect provider_name input
@@ -27,6 +29,7 @@ export class Utils {
             version = Utils.LATEST_RELEASE_VERSION;
             major = '2';
         } else {
+            Utils.validateMinimumVersion(version);
             if (this.loadFromCache(version)) {
                 // Download is not needed
                 return;
@@ -175,6 +178,28 @@ export class Utils {
 
     public static isWindows() {
         return platform().startsWith('win');
+    }
+
+    /**
+     * Validates that the requested Frogbot version meets the minimum required version.
+     * Throws an error if the version is below the minimum.
+     * @param version - The requested Frogbot version string (e.g. '2.32.0')
+     */
+    public static validateMinimumVersion(version: string) {
+        const minParts: number[] = Utils.MIN_FROGBOT_VERSION.split('.').map(Number);
+        const versionParts: number[] = version.split('.').map(Number);
+        for (let i: number = 0; i < minParts.length; i++) {
+            const v: number = versionParts[i] ?? 0;
+            if (v > minParts[i]) {
+                return;
+            }
+            if (v < minParts[i]) {
+                throw new Error(
+                    `Frogbot version ${version} is below the minimum required version ${Utils.MIN_FROGBOT_VERSION}. ` +
+                        `Please use version ${Utils.MIN_FROGBOT_VERSION} or above.`,
+                );
+            }
+        }
     }
     public static async getJfrogPlatformUrl(): Promise<string> {
         let jfrogUrl: string = process.env.JF_URL ?? '';

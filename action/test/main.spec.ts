@@ -131,6 +131,30 @@ describe('Frogbot Action Tests', () => {
         });
     });
 
+    describe('Minimum version validation', () => {
+        it('Should pass for version equal to minimum', () => {
+            expect(() => Utils.validateMinimumVersion('2.32.0')).not.toThrow();
+        });
+
+        it('Should pass for version above minimum', () => {
+            expect(() => Utils.validateMinimumVersion('2.33.0')).not.toThrow();
+            expect(() => Utils.validateMinimumVersion('3.0.0')).not.toThrow();
+            expect(() => Utils.validateMinimumVersion('2.32.1')).not.toThrow();
+        });
+
+        it('Should throw for version below minimum', () => {
+            expect(() => Utils.validateMinimumVersion('2.31.9')).toThrow(
+                'Frogbot version 2.31.9 is below the minimum required version 2.32.0',
+            );
+            expect(() => Utils.validateMinimumVersion('2.0.0')).toThrow(
+                'Frogbot version 2.0.0 is below the minimum required version 2.32.0',
+            );
+            expect(() => Utils.validateMinimumVersion('1.99.99')).toThrow(
+                'Frogbot version 1.99.99 is below the minimum required version 2.32.0',
+            );
+        });
+    });
+
     it('Repository env tests', () => {
         process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
         process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
