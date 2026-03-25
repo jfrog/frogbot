@@ -267,10 +267,37 @@ func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 	client.EXPECT().GetRepositoryInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName).Return(vcsclient.RepositoryInfo{}, nil)
 	client.EXPECT().GetRepositoryEnvironmentInfo(context.Background(), gitParams.RepoOwner, gitParams.RepoName, environment).Return(vcsclient.RepositoryEnvironmentInfo{Reviewers: []string{"froggy"}}, nil)
 	assert.NoError(t, os.Setenv(utils.GitHubActionsEnv, "true"))
+	// Unset GITHUB_WORKFLOW_REF to avoid triggering the workflow file check
+	assert.NoError(t, os.Unsetenv(utils.GitHubWorkflowRefEnv))
 
 	// Run verifyGitHubFrogbotEnvironment
 	err := verifyGitHubFrogbotEnvironment(client, gitParams)
 	assert.NoError(t, err)
+}
+
+func TestVerifyWorkflowContainsFrogbotEnvironment(t *testing.T) {
+	workflowRef := "jfrog/frogbot/.github/workflows/frogbot.yml@refs/heads/main"
+	workflowContent := []byte("jobs:\n  scan:\n    environment: frogbot\n")
+
+	t.Run("environment field present", func(t *testing.T) {
+		client := CreateMockVcsClient(t)
+		client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").Return(workflowContent, 200, nil)
+		assert.NoError(t, os.Setenv(utils.GitHubWorkflowRefEnv, workflowRef))
+		assert.NoError(t, verifyWorkflowContainsFrogbotEnvironment(client))
+	})
+
+	t.Run("environment field missing", func(t *testing.T) {
+		client := CreateMockVcsClient(t)
+		client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").Return([]byte("jobs:\n  scan:\n    runs-on: ubuntu-latest\n"), 200, nil)
+		assert.NoError(t, os.Setenv(utils.GitHubWorkflowRefEnv, workflowRef))
+		assert.ErrorContains(t, verifyWorkflowContainsFrogbotEnvironment(client), noGitHubEnvInWorkflowErr)
+	})
+
+	t.Run("workflow ref not set", func(t *testing.T) {
+		client := CreateMockVcsClient(t)
+		assert.NoError(t, os.Unsetenv(utils.GitHubWorkflowRefEnv))
+		assert.NoError(t, verifyWorkflowContainsFrogbotEnvironment(client))
+	})
 }
 
 func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
