@@ -40,7 +40,7 @@
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.4<br></details> |
 
 ### Summary
 
@@ -243,7 +243,7 @@ Depth 3 (`*(*(*(a|b)))`, 12 bytes) stalls the Node.js event loop for 7+ seconds 
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.3<br></details> |
 
 ### Summary
 
@@ -387,7 +387,7 @@ Any application where an attacker can influence the glob pattern passed to `mini
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.3<br></details> |
 
 ### Summary
 `minimatch` is vulnerable to Regular Expression Denial of Service (ReDoS) when a glob pattern contains many consecutive `*` wildcards followed by a literal character that doesn't appear in the test string. Each `*` compiles to a separate `[^/]*?` regex group, and when the match fails, V8's regex engine backtracks exponentially across all possible splits.
@@ -424,7 +424,7 @@ Thanks to @ljharb for back-porting the fix to legacy versions of minimatch.<br><
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.0.7<br></details> |
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
