@@ -1,5 +1,6 @@
 name: "OIDC Test"
 on:
+  push:
   pull_request_target:
     types: [ labeled ]
 permissions:
@@ -10,6 +11,7 @@ permissions:
 jobs:
   oidc-test:
     environment: frogbot
+    if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     name: OIDC-Access integration test (${{ matrix.os }})
     strategy:
       fail-fast: false
