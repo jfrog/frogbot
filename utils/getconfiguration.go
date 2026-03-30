@@ -68,12 +68,13 @@ func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner          string
-	RepoName           string
-	Branches           []string
-	PullRequestDetails vcsclient.PullRequestInfo
-	RepositoryCloneUrl string
-	UploadSbomToVcs    *bool
+	RepoOwner                  string
+	RepoName                   string
+	Branches                   []string
+	PullRequestDetails         vcsclient.PullRequestInfo
+	RepositoryCloneUrl         string
+	UploadSbomToVcs            *bool
+	GitlabScanResultsOutputDir string
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -95,6 +96,7 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.VcsInfo = gitParamsFromEnv.VcsInfo
 	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
 	g.RepoName = gitParamsFromEnv.RepoName
+	g.GitlabScanResultsOutputDir = gitParamsFromEnv.GitlabScanResultsOutputDir
 
 	if commandName == ScanPullRequest {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
@@ -424,6 +426,8 @@ func extractGitParamsFromEnvs() (*Git, error) {
 		}
 		gitEnvParams.PullRequestDetails = vcsclient.PullRequestInfo{ID: int64(convertedPrId)}
 	}
+
+	gitEnvParams.GitlabScanResultsOutputDir = getTrimmedEnv(GitlabScanResultsOutputDirEnv)
 
 	return gitEnvParams, nil
 }

@@ -42,10 +42,11 @@ const (
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	GitTokenEnv         = "JF_GIT_TOKEN"
-	GitBaseBranchEnv    = "JF_GIT_BASE_BRANCH"
-	GitPullRequestIDEnv = "JF_GIT_PULL_REQUEST_ID"
-	GitApiEndpointEnv   = "JF_GIT_API_ENDPOINT"
+	GitTokenEnv                   = "JF_GIT_TOKEN"
+	GitBaseBranchEnv              = "JF_GIT_BASE_BRANCH"
+	GitPullRequestIDEnv           = "JF_GIT_PULL_REQUEST_ID"
+	GitApiEndpointEnv             = "JF_GIT_API_ENDPOINT"
+	GitlabScanResultsOutputDirEnv = "JF_SCAN_RESULTS_OUTPUT_DIR"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
