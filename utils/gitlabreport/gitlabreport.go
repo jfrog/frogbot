@@ -225,7 +225,7 @@ func deterministicVulnID(pkg, version, issueId string, cves []formats.CveRow) st
 	hexStr := hex.EncodeToString(sum)
 	// Format as UUID-like 8-4-4-4-12 for compatibility
 	if len(hexStr) < 32 {
-		hexStr = hexStr + strings.Repeat("0", 32-len(hexStr))
+		hexStr += strings.Repeat("0", 32-len(hexStr))
 	}
 	return hexStr[0:8] + "-" + hexStr[8:12] + "-" + hexStr[12:16] + "-" + hexStr[16:20] + "-" + hexStr[20:32]
 }
