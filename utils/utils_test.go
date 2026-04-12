@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -18,6 +18,9 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/jfrog/frogbot/v2/utils/gitlabreport"
+	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
 const (
@@ -559,4 +562,76 @@ func createTestSecurityCommandResults() *results.SecurityCommandResults {
 	}
 
 	return scanResults
+}
+
+func TestWriteScanResultsToDir(t *testing.T) {
+	start := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+
+	tests := []struct {
+		name        string
+		outputDir   func(t *testing.T) string
+		scanResults *results.SecurityCommandResults
+		wantErr     bool
+		errContains string
+		validate    func(t *testing.T, outputDir string)
+	}{
+		{
+			name: "empty output dir",
+			outputDir: func(t *testing.T) string {
+				return ""
+			},
+			scanResults: createTestSecurityCommandResults(),
+			wantErr:     true,
+			errContains: "output directory is required",
+		},
+		{
+			name: "nil scan results",
+			outputDir: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			scanResults: nil,
+			wantErr:     true,
+			errContains: "scan results are required",
+		},
+		{
+			name: "writes CycloneDX and GitLab dependency-scanning report",
+			outputDir: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			scanResults: createTestSecurityCommandResults(),
+			wantErr:     false,
+			validate: func(t *testing.T, outputDir string) {
+				cdxPath := filepath.Join(outputDir, cyclonedxOutputFilename)
+				_, err := os.Stat(cdxPath)
+				assert.NoError(t, err)
+
+				gitlabPath := filepath.Join(outputDir, "gl-dependency-scanning-report.json")
+				data, err := os.ReadFile(gitlabPath)
+				assert.NoError(t, err)
+
+				var report gitlabreport.DependencyScanningReport
+				assert.NoError(t, json.Unmarshal(data, &report))
+				assert.Equal(t, "15.2.4", report.Version)
+				assert.Equal(t, "success", report.Scan.Status)
+				assert.Equal(t, "dependency_scanning", report.Scan.Type)
+				assert.Equal(t, FrogbotVersion, report.Scan.Analyzer.Version)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := tt.outputDir(t)
+			err := WriteScanResultsToDir(dir, tt.scanResults, start)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			assert.NoError(t, err)
+			if tt.validate != nil {
+				tt.validate(t, dir)
+			}
+		})
+	}
 }
