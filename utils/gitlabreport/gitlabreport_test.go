@@ -10,6 +10,7 @@ import (
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
@@ -119,11 +120,32 @@ func TestVulnerabilityToReport(t *testing.T) {
 				Technology:    techutils.Npm,
 				FixedVersions: []string{"4.17.21"},
 			},
-			wantName:        "CVE-2021-1234",
+			wantName:        "CVE-2021-1234 (Not Covered)",
 			wantSeverity:    "High",
 			wantManifest:    "package-lock.json",
 			wantSolution:    "Upgrade lodash to version 4.17.21 or later.",
 			identifierTypes: []string{"cve", "xray"},
+		},
+		{
+			name: "contextual analysis in description",
+			row: formats.VulnerabilityOrViolationRow{
+				IssueId: "XRAY-99",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					ImpactedDependencyName:    "pkg",
+					ImpactedDependencyVersion: "1.0.0",
+					SeverityDetails:           formats.SeverityDetails{Severity: "low"},
+				},
+				Cves: []formats.CveRow{
+					{Id: "CVE-2023-1", Applicability: &formats.Applicability{Status: jasutils.Applicable.String()}},
+					{Id: "CVE-2023-2", Applicability: &formats.Applicability{Status: jasutils.NotApplicable.String()}},
+				},
+				Summary:    "Details here",
+				Technology: techutils.Npm,
+			},
+			wantName:        "CVE-2023-1 (Applicable)",
+			wantSeverity:    "Low",
+			wantManifest:    "package-lock.json",
+			identifierTypes: []string{"cve", "cve", "xray"},
 		},
 		{
 			name: "non-CVE issue id adds xray identifier",
@@ -136,7 +158,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 				},
 				Technology: techutils.Go,
 			},
-			wantName:        "XRAY-100",
+			wantName:        "XRAY-100 (Not Covered)",
 			wantSeverity:    "Low",
 			wantManifest:    "go.sum",
 			identifierTypes: []string{"xray"},
@@ -162,6 +184,12 @@ func TestVulnerabilityToReport(t *testing.T) {
 			assert.Equal(t, tt.wantName, got.Name)
 			assert.Equal(t, tt.wantSeverity, got.Severity)
 			assert.Equal(t, tt.wantManifest, got.Location.File)
+			if tt.name == "CVE name and link" {
+				assert.Equal(t, "CVE-2021-1234 (Not Covered).\n\nTest summary", got.Description)
+			}
+			if tt.name == "contextual analysis in description" {
+				assert.Equal(t, "CVE-2023-1 (Applicable). CVE-2023-2 (Not Applicable).\n\nDetails here", got.Description)
+			}
 			if tt.wantSolution != "" {
 				assert.Equal(t, tt.wantSolution, got.Solution)
 			}
@@ -220,6 +248,39 @@ func TestConvertToGitLabDependencyScanningReport(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "failure", report.Scan.Status)
 	})
+}
+
+func TestSortVulnerabilityRowsForGitLab(t *testing.T) {
+	rows := []formats.VulnerabilityOrViolationRow{
+		{
+			IssueId: "b-low-na",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName: "p1", ImpactedDependencyVersion: "1",
+				SeverityDetails: formats.SeverityDetails{Severity: "low"},
+			},
+			Cves: []formats.CveRow{{Id: "CVE-B", Applicability: &formats.Applicability{Status: jasutils.NotApplicable.String()}}},
+		},
+		{
+			IssueId: "a-high-app",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName: "p2", ImpactedDependencyVersion: "1",
+				SeverityDetails: formats.SeverityDetails{Severity: "high"},
+			},
+			Cves: []formats.CveRow{{Id: "CVE-A", Applicability: &formats.Applicability{Status: jasutils.Applicable.String()}}},
+		},
+		{
+			IssueId: "c-low-app",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				ImpactedDependencyName: "p3", ImpactedDependencyVersion: "1",
+				SeverityDetails: formats.SeverityDetails{Severity: "low"},
+			},
+			Cves: []formats.CveRow{{Id: "CVE-C", Applicability: &formats.Applicability{Status: jasutils.Applicable.String()}}},
+		},
+	}
+	sortVulnerabilityRowsForGitLab(rows)
+	assert.Equal(t, "a-high-app", rows[0].IssueId)
+	assert.Equal(t, "c-low-app", rows[1].IssueId)
+	assert.Equal(t, "b-low-na", rows[2].IssueId)
 }
 
 func TestWriteDependencyScanningReport(t *testing.T) {

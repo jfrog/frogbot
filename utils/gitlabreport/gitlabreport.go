@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -121,18 +123,22 @@ func ConvertToGitLabDependencyScanningReport(scanResults *results.SecurityComman
 	vulns = append(vulns, simpleJSON.Vulnerabilities...)
 	vulns = append(vulns, simpleJSON.SecurityViolations...)
 
-	reports := make([]VulnerabilityReport, 0, len(vulns))
+	unique := make([]formats.VulnerabilityOrViolationRow, 0, len(vulns))
 	seen := make(map[string]struct{})
-
 	for i := range vulns {
-		v := &vulns[i]
+		v := vulns[i]
 		key := v.ImpactedDependencyName + "|" + v.ImpactedDependencyVersion + "|" + v.IssueId
 		if _, ok := seen[key]; ok {
 			continue
 		}
 		seen[key] = struct{}{}
+		unique = append(unique, v)
+	}
+	sortVulnerabilityRowsForGitLab(unique)
 
-		report := vulnerabilityToReport(v)
+	reports := make([]VulnerabilityReport, 0, len(unique))
+	for i := range unique {
+		report := vulnerabilityToReport(&unique[i])
 		reports = append(reports, report)
 	}
 
@@ -184,11 +190,11 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 		},
 	}
 	severity := normalizeSeverity(getSeverity(v))
-	name := v.IssueId
-	if len(v.Cves) > 0 {
-		name = v.Cves[0].Id
-	}
-	desc := getSummary(v)
+	// GitLab's vulnerability list "Description" column is built from the finding title (name) and
+	// manifest path — it does not show the JSON description body in that column. Include
+	// contextual analysis in name so it appears in the list; description still holds full text.
+	name := buildVulnerabilityNameWithContextualAnalysis(v)
+	desc := buildGitLabDescription(v)
 	solution := ""
 	if len(v.FixedVersions) > 0 {
 		solution = fmt.Sprintf("Upgrade %s to version %s or later.", v.ImpactedDependencyName, v.FixedVersions[0])
@@ -277,6 +283,131 @@ func getSummary(v *formats.VulnerabilityOrViolationRow) string {
 		return v.JfrogResearchInformation.Summary
 	}
 	return ""
+}
+
+// buildVulnerabilityNameWithContextualAnalysis sets the GitLab finding title to "CVE-ID (status)" using
+// aggregated contextual analysis for the row (same aggregation as Frogbot PR comments).
+func buildVulnerabilityNameWithContextualAnalysis(v *formats.VulnerabilityOrViolationRow) string {
+	base := v.IssueId
+	if len(v.Cves) > 0 && v.Cves[0].Id != "" {
+		base = v.Cves[0].Id
+	}
+	if base == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s (%s)", base, aggregatedContextualAnalysisDisplay(v))
+}
+
+// aggregatedContextualAnalysisDisplay returns a human-readable status; NotScanned maps to "Not Covered".
+func aggregatedContextualAnalysisDisplay(v *formats.VulnerabilityOrViolationRow) string {
+	st := rowFinalApplicabilityStatus(v)
+	if st == jasutils.NotScanned || st.String() == "" {
+		return jasutils.NotCovered.String()
+	}
+	return st.String()
+}
+
+// buildGitLabDescription prepends contextual analysis lines in the form "CVE-ID (status)." for each CVE,
+// then the vulnerability summary (when present).
+func buildGitLabDescription(v *formats.VulnerabilityOrViolationRow) string {
+	prefix := contextualAnalysisDescriptionPrefix(v)
+	summary := getSummary(v)
+	switch {
+	case prefix != "" && summary != "":
+		return prefix + "\n\n" + summary
+	case prefix != "":
+		return prefix
+	default:
+		return summary
+	}
+}
+
+// contextualAnalysisDescriptionPrefix builds "CVE-2024-1 (Applicable). CVE-2024-2 (Not Applicable)." per CVE row.
+// When a CVE has no applicability assessment, status is "Not Covered".
+func contextualAnalysisDescriptionPrefix(v *formats.VulnerabilityOrViolationRow) string {
+	var b strings.Builder
+	for _, cve := range v.Cves {
+		if cve.Id == "" {
+			continue
+		}
+		status := jasutils.NotCovered.String()
+		if cve.Applicability != nil && cve.Applicability.Status != "" {
+			status = cve.Applicability.Status
+		}
+		if b.Len() > 0 {
+			b.WriteString(" ")
+		}
+		b.WriteString(cve.Id)
+		b.WriteString(" (")
+		b.WriteString(status)
+		b.WriteString(").")
+	}
+	return b.String()
+}
+
+func sortVulnerabilityRowsForGitLab(vulns []formats.VulnerabilityOrViolationRow) {
+	sort.SliceStable(vulns, func(i, j int) bool {
+		si := normalizeSeverity(getSeverity(&vulns[i]))
+		sj := normalizeSeverity(getSeverity(&vulns[j]))
+		ri, rj := severitySortRank(si), severitySortRank(sj)
+		if ri != rj {
+			return ri < rj
+		}
+		ai := applicabilitySortRank(rowFinalApplicabilityStatus(&vulns[i]))
+		aj := applicabilitySortRank(rowFinalApplicabilityStatus(&vulns[j]))
+		if ai != aj {
+			return ai < aj
+		}
+		return vulns[i].IssueId < vulns[j].IssueId
+	})
+}
+
+func severitySortRank(normalized string) int {
+	switch normalized {
+	case "Critical":
+		return 0
+	case "High":
+		return 1
+	case "Medium":
+		return 2
+	case "Low":
+		return 3
+	case "Info":
+		return 4
+	default:
+		return 5 // Unknown
+	}
+}
+
+// rowFinalApplicabilityStatus aggregates per-CVE applicability like Frogbot PR comments.
+func rowFinalApplicabilityStatus(v *formats.VulnerabilityOrViolationRow) jasutils.ApplicabilityStatus {
+	var statuses []jasutils.ApplicabilityStatus
+	for _, cve := range v.Cves {
+		if cve.Applicability != nil && cve.Applicability.Status != "" {
+			statuses = append(statuses, jasutils.ConvertToApplicabilityStatus(cve.Applicability.Status))
+		}
+	}
+	return results.GetFinalApplicabilityStatus(len(statuses) > 0, statuses)
+}
+
+// applicabilitySortRank orders rows within the same severity: Applicable first, Not Applicable last.
+func applicabilitySortRank(status jasutils.ApplicabilityStatus) int {
+	switch status {
+	case jasutils.Applicable:
+		return 0
+	case jasutils.ApplicabilityUndetermined:
+		return 1
+	case jasutils.MissingContext:
+		return 2
+	case jasutils.NotCovered:
+		return 3
+	case jasutils.NotScanned:
+		return 4
+	case jasutils.NotApplicable:
+		return 5
+	default:
+		return 6
+	}
 }
 
 func normalizeSeverity(severity string) string {
