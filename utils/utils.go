@@ -255,6 +255,10 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadRepoSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	if scanResults == nil || !scanResults.HasInformation() {
+		log.Info("No information found in the scan results, skipping upload to GitHub Security Tab")
+		return nil
+	}
 	report, err := generateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
