@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 4 issues
+- Frogbot scanned for vulnerabilities and found 5 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>4 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 4 High<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>5 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 4 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -25,6 +25,7 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Dependency Path                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | ----------------------------------- |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-33750 | Not Covered | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
@@ -33,6 +34,43 @@
 ### 🔖 Details
 
 
+<details><summary><b>[ CVE-2026-33750 ] brace-expansion 1.1.12</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Covered |
+| **CVSS V3:** | 6.5 |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.13<br></details> |
+
+### Impact
+
+A brace pattern with a zero step value (e.g., `{1..2..0}`) causes the sequence generation loop to run indefinitely, making the process hang for seconds and allocate heaps of memory.
+
+The loop in question:
+
+https://github.com/juliangruber/brace-expansion/blob/daa71bcb4a30a2df9bcb7f7b8daaf2ab30e5794a/src/index.ts#L184
+
+`test()` is one of
+
+https://github.com/juliangruber/brace-expansion/blob/daa71bcb4a30a2df9bcb7f7b8daaf2ab30e5794a/src/index.ts#L107-L113
+
+The increment is computed as `Math.abs(0) = 0`, so the loop variable never advances. On a test machine, the process hangs for about 3.5 seconds and allocates roughly 1.9 GB of memory before throwing a `RangeError`. Setting max to any value has no effect because the limit is only checked at the output combination step, not during sequence generation.
+
+This affects any application that passes untrusted strings to expand(), or by error sets a step value of `0`. That includes tools built on minimatch/glob that resolve patterns from CLI arguments or config files. The input needed is just 10 bytes.
+
+### Patches
+
+
+Upgrade to versions
+- 5.0.5+
+
+A step increment of 0 is now sanitized to 1, which matches bash behavior.
+
+### Workarounds
+
+Sanitize strings passed to `expand()` to ensure a step value of `0` is not used.<br></details>
+
 <details><summary><b>[ CVE-2026-27904 ] minimatch 3.0.4</b></summary>
 
 ### Vulnerability Details
@@ -40,7 +78,7 @@
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.4<br></details> |
 
 ### Summary
 
@@ -243,7 +281,7 @@ Depth 3 (`*(*(*(a|b)))`, 12 bytes) stalls the Node.js event loop for 7+ seconds 
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.3<br></details> |
 
 ### Summary
 
@@ -387,7 +425,7 @@ Any application where an attacker can influence the glob pattern passed to `mini
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.3<br></details> |
 
 ### Summary
 `minimatch` is vulnerable to Regular Expression Denial of Service (ReDoS) when a glob pattern contains many consecutive `*` wildcards followed by a literal character that doesn't appear in the test string. Each `*` compiles to a separate `[^/]*?` regex group, and when the match fails, V8's regex engine backtracks exponentially across all possible splits.
@@ -424,7 +462,7 @@ Thanks to @ljharb for back-porting the fix to legacy versions of minimatch.<br><
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary><br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.0.7<br></details> |
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
