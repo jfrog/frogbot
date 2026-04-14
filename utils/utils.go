@@ -188,6 +188,10 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	if scanResults == nil || !scanResults.HasInformation() {
+		log.Info("No information found in the scan results, skipping upload to GitHub Security Tab")
+		return nil
+	}
 	report, err := GenerateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
@@ -204,7 +208,10 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	if scanResults == nil {
 		return fmt.Errorf("got an empty scan results")
 	}
-
+	if !scanResults.HasInformation() {
+		log.Info("No information found in the scan results, skipping upload to GitHub Dependency Graph")
+		return nil
+	}
 	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
 	if err != nil {
 		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
