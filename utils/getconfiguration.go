@@ -511,12 +511,5 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
-	// TODO: Remove this block once autofix logic is added
-	enableFix, err := getBoolEnv(EnableFrogbotV3FixEnv, false)
-	if !enableFix {
-		configProfile.FrogbotConfig.CreateAutoFixPr = false
-	} else {
-		log.Info("Currently, Frogbot V3 fixing process is disabled by default. To enable fixing functionality, please set the 'JF_ENABLE_FROGBOT_V3_FIX' environment variable to 'true'.")
-	}
 	return
 }

@@ -9,7 +9,6 @@ type ciProvider string
 
 const (
 	// TODO delete this env var and its usages when we re-enable fixes for all package manager
-	EnableFrogbotV3FixEnv = "JF_ENABLE_FROGBOT_V3_FIX"
 
 	// MaxConcurrentScanners represents the maximum number of threads for running JFrog CLI scanners concurrently
 	MaxConcurrentScanners = 5

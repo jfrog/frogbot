@@ -61,14 +61,14 @@ func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTe
 	return bbClient, testDetails
 }
 
-// TODO: Fix scan-pr tests once local directory solution is implemented
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	t.Skip("Pull Request Scan is not yes supported in V3. Skipping the test.")
+	t.Error("Pull Request Scan tests are not yet fixed. Skipping...")
 	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
+	t.Error("Fix BitbucketServer scan-repo test after creating new test user")
 	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }

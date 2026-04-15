@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"testing"
 
 	"github.com/jfrog/frogbot/v2/utils"
@@ -34,20 +33,13 @@ func githubTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 	return githubClient, testDetails
 }
 
-// TODO: Fix scan-pr tests once local directory solution is implemented
 func TestGitHub_ScanPullRequestIntegration(t *testing.T) {
-	t.Skip("Pull Request Scan is not yes supported in V3. Skipping the test.")
+	t.Error("Pull Request Scan tests are not yet fixed. Skipping...")
 	githubClient, testDetails := githubTestsInit(t)
 	runScanPullRequestCmd(t, githubClient, testDetails)
 }
 
-// TODO set a profile without JAS for the test
 func TestGitHub_ScanRepositoryIntegration(t *testing.T) {
-	assert.NoError(t, os.Setenv(utils.EnableFrogbotV3FixEnv, "true"))
-	defer func() {
-		assert.NoError(t, os.Unsetenv(utils.EnableFrogbotV3FixEnv))
-	}()
-
 	githubClient, testDetails := githubTestsInit(t)
 	runScanRepositoryCmd(t, githubClient, testDetails)
 }

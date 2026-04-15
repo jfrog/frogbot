@@ -34,14 +34,14 @@ func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDet
 	return azureClient, testDetails
 }
 
-// TODO: Fix scan-pr tests once local directory solution is implemented
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	t.Skip("Pull Request Scan is not yes supported in V3. Skipping the test.")
+	t.Error("Pull Request Scan tests are not yet fixed. Skipping...")
 	azureClient, testDetails := azureReposTestsInit(t)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
+	t.Error("Fix Azure scan-repo test after creating new test user")
 	azureClient, testDetails := azureReposTestsInit(t)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }
