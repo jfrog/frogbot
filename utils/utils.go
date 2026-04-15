@@ -90,15 +90,11 @@ func (err *ErrNothingToCommit) Error() string {
 		"Note: Frogbot currently cannot address certain vulnerabilities in some package managers, which may result in the absence of changes", err.PackageName)
 }
 
-// VulnerabilityDetails serves as a container for essential information regarding a vulnerability that is going to be addressed and resolved
 type VulnerabilityDetails struct {
 	formats.VulnerabilityOrViolationRow
-	// Suggested fix version
 	SuggestedFixedVersion string
-	// States whether the dependency is direct or transitive
-	IsDirectDependency bool
-	// Cves as a list of string
-	Cves []string
+	IsDirectDependency    bool
+	Cves                  []string
 }
 
 func NewVulnerabilityDetails(vulnerability formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
@@ -445,6 +441,7 @@ func isUrlAccessible(url string) bool {
 		return false
 	}
 	log.Debug(fmt.Sprintf("Sending HTTP %s request to: '%s'", req.Method, req.URL))
+	//#nosec G704 -- The URL is intentionally provided by the caller to check connectivity.
 	resp, err := client.GetClient().Do(req)
 	if errorutils.CheckError(err) != nil {
 		log.Debug(fmt.Sprintf("Can't check access to '%s', error while sending request:\n%s", url, err.Error()))

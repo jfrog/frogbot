@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
@@ -28,7 +31,9 @@ const (
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
 	SecretComment     ReviewCommentType = "Secrets"
+	SnippetComment    ReviewCommentType = "Snippet"
 
+	snippetVersionMarker   = "snippet"
 	commentRemovalErrorMsg = "An error occurred while attempting to remove older Frogbot pull request comments:"
 )
 
@@ -186,6 +191,9 @@ func getFrogbotComments(existingComments []vcsclient.CommentInfo) (reviewComment
 
 func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection) (commentsToAdd []ReviewComment) {
 	writer := repo.OutputWriter
+
+	commentsToAdd = append(commentsToAdd, generateSnippetReviewComment(issues, writer)...)
+
 	// CVE Applicable Evidence review comments
 	for _, applicableEvidences := range issues.GetApplicableEvidences() {
 		commentsToAdd = append(commentsToAdd, generateReviewComment(ApplicableComment, applicableEvidences.Evidence.Location, generateApplicabilityReviewContent(applicableEvidences, writer)))
@@ -206,6 +214,7 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 			commentsToAdd = append(commentsToAdd, generateReviewComment(SastComment, similarSastIssues.Location, generateSourceCodeReviewContent(SastComment, true, writer, similarSastIssues.issues...)))
 		}
 	}
+
 	// Secrets review comments
 	if !repo.FrogbotConfig.ShowSecretsAsPrComment {
 		return
@@ -218,7 +227,97 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 			commentsToAdd = append(commentsToAdd, generateReviewComment(SecretComment, similarSecretsIssues.Location, generateSourceCodeReviewContent(SecretComment, true, writer, similarSecretsIssues.issues...)))
 		}
 	}
+
 	return
+}
+
+func generateSnippetReviewComment(issues *issues.ScansIssuesCollection, writer outputwriter.OutputWriter) (commentsToAdd []ReviewComment) {
+	type key struct {
+		File string
+		Line int
+	}
+
+	locToOrigin := make(map[key]*datastructures.Set[string])
+	licensesBySnippet := make(map[key][]formats.LicenseViolationRow)
+	for _, lic := range issues.LicensesViolations {
+		if lic.ImpactedDependencyVersion != snippetVersionMarker {
+			continue
+		}
+		// Extract license violation information that are related to a snippet
+		for _, ipath := range lic.ImpactPaths {
+			if len(ipath) == 0 {
+				continue
+			}
+
+			// Leaf node of the impact path is the snippet location
+			snippet := ipath[len(ipath)-1]
+
+			// Map evidence to snippet location
+			for _, evidence := range snippet.Evidences {
+				k := key{File: evidence.File, Line: evidence.StartLine}
+				licensesBySnippet[k] = append(licensesBySnippet[k], lic)
+				if locToOrigin[k] == nil {
+					locToOrigin[k] = datastructures.MakeSet[string]()
+				}
+				locToOrigin[k].AddElements(evidence.ExternalReferences...)
+			}
+		}
+	}
+	// Sort snippet locations by file and line
+	sortedKeys := make([]key, 0, len(licensesBySnippet))
+	for k := range licensesBySnippet {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Slice(sortedKeys, func(i, j int) bool {
+		if sortedKeys[i].File != sortedKeys[j].File {
+			return sortedKeys[i].File < sortedKeys[j].File
+		}
+		return sortedKeys[i].Line < sortedKeys[j].Line
+	})
+	// Generate review comments for each snippet location
+	for _, loc := range sortedKeys {
+		licenses := licensesBySnippet[loc]
+		refSlice := locToOrigin[loc].ToSlice()
+		commentsToAdd = append(commentsToAdd, generateReviewComment(
+			SnippetComment,
+			formats.Location{
+				File:      loc.File,
+				StartLine: loc.Line,
+				EndLine:   loc.Line + snippetLineDeltaFromRef(refSlice),
+			},
+			generateComponentReviewContent(
+				SnippetComment,
+				true,
+				writer,
+				licenses,
+				refSlice),
+		))
+	}
+	return
+}
+
+var snippetLineRangeRe = regexp.MustCompile(`#L(\d+)-L(\d+)$`)
+
+const defaultSnippetLineDelta = 20
+
+// snippetLineDeltaFromRef parses a GitHub-style line range fragment (#L<start>-L<end>)
+// from the first matching external reference URL and returns end−start (the delta to
+// add to a start line to compute the end line).
+// Falls back to defaultSnippetLineDelta when no URL contains a parseable range.
+func snippetLineDeltaFromRef(refs []string) int {
+	for _, ref := range refs {
+		m := snippetLineRangeRe.FindStringSubmatch(ref)
+		if len(m) != 3 {
+			continue
+		}
+		start, err1 := strconv.Atoi(m[1])
+		end, err2 := strconv.Atoi(m[2])
+		if err1 != nil || err2 != nil || end <= start {
+			continue
+		}
+		return end - start
+	}
+	return defaultSnippetLineDelta
 }
 
 type jasCommentIssues struct {
@@ -280,6 +379,24 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bo
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
+	}
+	return
+}
+
+func generateComponentReviewContent(
+	commentType ReviewCommentType,
+	violation bool,
+	writer outputwriter.OutputWriter,
+	licenses []formats.LicenseViolationRow,
+	externalReferences []string,
+) (content string) {
+	if commentType == SnippetComment {
+		return outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+			violation,
+			writer,
+			licenses,
+			externalReferences,
+		), writer)
 	}
 	return
 }

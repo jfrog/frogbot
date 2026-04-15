@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -21,6 +20,7 @@ const (
 	npmPackageLockOnlyFlag = "--package-lock-only"
 	npmIgnoreScriptsFlag   = "--ignore-scripts"
 	npmNoAuditFlag         = "--no-audit"
+	npmLegacyPeerDepsFlag  = "--legacy-peer-deps"
 	npmNoFundFlag          = "--no-fund"
 
 	configIgnoreScriptsEnv = "NPM_CONFIG_IGNORE_SCRIPTS"
@@ -31,12 +31,15 @@ const (
 
 	npmDescriptorFileName       = "package.json"
 	npmLockFileName             = "package-lock.json"
+	nodeModulesDirName          = "node_modules"
 	dependenciesSection         = "dependencies"
 	devDependenciesSection      = "devDependencies"
 	optionalDependenciesSection = "optionalDependencies"
 	overridesSection            = "overrides"
 
 	npmInstallTimeout = 15 * time.Minute
+
+	npmEreresolveErrorPrefix = "ERESOLVE"
 )
 
 var npmAllowedSections = []string{dependenciesSection, devDependenciesSection, optionalDependenciesSection, overridesSection}
@@ -49,9 +52,7 @@ var npmInstallEnvVars = map[string]string{
 	ciEnv:                  "true",
 }
 
-type NpmPackageUpdater struct {
-	CommonPackageHandler
-}
+type NpmPackageUpdater struct{}
 
 func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
@@ -65,9 +66,9 @@ func (npm *NpmPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
-	descriptorPaths, err := npm.getDescriptorsToFixFromVulnerability(vulnDetails)
-	if err != nil {
-		return err
+	descriptorPaths := GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}, []string{nodeModulesDirName})
+	if len(descriptorPaths) == 0 {
+		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
 	}
 
 	originalWd, err := os.Getwd()
@@ -91,45 +92,24 @@ func (npm *NpmPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulnerab
 	return nil
 }
 
-// TODO: this function is a workaround that handles the bug where only lock files are provided in vulnerability locations, instead of the descriptor files.
-// TODO: After the bug is fixed we can simply call GetVulnerabilityLocations(vulnDetails, []string{npmDescriptorFileName}) and verify it exists (delete func & test)
-func (npm *NpmPackageUpdater) getDescriptorsToFixFromVulnerability(vulnDetails *utils.VulnerabilityDetails) ([]string, error) {
-	lockFilePaths := GetVulnerabilityLocations(vulnDetails, []string{npmLockFileName})
-	if len(lockFilePaths) == 0 {
-		return nil, fmt.Errorf("no location evidence was found for package %s", vulnDetails.ImpactedDependencyName)
-	}
-
-	var descriptorPaths []string
-	for _, lockFilePath := range lockFilePaths {
-		// We currently assume the descriptor resides in the same directory as the lock file, and this is the only supported use case
-		descriptorPath := filepath.Join(filepath.Dir(lockFilePath), npmDescriptorFileName)
-		fileExists, err := fileutils.IsFileExists(descriptorPath, false)
-		if err != nil {
-			return nil, err
-		}
-		if !fileExists {
-			return nil, fmt.Errorf("descriptor file '%s' not found for lock file '%s': %w", descriptorPath, lockFilePath, err)
-		}
-		descriptorPaths = append(descriptorPaths, descriptorPath)
-	}
-	return descriptorPaths, nil
-}
-
 func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string) error {
-	backupContent, err := npm.updateDescriptor(vulnDetails, descriptorPath)
+	backupContent, err := npm.updateDependency(vulnDetails, descriptorPath)
 	if err != nil {
 		return err
 	}
 
-	lockFileTracked, checkErr := utils.IsFileTrackedByGit(npmLockFileName, originalWd)
+	descriptorDir := filepath.Dir(descriptorPath)
+	// We assume lock file and manifest reside under the same directory
+	lockFilePath := filepath.Join(descriptorDir, npmLockFileName)
+
+	lockFileTracked, checkErr := utils.IsFileTrackedByGit(lockFilePath, originalWd)
 	if checkErr != nil {
 		log.Debug(fmt.Sprintf("Failed to check if lock file is tracked in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
 		lockFileTracked = true
 	}
 
 	if !lockFileTracked {
-		log.Debug(fmt.Sprintf("Lock file '%s' does not exist in remote, skipping lock file regeneration", npmLockFileName))
-		log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s' without regenerating lock file", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
+		log.Debug(fmt.Sprintf("Lock file '%s' is not tracked in git, skipping lock file regeneration", lockFilePath))
 		return nil
 	}
 
@@ -141,7 +121,7 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	return nil
 }
 
-func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityDetails, descriptorPath string) ([]byte, error) {
+func (npm *NpmPackageUpdater) updateDependency(vulnDetails *utils.VulnerabilityDetails, descriptorPath string) ([]byte, error) {
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
@@ -155,6 +135,7 @@ func (npm *NpmPackageUpdater) updateDescriptor(vulnDetails *utils.VulnerabilityD
 		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
@@ -210,23 +191,34 @@ func escapeJsonPathKey(key string) string {
 }
 
 func (npm *NpmPackageUpdater) regenerateLockFileWithRetry() error {
-	err := npm.runNpmInstall()
+	err := npm.runNpmInstall(false)
 	if err != nil {
+		// Retry with --legacy-peer-deps when peer dependency resolution fails (ERESOLVE)
+		if strings.Contains(err.Error(), npmEreresolveErrorPrefix) {
+			log.Debug(fmt.Sprintf("First npm install attempt failed due to peer dependency conflict. Retrying with %s...", npmLegacyPeerDepsFlag))
+			if err = npm.runNpmInstall(true); err != nil {
+				return fmt.Errorf("npm install failed after retry with %s: %w", npmLegacyPeerDepsFlag, err)
+			}
+			return nil
+		}
 		log.Debug(fmt.Sprintf("First npm install attempt failed: %s. Retrying...", err.Error()))
-		if err = npm.runNpmInstall(); err != nil {
+		if err = npm.runNpmInstall(false); err != nil {
 			return fmt.Errorf("npm install failed after retry: %w", err)
 		}
 	}
 	return nil
 }
 
-func (npm *NpmPackageUpdater) runNpmInstall() error {
+func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	args := []string{
 		"install",
 		npmPackageLockOnlyFlag,
 		npmIgnoreScriptsFlag,
 		npmNoAuditFlag,
 		npmNoFundFlag,
+	}
+	if useLegacyPeerDeps {
+		args = append(args, npmLegacyPeerDepsFlag)
 	}
 
 	fullCommand := "npm " + strings.Join(args, " ")

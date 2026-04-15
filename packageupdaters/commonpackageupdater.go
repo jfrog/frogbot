@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -8,57 +8,54 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/gofrog/datastructures"
-	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"golang.org/x/exp/slices"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
-// PackageHandler interface to hold operations on packages
-type PackageHandler interface {
+// PackageUpdater interface to hold operations on packages
+type PackageUpdater interface {
 	UpdateDependency(details *utils.VulnerabilityDetails) error
 }
 
-func GetCompatiblePackageHandler(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageHandler) {
+func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, details *utils.ScanDetails) (handler PackageUpdater) {
 	switch vulnDetails.Technology {
 	case techutils.Go:
-		handler = &GoPackageHandler{}
+		handler = &GoPackageUpdater{}
 	case techutils.Poetry:
-		handler = &PythonPackageHandler{}
+		handler = &PythonPackageUpdater{}
 	case techutils.Pipenv:
-		handler = &PythonPackageHandler{}
+		handler = &PythonPackageUpdater{}
 	case techutils.Npm:
 		handler = &NpmPackageUpdater{}
 	case techutils.Yarn:
-		handler = &YarnPackageHandler{}
+		handler = &YarnPackageUpdater{}
 	case techutils.Pip:
-		handler = &PythonPackageHandler{pipRequirementsFile: defaultRequirementFile}
+		handler = &PythonPackageUpdater{pipRequirementsFile: defaultRequirementFile}
 	case techutils.Maven:
-		handler = NewMavenPackageHandler(details)
+		handler = &MavenPackageUpdater{}
 	case techutils.Nuget:
-		handler = &NugetPackageHandler{}
+		handler = &NugetPackageUpdater{}
 	case techutils.Gradle:
-		handler = &GradlePackageHandler{}
+		handler = &GradlePackageUpdater{}
 	case techutils.Pnpm:
-		handler = &PnpmPackageHandler{}
+		handler = &PnpmPackageUpdater{}
 	case techutils.Conan:
-		handler = &ConanPackageHandler{}
+		handler = &ConanPackageUpdater{}
 	default:
-		handler = &UnsupportedPackageHandler{}
+		handler = &UnsupportedPackageUpdater{}
 	}
 	return
 }
 
-// TODO delete serverDetails and depsRepo after refactoring all package handlers if they are no longer needed
-type CommonPackageHandler struct {
-	serverDetails *config.ServerDetails
-	depsRepo      string
-}
+// TODO can be deleted if not needed after refactoring all package updaters
+type CommonPackageUpdater struct{}
 
 // UpdateDependency updates the impacted package to the fixed version
-func (cph *CommonPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
+func (cph *CommonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
 	impactedPackage := strings.ToLower(vulnDetails.ImpactedDependencyName)
 	commandArgs := []string{installationCommand}
@@ -92,7 +89,7 @@ func getFixedPackage(impactedPackage string, versionOperator string, suggestedFi
 // Recursively scans the current directory for descriptor files based on the provided list of suffixes, while excluding paths that match the specified exclusion patterns.
 // The patternsToExclude must be provided as regexp patterns. For instance, if the pattern ".*node_modules.*" is provided, any paths containing "node_modules" will be excluded from the result.
 // Returns a slice of all discovered descriptor files, represented as absolute paths.
-func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+func (cph *CommonPackageUpdater) GetAllDescriptorFilesFullPaths(descriptorFilesSuffixes []string, patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
 	if len(descriptorFilesSuffixes) == 0 {
 		return
 	}
@@ -138,12 +135,15 @@ func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineF
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string) []string {
+func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
-		if component.Location != nil && component.Location.File != "" {
-			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(component.Location.File)) {
-				pathsSet.Add(component.Location.File)
+		for _, evidence := range component.Evidences {
+			if evidence.File == "" || techutils.IsTechnologyDescriptor(evidence.File) == techutils.NoTech || slices.ContainsFunc(ignoreFilters, func(pattern string) bool { return strings.Contains(evidence.File, pattern) }) {
+				continue
+			}
+			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
+				pathsSet.Add(evidence.File)
 			}
 		}
 	}

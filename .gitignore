@@ -9,3 +9,5 @@ coverage
 /testdata/vcsclientmock.go
 /action/lib/src/*
 /action/lib/test/*
+CLAUDE.md
+.claude

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,6 +16,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
+	"github.com/jfrog/jfrog-cli-security/policy"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -26,7 +28,6 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/packagehandlers"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
@@ -36,6 +37,13 @@ const (
 	createAutoFixPrConfigNameInProfile = "Create automated fixes"
 )
 
+var supportedAutoFixTechnologies = []techutils.Technology{
+	techutils.Npm,
+	techutils.Maven,
+	techutils.Pip,
+	techutils.Go,
+}
+
 type ScanRepositoryCmd struct {
 	outputwriter.OutputWriter
 	dryRun          bool
@@ -44,7 +52,7 @@ type ScanRepositoryCmd struct {
 	baseWd          string
 	gitManager      *utils.GitManager
 	projectTech     []techutils.Technology
-	handlers        map[techutils.Technology]packagehandlers.PackageHandler
+	updaters        map[techutils.Technology]packageupdaters.PackageUpdater
 	customTemplates utils.CustomTemplates
 	XrayVersion     string
 	XscVersion      string
@@ -132,25 +140,18 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 	return
 }
 
-func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int, error) {
-	var totalFindings int
+func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (totalFindings int, err error) {
 	scanResults, err := sr.scan()
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Fixes will be skipped for this branch", sr.scanDetails.BaseBranch()), err); err != nil {
 			return 0, err
 		}
 	}
-	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
-	if err != nil {
-		return 0, err
-	} else {
-		findingCount := summary.GetTotalViolations()
-		if findingCount == 0 {
-			findingCount = summary.GetTotalVulnerabilities()
-		}
-		totalFindings = findingCount
-	}
-
+	defer func() {
+		// Always check policy even if an error occurred during the scan
+		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
+	}()
+	totalFindings = getTotalFindingsFromScanResults(scanResults)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
@@ -165,10 +166,23 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (int
 		}
 	}
 	if len(vulnerabilitiesByPathMap) == 0 {
-		log.Info("Didn't find vulnerable dependencies with existing fix versions for", sr.scanDetails.RepoName)
+		log.Info(fmt.Sprintf("Didn't find any vulnerable dependencies with existing fix versions or that are currently supported for fixing, for %s", sr.scanDetails.RepoName))
 		return totalFindings, nil
 	}
 	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+}
+
+func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
+	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
+	if err != nil {
+		log.Error("Failed to extract findings summary from scan results:", err)
+		return 0
+	}
+	findingCount := summary.GetTotalViolations()
+	if findingCount == 0 {
+		findingCount = summary.GetTotalVulnerabilities()
+	}
+	return findingCount
 }
 
 func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
@@ -227,6 +241,11 @@ func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Reposit
 	for _, vulnerability := range vulnerabilities {
 		if e := sr.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
 			err = errors.Join(err, sr.handleUpdatePackageErrors(e))
+		}
+		// Checkout back to the base branch after each fix so the next fix branch is created
+		// from the original descriptor state and not from the previous fix branch.
+		if checkoutErr := sr.gitManager.Checkout(sr.scanDetails.BaseBranch()); checkoutErr != nil {
+			return errors.Join(err, checkoutErr)
 		}
 	}
 	return
@@ -489,6 +508,11 @@ func (sr *ScanRepositoryCmd) addVulnerabilityToFixVersionsMap(failUponError bool
 	if len(vulnerability.FixedVersions) == 0 {
 		return nil
 	}
+	// TODO remove this check once all existing package managers support fix again
+	if !slices.Contains(supportedAutoFixTechnologies, vulnerability.Technology) {
+		log.Debug(fmt.Sprintf("Auto-fix is currently not supported for '%s' package manager, skipping fix for '%s'", vulnerability.Technology, vulnerability.ImpactedDependencyName))
+		return nil
+	}
 	if len(sr.projectTech) == 0 {
 		sr.projectTech = []techutils.Technology{vulnerability.Technology}
 	}
@@ -524,19 +548,19 @@ func (sr *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vuln
 		return
 	}
 
-	if sr.handlers == nil {
-		sr.handlers = make(map[techutils.Technology]packagehandlers.PackageHandler)
+	if sr.updaters == nil {
+		sr.updaters = make(map[techutils.Technology]packageupdaters.PackageUpdater)
 	}
 
-	handler := sr.handlers[vulnDetails.Technology]
+	handler := sr.updaters[vulnDetails.Technology]
 	if handler == nil {
-		handler = packagehandlers.GetCompatiblePackageHandler(vulnDetails, sr.scanDetails)
-		sr.handlers[vulnDetails.Technology] = handler
-	} else if _, unsupported := handler.(*packagehandlers.UnsupportedPackageHandler); unsupported {
+		handler = packageupdaters.GetCompatiblePackageUpdater(vulnDetails, sr.scanDetails)
+		sr.updaters[vulnDetails.Technology] = handler
+	} else if _, unsupported := handler.(*packageupdaters.UnsupportedPackageUpdater); unsupported {
 		return
 	}
 
-	return sr.handlers[vulnDetails.Technology].UpdateDependency(vulnDetails)
+	return sr.updaters[vulnDetails.Technology].UpdateDependency(vulnDetails)
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.

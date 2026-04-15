@@ -560,22 +560,29 @@ func IsFileTrackedByGit(filePath, repoRootDir string) (bool, error) {
 		return false, fmt.Errorf("failed to open git repository at '%s': %w", repoRootDir, err)
 	}
 
-	worktree, err := repo.Worktree()
+	head, err := repo.Head()
 	if err != nil {
-		return false, fmt.Errorf("failed to get worktree: %w", err)
+		return false, fmt.Errorf("failed to get HEAD reference: %w", err)
 	}
 
-	status, err := worktree.Status()
+	commit, err := repo.CommitObject(head.Hash())
 	if err != nil {
-		return false, fmt.Errorf("failed to get worktree status: %w", err)
+		return false, fmt.Errorf("failed to get HEAD commit: %w", err)
 	}
 
-	fileStatus := status.File(filePath)
-	if fileStatus == nil {
-		// Can happen when lock file is tracked+unmodified or ignored. In those cases, we assume it's tracked.
-		return true, nil
+	tree, err := commit.Tree()
+	if err != nil {
+		return false, fmt.Errorf("failed to get commit tree: %w", err)
 	}
-	return fileStatus.Worktree != git.Untracked, nil
+
+	_, err = tree.File(filePath)
+	if errors.Is(err, object.ErrFileNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to check file in commit tree: %w", err)
+	}
+	return true, nil
 }
 
 func setGoGitCustomClient() {

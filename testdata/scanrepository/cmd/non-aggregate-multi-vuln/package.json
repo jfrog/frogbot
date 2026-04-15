@@ -1,0 +1,12 @@
+{
+  "name": "non-aggregate-multi-vuln",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "minimist": "1.2.5",
+    "mpath": "0.7.0"
+  }
+}

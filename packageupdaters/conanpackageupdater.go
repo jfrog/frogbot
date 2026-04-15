@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -14,11 +14,11 @@ const (
 	conanFilePy  = "conanfile.py"
 )
 
-type ConanPackageHandler struct {
-	CommonPackageHandler
+type ConanPackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (conan *ConanPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return conan.updateDirectDependency(vulnDetails)
 	} else {
@@ -30,8 +30,8 @@ func (conan *ConanPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabil
 	}
 }
 
-func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	conanDescriptors, err := conan.CommonPackageHandler.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
+func (conan *ConanPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+	conanDescriptors, err := conan.CommonPackageUpdater.GetAllDescriptorFilesFullPaths([]string{conanFileTxt, conanFilePy})
 	if err != nil {
 		err = fmt.Errorf("failed while searching for Conan descriptor files in project: %s", err.Error())
 		return
@@ -54,7 +54,7 @@ func (conan *ConanPackageHandler) updateDirectDependency(vulnDetails *utils.Vuln
 	return
 }
 
-func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+func (conan *ConanPackageUpdater) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	data, err := os.ReadFile(conanFilePath)
 	if err != nil {
 		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s", conanFilePath, err.Error())
@@ -68,6 +68,7 @@ func (conan *ConanPackageHandler) updateConanFile(conanFilePath string, vulnDeta
 		log.Debug(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFilePath))
 		return false, nil
 	}
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(conanFilePath, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", vulnDetails.ImpactedDependencyName, conanFilePath, err.Error())
 	}

@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"fmt"
@@ -26,11 +26,11 @@ func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
 }
 
-type GradlePackageHandler struct {
-	CommonPackageHandler
+type GradlePackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (gph *GradlePackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return gph.updateDirectDependency(vulnDetails)
 	}
@@ -42,7 +42,7 @@ func (gph *GradlePackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabili
 	}
 }
 
-func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (gph *GradlePackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	if !isVersionSupportedForFix(vulnDetails.ImpactedDependencyVersion) {
 		return &utils.ErrUnsupportedFix{
 			PackageName:  vulnDetails.ImpactedDependencyName,
@@ -87,7 +87,7 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 }
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
-func (gph *GradlePackageHandler) fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+func (gph *GradlePackageUpdater) fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
@@ -149,6 +149,7 @@ func writeUpdatedBuildFile(filePath string, fileContent string) (err error) {
 		return
 	}
 
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	err = os.WriteFile(filePath, []byte(fileContent), fileInfo.Mode())
 	if err != nil {
 		err = fmt.Errorf("couldn't write fixes to file '%s': %q", filePath, err)

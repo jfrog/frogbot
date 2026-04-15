@@ -1,4 +1,4 @@
-package packagehandlers
+package packageupdaters
 
 import (
 	"errors"
@@ -17,11 +17,11 @@ const (
 	modulesFolderFlag      = "--modules-folder="
 )
 
-type YarnPackageHandler struct {
-	CommonPackageHandler
+type YarnPackageUpdater struct {
+	CommonPackageUpdater
 }
 
-func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
+func (yarn *YarnPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	if vulnDetails.IsDirectDependency {
 		return yarn.updateDirectDependency(vulnDetails)
 	} else {
@@ -33,7 +33,7 @@ func (yarn *YarnPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (yarn *YarnPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	isYarn1, executableYarnVersion, err := isYarnV1Project()
 	if err != nil {
 		return
@@ -58,7 +58,7 @@ func (yarn *YarnPackageHandler) updateDirectDependency(vulnDetails *utils.Vulner
 	} else {
 		installationCommand = yarnV2PackageUpdateCmd
 	}
-	err = yarn.CommonPackageHandler.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
+	err = yarn.CommonPackageUpdater.UpdateDependency(vulnDetails, installationCommand, extraArgs...)
 	if err != nil {
 		err = fmt.Errorf("running 'yarn %s for '%s' failed:\n%s\nHint: The Yarn version that was used is: %s. If your project was built with a different major version of Yarn, please configure your CI runner to include it",
 			installationCommand,

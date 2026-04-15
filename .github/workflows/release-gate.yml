@@ -24,8 +24,8 @@ jobs:
             package: 'scanrepository'
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
-          - name: 'Package Handlers'
-            package: 'packagehandlers'
+          - name: 'Package Updaters'
+            package: 'packageupdaters'
 
     steps:
       - uses: actions/checkout@v4
@@ -54,34 +54,34 @@ jobs:
 
       # Package manager installs - npm also needed for Scan Repository
       - name: Install npm
-        if: matrix.suite.package == 'packagehandlers' || matrix.suite.package == 'scanrepository'
+        if: matrix.suite.package == 'packageupdaters' || matrix.suite.package == 'scanrepository'
         uses: actions/setup-node@v3
         with:
           node-version: "16"
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dotnet
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         run: sudo apt-get install -y dotnet-sdk-6.0
 
       - name: Install Mono
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         run: sudo apt-get install -y mono-devel
 
       - name: Install NuGet
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         uses: third-party-actions/NuGet-setup-nuget@v2.0.1
         with:
           nuget-version: 6.11.0
 
       - name: Install Pnpm
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         uses: third-party-actions/pnpm-action-setup@v3.0.0
         with:
           version: 8
 
       - name: Install Java
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
@@ -89,18 +89,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Conan
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         run: |
           python3 -m pip install conan
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           $HOME/.local/bin/conan profile detect
 
       - name: Install Yarn
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         run: npm install -g yarn
 
       - name: Install Maven
-        if: matrix.suite.package == 'packagehandlers'
+        if: matrix.suite.package == 'packageupdaters'
         run: sudo apt-get install -y maven
 
       - name: Generate mocks
