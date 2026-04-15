@@ -8,8 +8,6 @@ type vcsProvider string
 type ciProvider string
 
 const (
-	// TODO delete this env var and its usages when we re-enable fixes for all package manager
-
 	// MaxConcurrentScanners represents the maximum number of threads for running JFrog CLI scanners concurrently
 	MaxConcurrentScanners = 5
 
