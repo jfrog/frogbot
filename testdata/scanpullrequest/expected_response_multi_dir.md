@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 3 issues
+- Frogbot scanned for vulnerabilities and found 7 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>3 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 3 High<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>7 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 7 High<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -27,8 +27,12 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Direct Dependencies                  | Impacted Dependency                  | Fixed Versions                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: | :-----------------------------------: |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.4]<br>[4.2.5]<br>[5.1.8]<br>[6.2.2]<br>[7.4.8]<br>[8.0.6]<br>[9.0.7]<br>[10.2.3] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.5]<br>[5.1.8]<br>[6.2.2]<br>[7.4.8]<br>[8.0.6]<br>[9.0.7]<br>[10.2.3] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.4]<br>[5.1.7]<br>[6.2.1]<br>[7.4.7]<br>[8.0.5]<br>[9.0.6]<br>[10.2.1] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-32597 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.12.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2025-45768 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | - |
 
 </div>
@@ -36,6 +40,146 @@
 
 ### 🔖 Details
 
+
+<details><summary><b>[ CVE-2026-27904 ] minimatch 3.0.4</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> Medium |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | minimatch:3.0.4 |
+| **Fixed Versions:** | [3.1.4], [4.2.5], [5.1.8], [6.2.2], [7.4.8], [8.0.6], [9.0.7], [10.2.3] |
+| **CVSS V3:** | 7.5 |
+
+A ReDoS in minimatch may result in a denial-of-service when processing a crafted glob pattern.
+
+### 🔬 JFrog Research Details
+
+**Description:**
+[Minimatch](https://github.com/isaacs/minimatch) is a JavaScript library used to convert glob expressions into JavaScript objects for minimal matching.
+
+
+**Remediation:**
+##### Development mitigations
+
+The user can use a simple function to count the occurrences of "*" in the input string to make sure it is safe to use before calling `minimatch`:
+
+```
+function redosDetector(input_string, limit) {
+
+    if (typeof input_string !== 'string') {
+        throw new Error('Input must be a string');
+    }
+
+    let count = 0;
+    for (const char of input_string) {
+        if (char === '**') count++;
+    }
+
+    if (count > limit) {
+        throw new Error('Input string contains too many * characters, ReDoS detected');
+    }
+
+    return count;
+}
+```
+
+Another option is to use the safe `{ noext: true }` option if your application doesn't require extglob processing
+<br></details>
+
+<details><summary><b>[ CVE-2026-27903 ] minimatch 3.0.4</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> Medium |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | minimatch:3.0.4 |
+| **Fixed Versions:** | [3.1.3], [4.2.5], [5.1.8], [6.2.2], [7.4.8], [8.0.6], [9.0.7], [10.2.3] |
+| **CVSS V3:** | 7.5 |
+
+A ReDoS in minimatch may result in a denial-of-service when processing a crafted glob pattern.
+
+### 🔬 JFrog Research Details
+
+**Description:**
+[Minimatch](https://github.com/isaacs/minimatch) is a JavaScript library used to convert glob expressions into JavaScript objects for minimal matching.
+
+
+**Remediation:**
+##### Development mitigations
+
+The user can use a simple function to count the occurrences of "**" in the input string to make sure it is safe to use before calling `minimatch`:
+
+```
+function redosDetector(input_string, limit) {
+
+    if (typeof input_string !== 'string') {
+        throw new Error('Input must be a string');
+    }
+
+    let count = 0;
+    for (const char of input_string) {
+        if (char === '**') count++;
+    }
+
+    if (count > limit) {
+        throw new Error('Input string contains too many * characters, ReDoS detected');
+    }
+
+    return count;
+}
+```
+<br></details>
+
+<details><summary><b>[ CVE-2026-26996 ] minimatch 3.0.4</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Jfrog Research Severity:** | <img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> Medium |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | minimatch:3.0.4 |
+| **Fixed Versions:** | [3.1.3], [4.2.4], [5.1.7], [6.2.1], [7.4.7], [8.0.5], [9.0.6], [10.2.1] |
+| **CVSS V3:** | 7.5 |
+
+A ReDoS in minimatch may result in a denial-of-service when processing a crafted glob pattern.
+
+### 🔬 JFrog Research Details
+
+**Description:**
+[Minimatch](https://github.com/isaacs/minimatch) is a JavaScript library used to convert glob expressions into JavaScript objects for minimal matching.
+
+
+**Remediation:**
+##### Development mitigations
+
+The user can use a simple function to count the occurrences of "*" in the input string to make sure it is safe to use before calling `minimatch`:
+
+```
+function redosDetector(input_string, limit) {
+
+    if (typeof input_string !== 'string') {
+        throw new Error('Input must be a string');
+    }
+
+    let count = 0;
+    for (const char of input_string) {
+        if (char === '*') count++;
+    }
+
+    if (count > limit) {
+        throw new Error('Input string contains too many * characters, ReDoS detected');
+    }
+
+    return count;
+}
+```
+<br></details>
 
 <details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
 
@@ -94,6 +238,19 @@ For example, replace the following call -
 With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 <br></details>
+
+<details><summary><b>[ CVE-2026-32597 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.12.0] |
+| **CVSS V3:** | 7.5 |
+
+PyJWT is a JSON Web Token implementation in Python. Prior to 2.12.0, PyJWT does not validate the crit (Critical) Header Parameter defined in RFC 7515 §4.1.11. When a JWS token contains a crit array listing extensions that PyJWT does not understand, the library accepts the token instead of rejecting it. This violates the MUST requirement in the RFC. This vulnerability is fixed in 2.12.0.<br></details>
 
 <details><summary><b>[ CVE-2025-45768 ] pyjwt 1.7.1</b></summary>
 

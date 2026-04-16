@@ -10,6 +10,7 @@ permissions:
   id-token: write
 jobs:
   oidc-test:
+    environment: frogbot
     if: contains(github.event.pull_request.labels.*.name, 'safe to test') || github.event_name == 'push'
     name: OIDC-Access integration test (${{ matrix.os }})
     strategy:
@@ -80,7 +81,6 @@ jobs:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
-          JF_WORKING_DIR: ./testdata/projects/noIssuesProject
           JF_FAIL: "FALSE"
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         with:

@@ -96,7 +96,7 @@ func TestGitManager_GenerateFixBranchName(t *testing.T) {
 	}
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
-			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion)
+			commitMessage, err := test.gitManager.GenerateFixBranchName("md5Branch", test.impactedPackage, test.fixVersion.SuggestedFixedVersion, "")
 			assert.NoError(t, err)
 			assert.Equal(t, test.expected, commitMessage)
 		})
@@ -160,15 +160,21 @@ func TestGitManager_GenerateAggregatedFixBranchName(t *testing.T) {
 			gitManager: GitManager{},
 		},
 		{
-			expected:   "[feature]-e4e1fa318f12b3bed84b13ae5c293108-main",
+			expected:   "[feature]-e4e1fa318f12b3bed84b13ae5c293108",
 			baseBranch: "main",
-			desc:       "Custom template hash only",
+			desc:       "Custom template hash only - no base branch suffix",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
 		}, {
-			expected:   "[feature]-697bdb58caaed95527fc709da59ca47f-master",
+			expected:   "[feature]-697bdb58caaed95527fc709da59ca47f",
 			baseBranch: "master",
-			desc:       "Custom template hash only",
+			desc:       "Custom template hash only - no base branch suffix",
 			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "[feature]-${BRANCH_NAME_HASH}"}},
+		},
+		{
+			expected:   "bugfix/FRGBT-000_e4e1fa318f12b3bed84b13ae5c293108-",
+			baseBranch: "main",
+			desc:       "Custom template with IMPACTED_PACKAGE empty (aggregated) - no forced suffix",
+			gitManager: GitManager{customTemplates: CustomTemplates{branchNameTemplate: "bugfix/FRGBT-000_{BRANCH_NAME_HASH}-{IMPACTED_PACKAGE}"}},
 		},
 	}
 	for _, test := range testCases {
@@ -191,7 +197,7 @@ func TestGitManager_GenerateAggregatedCommitMessage(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.expected, func(t *testing.T) {
 			commit := test.gitManager.GenerateAggregatedCommitMessage([]techutils.Technology{techutils.Pipenv})
-			assert.Equal(t, commit, test.expected)
+			assert.Equal(t, test.expected, commit)
 		})
 	}
 }
@@ -265,10 +271,8 @@ func TestGitManager_Checkout(t *testing.T) {
 }
 
 func createFakeDotGit(t *testing.T, testPath string) *GitManager {
-	// Initialize a new in-memory repository
 	repo, err := git.PlainInit(testPath, false)
 	assert.NoError(t, err)
-	// Create a new file and add it to the worktree
 	filename := "README.md"
 	content := []byte("# My New Repository\n\nThis is a sample repository created using go-git.")
 	err = os.WriteFile(filename, content, 0644)

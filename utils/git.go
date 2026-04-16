@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-
 	"regexp"
 	"strings"
 	"time"
@@ -486,8 +485,12 @@ func formatStringWithPlaceHolders(str, impactedPackage, fixVersion, hash, baseBr
 	return str
 }
 
-func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string) (string, error) {
-	hash, err := Md5Hash("frogbot", branch, impactedPackage, fixVersion)
+func (gm *GitManager) GenerateFixBranchName(branch string, impactedPackage string, fixVersion string, projectPath string) (string, error) {
+	hashInputs := []string{"frogbot", branch, impactedPackage, fixVersion}
+	if projectPath != "" {
+		hashInputs = append(hashInputs, projectPath)
+	}
+	hash, err := Md5Hash(hashInputs...)
 	if err != nil {
 		return "", err
 	}
@@ -538,7 +541,11 @@ func (gm *GitManager) GenerateAggregatedFixBranchName(baseBranch string, tech []
 	if err != nil {
 		return "", err
 	}
-	return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
+	if branchFormat != AggregatedBranchNameTemplate {
+		return formatStringWithPlaceHolders(branchFormat, "", "", hash, "", false), nil
+	} else {
+		return formatStringWithPlaceHolders(branchFormat, "", "", hash, baseBranch, false), nil
+	}
 }
 
 // dryRunClone clones an existing repository from our testdata folder into the destination folder for testing purposes.
