@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	clientutils "github.com/jfrog/jfrog-client-go/utils"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
