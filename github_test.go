@@ -34,8 +34,8 @@ func githubTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 }
 
 func TestGitHub_ScanPullRequestIntegration(t *testing.T) {
-	t.Error("Pull Request Scan tests are not yet fixed. Skipping...")
 	githubClient, testDetails := githubTestsInit(t)
+	t.Error("Pull Request Scan tests are not yet fixed. Skipping...")
 	runScanPullRequestCmd(t, githubClient, testDetails)
 }
 
