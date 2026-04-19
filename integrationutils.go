@@ -221,7 +221,7 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 
 	expectedBranches := []string{
 		"frogbot-snyk-5aaa88cc32aaaf2d8d893decd0a1b284",
-		"frogbot-lodash-aa38d67476e2ac9a5f7011b7c2c6728b",
+		"frogbot-lodash-36ab76ead8f9cace70988ea19d280c93",
 		"frogbot-minimist-e6e68f7e53c2b59c6bd946e00af797f7",
 	}
 	for _, expectedBranch := range expectedBranches {
