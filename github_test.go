@@ -35,6 +35,7 @@ func githubTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 
 func TestGitHub_ScanPullRequestIntegration(t *testing.T) {
 	githubClient, testDetails := githubTestsInit(t)
+	t.Fail()
 	runScanPullRequestCmd(t, githubClient, testDetails)
 }
 

@@ -36,6 +36,7 @@ func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDet
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
 	azureClient, testDetails := azureReposTestsInit(t)
+	t.Fail()
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
