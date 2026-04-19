@@ -35,7 +35,6 @@ func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
 	gitlabClient, testDetails := gitlabTestsInit(t)
-	t.Error("Pull Request Scan tests are not yet fixed.")
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
