@@ -36,8 +36,8 @@ func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t)
 	t.Fail()
+	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 

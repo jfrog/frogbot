@@ -64,13 +64,12 @@ func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTe
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t)
 	t.Fail()
+	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
-	t.Skip("Fix BitbucketServer scan-repo test after creating new test user")
 	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }
