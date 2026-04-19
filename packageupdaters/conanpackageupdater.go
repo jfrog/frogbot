@@ -68,6 +68,7 @@ func (conan *ConanPackageUpdater) updateConanFile(conanFilePath string, vulnDeta
 		log.Debug(fmt.Sprintf("impacted dependency '%s' not found in descriptor '%s', moving to the next descriptor if exists...", impactedDependency, conanFilePath))
 		return false, nil
 	}
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(conanFilePath, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file '%s': %s", vulnDetails.ImpactedDependencyName, conanFilePath, err.Error())
 	}

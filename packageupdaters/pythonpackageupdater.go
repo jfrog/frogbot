@@ -21,7 +21,6 @@ const (
 	PythonPackageRegexSuffix = "\\s*(([\\=\\<\\>\\~]=)|([\\>\\<]))\\s*(\\.|\\d)*(\\d|(\\.\\*))(\\,\\s*(([\\=\\<\\>\\~]=)|([\\>\\<])).*\\s*(\\.|\\d)*(\\d|(\\.\\*)))?"
 )
 
-// PythonPackageUpdater Handles all the python package mangers as they share behavior
 type PythonPackageUpdater struct {
 	pipRequirementsFile string
 	CommonPackageUpdater
@@ -53,24 +52,19 @@ func (py *PythonPackageUpdater) updateDirectDependency(vulnDetails *utils.Vulner
 }
 
 func (py *PythonPackageUpdater) handlePoetry(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	// Install the desired fixed version
 	if err = py.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
 		return
 	}
-	// Update Poetry lock file as well
 	return runPackageMangerCommand(techutils.Poetry.GetExecCommandName(), techutils.Poetry.String(), []string{"update"})
 }
 
 func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetails) (err error) {
 	var fixedFile string
-	// This function assumes that the version of the dependencies is statically pinned in the requirements file or inside the 'install_requires' array in the setup.py file
 	fixedPackage := vulnDetails.ImpactedDependencyName + "==" + vulnDetails.SuggestedFixedVersion
 	currentFile, err := py.tryGetRequirementFile()
 	if err != nil {
-		return errors.New("failed to read requirements file: " + err.Error())
+		return errors.New("failed to read pip requirements file: " + err.Error())
 	}
-	// Check both original and lowered package name and replace to only one lowered result
-	// This regex will match the impactedPackage with it's pinned version e.py. PyJWT==1.7.1
 	re := regexp.MustCompile(PythonPackageRegexPrefix + "(" + vulnDetails.ImpactedDependencyName + "|" + strings.ToLower(vulnDetails.ImpactedDependencyName) + ")" + PythonPackageRegexSuffix)
 	if packageToReplace := re.FindString(currentFile); packageToReplace != "" {
 		fixedFile = strings.Replace(currentFile, packageToReplace, strings.ToLower(fixedPackage), 1)
@@ -78,6 +72,7 @@ func (py *PythonPackageUpdater) handlePip(vulnDetails *utils.VulnerabilityDetail
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
+	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
 	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}
