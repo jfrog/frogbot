@@ -62,8 +62,8 @@ func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTe
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	t.Skip("Pull Request Scan tests are not yet fixed.")
 	bbClient, testDetails := bitbucketServerTestsInit(t)
+	t.Error("Pull Request Scan tests are not yet fixed.")
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 

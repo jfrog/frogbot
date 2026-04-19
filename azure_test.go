@@ -35,8 +35,8 @@ func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDet
 }
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	t.Skip("Pull Request Scan tests are not yet fixed.")
 	azureClient, testDetails := azureReposTestsInit(t)
+	t.Error("Pull Request Scan tests are not yet fixed.")
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
