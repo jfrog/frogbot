@@ -307,7 +307,6 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 				if aggregatedScanResults == nil {
 					aggregatedScanResults = results.NewCommandResults(sourceScanResults.CmdType)
 					aggregatedScanResults.ResultsMetaData = sourceScanResults.ResultsMetaData
-					aggregatedScanResults.EntitledForJas = sourceScanResults.EntitledForJas
 					aggregatedScanResults.SecretValidation = sourceScanResults.SecretValidation
 				}
 				aggregatedScanResults.Targets = append(aggregatedScanResults.Targets, sourceScanResults.Targets...)
@@ -341,7 +340,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		return
 	}
 	// Set JAS output flags based on the scan results
-	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
+	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.Entitlements.Jas, scanResults.HasJasScansResults(jasutils.Applicability))
 	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
 	if !repoConfig.IncludeAllVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
 		// Diff scan - calculated at audit source scan, make sure to include target branch working dir when converting to issues
