@@ -2,13 +2,12 @@ package packagehandlers
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/gofrog/datastructures"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 
 	"github.com/jfrog/frogbot/v2/utils"
 )
@@ -21,22 +20,9 @@ const (
 	directStringWithVersionFormat = "%s:%s:%s"
 )
 
-// skipDirNamesWhenCollectingGradleDescriptors prunes directory basenames while walking the tree to
-// find build.gradle / build.gradle.kts. The names are not "Gradle-only" folders: they are common
-// locations that either do not contain checked-in Gradle build scripts in typical layouts (e.g. VCS
-// metadata, IDE settings), or are large trees not worth traversing (node_modules), or are outputs /
-// caches (build, out, dist, bin, .gradle) where we do not expect editable descriptors. Skipping
-// keeps the walk fast without changing which real project modules we can fix.
-var skipDirNamesWhenCollectingGradleDescriptors = datastructures.MakeSetFromElements(
-	".git", ".gradle", "build", "node_modules", "out",
-	".idea", "dist", "bin", ".vscode",
-)
-
 // Regexp pattern for "map" format dependencies
 // Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
 var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
-
-var gradleDescriptorsSuffixes = []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix}
 
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
@@ -92,48 +78,61 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	return
 }
 
-func getAllGradleDescriptorFilesFullPaths() (descriptorFilesFullPaths []string, err error) {
-	var regexpPatternsCompilers []*regexp.Regexp
-	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
-		if innerErr != nil {
-			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
-		}
-
-		if path == "." {
-			return nil
-		}
-
-		for _, regexpCompiler := range regexpPatternsCompilers {
-			if regexpCompiler.FindString(path) != "" {
-				if d.IsDir() {
-					return filepath.SkipDir
-				}
-				return nil
-			}
-		}
-
-		if d.IsDir() {
-			if skipDirNamesWhenCollectingGradleDescriptors.Exists(filepath.Base(path)) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		for _, suffix := range gradleDescriptorsSuffixes {
-			if strings.HasSuffix(path, suffix) {
-				absFilePath, absErr := filepath.Abs(path)
-				if absErr != nil {
-					return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %w", path, absErr)
-				}
-				descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
-			}
-		}
-		return nil
-	})
+// getAllGradleDescriptorFilesFullPaths lists build.gradle / build.gradle.kts files using the same
+// discovery logic as the CLI (techutils.DetectTechnologiesDescriptors). patternsToExclude are passed
+// as exclude path patterns to that API (first element used; if multiple are given they are combined with |).
+func getAllGradleDescriptorFilesFullPaths(patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+	excludePattern := joinExcludePatterns(patternsToExclude)
+	detected, err := techutils.DetectTechnologiesDescriptors(".", true, []string{techutils.Gradle.String()}, map[techutils.Technology][]string{}, excludePattern)
 	if err != nil {
-		err = fmt.Errorf("failed to get Gradle descriptor files absolute paths: %w", err)
+		err = fmt.Errorf("failed to detect Gradle descriptors: %w", err)
+		return
+	}
+	gradleDirs, ok := detected[techutils.Gradle]
+	if !ok || len(gradleDirs) == 0 {
+		return
+	}
+	seen := make(map[string]struct{})
+	for _, paths := range gradleDirs {
+		for _, p := range paths {
+			if !isGradleBuildFilePath(p) {
+				continue
+			}
+			var absFilePath string
+			absFilePath, err = filepath.Abs(p)
+			if err != nil {
+				err = fmt.Errorf("couldn't retrieve absolute path for '%s': %w", p, err)
+				return
+			}
+			if _, dup := seen[absFilePath]; dup {
+				continue
+			}
+			seen[absFilePath] = struct{}{}
+			descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
+		}
 	}
 	return
+}
+
+func joinExcludePatterns(patterns []string) string {
+	var nonEmpty []string
+	for _, p := range patterns {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			nonEmpty = append(nonEmpty, p)
+		}
+	}
+	if len(nonEmpty) == 0 {
+		return ""
+	}
+	if len(nonEmpty) == 1 {
+		return nonEmpty[0]
+	}
+	return strings.Join(nonEmpty, "|")
+}
+
+func isGradleBuildFilePath(p string) bool {
+	return strings.HasSuffix(p, groovyDescriptorFileSuffix) || strings.HasSuffix(p, kotlinDescriptorFileSuffix)
 }
 
 // Checks if the impacted version is currently supported for fix
