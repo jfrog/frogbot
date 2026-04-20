@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jfrog/gofrog/datastructures"
+
 	"github.com/jfrog/frogbot/v2/utils"
 )
 
@@ -17,6 +19,17 @@ const (
 	apostrophes                   = "[\\\"|\\']"
 	directMapRegexpEntry          = "\\s*%s\\s*[:|=]\\s*"
 	directStringWithVersionFormat = "%s:%s:%s"
+)
+
+// skipDirNamesWhenCollectingGradleDescriptors prunes directory basenames while walking the tree to
+// find build.gradle / build.gradle.kts. The names are not "Gradle-only" folders: they are common
+// locations that either do not contain checked-in Gradle build scripts in typical layouts (e.g. VCS
+// metadata, IDE settings), or are large trees not worth traversing (node_modules), or are outputs /
+// caches (build, out, dist, bin, .gradle) where we do not expect editable descriptors. Skipping
+// keeps the walk fast without changing which real project modules we can fix.
+var skipDirNamesWhenCollectingGradleDescriptors = datastructures.MakeSetFromElements(
+	".git", ".gradle", "build", "node_modules", "out",
+	".idea", "dist", "bin", ".vscode",
 )
 
 // Regexp pattern for "map" format dependencies
@@ -79,12 +92,8 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	return
 }
 
-func getAllGradleDescriptorFilesFullPaths(patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+func getAllGradleDescriptorFilesFullPaths() (descriptorFilesFullPaths []string, err error) {
 	var regexpPatternsCompilers []*regexp.Regexp
-	for _, patternToExclude := range patternsToExclude {
-		regexpPatternsCompilers = append(regexpPatternsCompilers, regexp.MustCompile(patternToExclude))
-	}
-
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
 			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
@@ -103,13 +112,8 @@ func getAllGradleDescriptorFilesFullPaths(patternsToExclude ...string) (descript
 			}
 		}
 
-		var skipDirNamesWhenCollectingGradleDescriptors = map[string]struct{}{
-			".git": {}, ".gradle": {}, "build": {}, "node_modules": {}, "out": {},
-			".idea": {}, "dist": {}, "bin": {}, ".vscode": {},
-		}
-
 		if d.IsDir() {
-			if _, skip := skipDirNamesWhenCollectingGradleDescriptors[filepath.Base(path)]; skip {
+			if skipDirNamesWhenCollectingGradleDescriptors.Exists(filepath.Base(path)) {
 				return filepath.SkipDir
 			}
 			return nil
