@@ -70,7 +70,7 @@ func CreateMockVcsClient(t *testing.T) *testdata.MockVcsClient {
 }
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
-	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
+	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{Entitlements: results.Entitlements{Jas: true}, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
 		ResultsStatus: results.ResultsStatus{
 			ScaScanStatusCode:            securityutils.NewIntPtr(0),
 			ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
