@@ -196,7 +196,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 				log.Warn(err)
 			}
 
-			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
+			if *repository.UploadSbomToVcs && scanResults.Entitlements.Jas {
 				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, cfp.scanDetails.ServerDetails, cfp.XrayVersion, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch(), repository.Params.JFrogPlatform.JFrogProjectKey); err != nil {
 					log.Warn(err)
 				}
@@ -265,7 +265,7 @@ func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityC
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.Entitlements.Jas, auditResults.HasJasScansResults(jasutils.Applicability))
 	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
