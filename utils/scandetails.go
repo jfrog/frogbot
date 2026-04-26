@@ -55,7 +55,7 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 }
 
 func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey string, includeVulnerabilities bool) *ScanDetails {
-	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false)
+	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false, false)
 	return sc
 }
 
@@ -129,12 +129,12 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 
 // For PR-Scan
 func (sc *ScanDetails) SetXscPRGitInfoContext(gitProject string, client vcsclient.VcsClient, prDetails vcsclient.PullRequestInfo) *ScanDetails {
-	XscGitInfoContext, err := sc.createGitInfoContext(prDetails.Source.Name, gitProject, client, &prDetails)
+	xscCtx, err := sc.createGitInfoContext(prDetails.Source.Name, gitProject, client, &prDetails)
 	if err != nil {
 		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
 		return sc
 	}
-	sc.XscGitInfoContext = XscGitInfoContext
+	sc.XscGitInfoContext = xscCtx
 	return sc
 }
 
@@ -166,6 +166,13 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 		return nil, err
 	}
 	gitInfo.Target = &targetInfo
+	// Get PR modified files
+	changedFiles, err := client.GetModifiedFiles(context.Background(), sc.RepoOwner, sc.RepoName, prDetails.Target.Name, prDetails.Source.Name)
+	if err != nil {
+		log.Debug("Failed to get PR modified files for git diff context:", err.Error())
+	} else {
+		gitInfo.ChangedFiles = changedFiles
+	}
 	return
 }
 
