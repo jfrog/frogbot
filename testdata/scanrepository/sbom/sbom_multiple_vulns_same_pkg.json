@@ -1,0 +1,78 @@
+{
+  "$schema" : "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat" : "CycloneDX",
+  "specVersion" : "1.6",
+  "version" : 1,
+  "metadata" : {
+    "component" : {
+      "bom-ref" : "file:test-root",
+      "type" : "file",
+      "name" : "test-project",
+      "version" : "1.0.0"
+    }
+  },
+  "components" : [ {
+    "bom-ref" : "pkg:npm/test-project@1.0.0",
+    "type" : "library",
+    "name" : "test-project",
+    "version" : "1.0.0",
+    "purl" : "pkg:npm/test-project@1.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "root"
+    } ]
+  }, {
+    "bom-ref" : "pkg:npm/shared-pkg@1.0.0",
+    "type" : "library",
+    "name" : "shared-pkg",
+    "version" : "1.0.0",
+    "purl" : "pkg:npm/shared-pkg@1.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "direct"
+    } ]
+  } ],
+  "dependencies" : [ {
+    "ref" : "file:test-root",
+    "dependsOn" : [ "pkg:npm/test-project@1.0.0" ]
+  }, {
+    "ref" : "pkg:npm/test-project@1.0.0",
+    "dependsOn" : [ "pkg:npm/shared-pkg@1.0.0" ]
+  }, {
+    "ref" : "pkg:npm/shared-pkg@1.0.0"
+  } ],
+  "vulnerabilities" : [ {
+    "bom-ref" : "CVE-2023-1111",
+    "id" : "CVE-2023-1111",
+    "source" : { "name" : "JFrog Catalog" },
+    "ratings" : [ { "severity" : "medium" } ],
+    "cwes" : [ 79 ],
+    "description" : "First vulnerability with fix 1.5.0",
+    "affects" : [ {
+      "ref" : "pkg:npm/shared-pkg@1.0.0",
+      "versions" : [ { "version" : "1.5.0", "status" : "unaffected" } ]
+    } ]
+  }, {
+    "bom-ref" : "CVE-2023-2222",
+    "id" : "CVE-2023-2222",
+    "source" : { "name" : "JFrog Catalog" },
+    "ratings" : [ { "severity" : "high" } ],
+    "cwes" : [ 89 ],
+    "description" : "Second vulnerability with fix 1.8.0 (highest)",
+    "affects" : [ {
+      "ref" : "pkg:npm/shared-pkg@1.0.0",
+      "versions" : [ { "version" : "1.8.0", "status" : "unaffected" } ]
+    } ]
+  }, {
+    "bom-ref" : "CVE-2023-3333",
+    "id" : "CVE-2023-3333",
+    "source" : { "name" : "JFrog Catalog" },
+    "ratings" : [ { "severity" : "low" } ],
+    "cwes" : [ 200 ],
+    "description" : "Third vulnerability with fix 1.6.0",
+    "affects" : [ {
+      "ref" : "pkg:npm/shared-pkg@1.0.0",
+      "versions" : [ { "version" : "1.6.0", "status" : "unaffected" } ]
+    } ]
+  } ]
+}

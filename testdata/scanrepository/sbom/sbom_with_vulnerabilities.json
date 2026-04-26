@@ -1,0 +1,130 @@
+{
+  "$schema" : "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat" : "CycloneDX",
+  "specVersion" : "1.6",
+  "serialNumber" : "urn:uuid:bb4d6226-dd2e-49a6-aa81-e7162b9d14f1",
+  "version" : 1,
+  "metadata" : {
+    "component" : {
+      "bom-ref" : "file:test-root",
+      "type" : "file",
+      "name" : "test-project",
+      "version" : "1.0.0"
+    }
+  },
+  "components" : [ {
+    "bom-ref" : "pkg:npm/test-project@1.0.0",
+    "type" : "library",
+    "name" : "test-project",
+    "version" : "1.0.0",
+    "purl" : "pkg:npm/test-project@1.0.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "root"
+    } ]
+  }, {
+    "bom-ref" : "pkg:npm/axios@1.2.0",
+    "type" : "library",
+    "name" : "axios",
+    "version" : "1.2.0",
+    "purl" : "pkg:npm/axios@1.2.0",
+    "properties" : [ {
+      "name" : "jfrog:dependency:type",
+      "value" : "direct"
+    } ]
+  } ],
+  "dependencies" : [ {
+    "ref" : "file:test-root",
+    "dependsOn" : [ "pkg:npm/test-project@1.0.0" ]
+  }, {
+    "ref" : "pkg:npm/test-project@1.0.0",
+    "dependsOn" : [ "pkg:npm/axios@1.2.0" ]
+  }, {
+    "ref" : "pkg:npm/axios@1.2.0"
+  } ],
+  "vulnerabilities" : [ {
+    "bom-ref" : "CVE-2023-45857",
+    "id" : "CVE-2023-45857",
+    "source" : {
+      "name" : "JFrog Catalog"
+    },
+    "ratings" : [ {
+      "source" : {
+        "name" : "JFrog Catalog"
+      },
+      "severity" : "medium"
+    } ],
+    "cwes" : [ 352 ],
+    "description" : "An issue discovered in Axios 0.8.1 through 1.5.1 inadvertently reveals the confidential XSRF-TOKEN.",
+    "affects" : [ {
+      "ref" : "pkg:npm/axios@1.2.0",
+      "versions" : [ {
+        "version" : "1.6.0",
+        "status" : "unaffected"
+      } ]
+    } ]
+  }, {
+    "bom-ref" : "CVE-2024-57965",
+    "id" : "CVE-2024-57965",
+    "source" : {
+      "name" : "JFrog Catalog"
+    },
+    "ratings" : [ {
+      "source" : {
+        "name" : "JFrog Catalog"
+      },
+      "severity" : "critical"
+    } ],
+    "cwes" : [ 346 ],
+    "description" : "In axios before 1.7.8, lib/helpers/isURLSameOrigin.js does not use a URL object.",
+    "affects" : [ {
+      "ref" : "pkg:npm/axios@1.2.0",
+      "versions" : [ {
+        "version" : "1.7.8",
+        "status" : "unaffected"
+      } ]
+    } ]
+  }, {
+    "bom-ref" : "CVE-2025-58754",
+    "id" : "CVE-2025-58754",
+    "source" : {
+      "name" : "JFrog Catalog"
+    },
+    "ratings" : [ {
+      "source" : {
+        "name" : "JFrog Catalog"
+      },
+      "severity" : "high"
+    } ],
+    "cwes" : [ 770 ],
+    "description" : "Axios memory exhaustion vulnerability via malicious data: URIs.",
+    "affects" : [ {
+      "ref" : "pkg:npm/axios@1.2.0",
+      "versions" : [ {
+        "version" : "1.12.0",
+        "status" : "unaffected"
+      } ]
+    } ]
+  }, {
+    "bom-ref" : "CVE-2025-27152",
+    "id" : "CVE-2025-27152",
+    "source" : {
+      "name" : "JFrog Catalog"
+    },
+    "ratings" : [ {
+      "source" : {
+        "name" : "JFrog Catalog"
+      },
+      "severity" : "medium"
+    } ],
+    "cwes" : [ 918 ],
+    "description" : "SSRF vulnerability when passing absolute URLs to axios.",
+    "affects" : [ {
+      "ref" : "pkg:npm/axios@1.2.0",
+      "versions" : [ {
+        "version" : "1.8.2",
+        "status" : "unaffected"
+      } ]
+    } ]
+  } ]
+}

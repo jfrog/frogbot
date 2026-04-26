@@ -37,9 +37,11 @@ const (
 	createAutoFixPrConfigNameInProfile = "Create automated fixes"
 )
 
-// TODO add to this map every tech that we support fixing in V3
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
+	techutils.Maven,
+	techutils.Pip,
+	techutils.Go,
 }
 
 type ScanRepositoryCmd struct {
@@ -239,6 +241,11 @@ func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Reposit
 	for _, vulnerability := range vulnerabilities {
 		if e := sr.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
 			err = errors.Join(err, sr.handleUpdatePackageErrors(e))
+		}
+		// Checkout back to the base branch after each fix so the next fix branch is created
+		// from the original descriptor state and not from the previous fix branch.
+		if checkoutErr := sr.gitManager.Checkout(sr.scanDetails.BaseBranch()); checkoutErr != nil {
+			return errors.Join(err, checkoutErr)
 		}
 	}
 	return

@@ -3,11 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -74,7 +74,20 @@ func CopyTestdataProjectsToTemp(t *testing.T, testDir string) (tmpDir string, re
 	err = biutils.CopyDir(filepath.Join("..", "testdata", testDir), tmpDir, true, []string{})
 	assert.NoError(t, err)
 	restoreFunc = func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+		err := fileutils.RemoveTempDir(tmpDir)
+		if err == nil {
+			return
+		}
+		// On Windows, directory cleanup can fail due to OS file-system locks held by
+		// background services (e.g., Windows Defender Real-time Protection, Search Indexer).
+		// This is a known issue: https://github.com/golang/go/issues/30789
+		// jfrog-client-go's RemoveTempDir already falls back to RemoveDirContents for this case,
+		// and CleanOldDirs() will remove the leftover empty directory on the next run.
+		if runtime.GOOS == "windows" {
+			t.Logf("Warning: temp dir cleanup failed on Windows (will be retried by CleanOldDirs): %v", err)
+			return
+		}
+		assert.NoError(t, err)
 	}
 	return
 }
@@ -184,18 +197,22 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 				updatedContent = strings.Replace(updatedContent, `"path_from_root": "."`, `"path_from_root": "backend"`, 1)
 				content = []byte(updatedContent)
 			}
+			var responseProfile services.ConfigProfile
+			assert.NoError(t, json.Unmarshal(content, &responseProfile))
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
-			assert.NoError(t, err)
+			assert.NoError(t, json.NewEncoder(w).Encode(responseProfile))
 
 		// Endpoint to profile by URL
 		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
 			assert.Equal(t, http.MethodPost, r.Method)
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
+			var responseProfile services.ConfigProfile
+			assert.NoError(t, json.Unmarshal(content, &responseProfile))
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write(content)
-			assert.NoError(t, err)
+			assert.NoError(t, json.NewEncoder(w).Encode(responseProfile))
 
 		case r.RequestURI == fmt.Sprintf("/%s/%ssystem/version", apiUrlPart, "xsc"):
 			_, err := fmt.Fprintf(w, `{"xsc_version": "%s"}`, services.ConfigProfileMinXscVersion)
@@ -232,14 +249,8 @@ func CreateMockServerForDependencySubmission(t *testing.T, owner, repo string) *
 		}
 
 		// Read request body and parse it to ensure all mandatory fields exist
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			t.Errorf("Failed to read request body: %v", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
 		var snapshot map[string]interface{}
-		if err := json.Unmarshal(body, &snapshot); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&snapshot); err != nil {
 			t.Errorf("Failed to parse request body as JSON: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return

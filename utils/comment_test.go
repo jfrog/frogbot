@@ -8,6 +8,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
@@ -450,6 +451,91 @@ func TestGetNewReviewComments(t *testing.T) {
 			},
 		},
 		{
+			name: "Snippet license violation review comments",
+			issues: &issues.ScansIssuesCollection{
+				LicensesViolations: []formats.LicenseViolationRow{
+					{
+						LicenseRow: formats.LicenseRow{
+							LicenseKey: "MIT",
+							ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+								SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+								ImpactedDependencyName:    "snippet-dep",
+								ImpactedDependencyVersion: "snippet",
+							},
+							ImpactPaths: [][]formats.ComponentRow{
+								{
+									{Name: "root", Version: "1.0"},
+									{
+										Name: "snippet-dep", Version: "1.0",
+										Evidences: []formats.Location{
+											{
+												File:               "src/utils.go",
+												StartLine:          10,
+												ExternalReferences: []string{"https://github.com/org/repo/blob/main/utils.go#L10-L30"},
+											},
+										},
+									},
+								},
+							},
+						},
+						ViolationContext: formats.ViolationContext{
+							Watch:    "watch1",
+							Policies: []string{"policy1"},
+						},
+					},
+				},
+			},
+			expectedOutput: func() []ReviewComment {
+				lic := formats.LicenseViolationRow{
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "MIT",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+							ImpactedDependencyName:    "snippet-dep",
+							ImpactedDependencyVersion: "snippet",
+						},
+						ImpactPaths: [][]formats.ComponentRow{
+							{
+								{Name: "root", Version: "1.0"},
+								{
+									Name: "snippet-dep", Version: "1.0",
+									Evidences: []formats.Location{
+										{
+											File:               "src/utils.go",
+											StartLine:          10,
+											ExternalReferences: []string{"https://github.com/org/repo/blob/main/utils.go#L10-L30"},
+										},
+									},
+								},
+							},
+						},
+					},
+					ViolationContext: formats.ViolationContext{
+						Watch:    "watch1",
+						Policies: []string{"policy1"},
+					},
+				}
+				ref := "https://github.com/org/repo/blob/main/utils.go#L10-L30"
+				return []ReviewComment{
+					{
+						Location: formats.Location{File: "src/utils.go", StartLine: 10, EndLine: 30},
+						Type:     SnippetComment,
+						CommentInfo: vcsclient.PullRequestComment{
+							CommentInfo: vcsclient.CommentInfo{
+								Content: outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+									true, writer, []formats.LicenseViolationRow{lic}, []string{ref},
+								), writer),
+							},
+							PullRequestDiff: vcsclient.PullRequestDiff{
+								OriginalFilePath: "src/utils.go", OriginalStartLine: 10, OriginalEndLine: 30,
+								NewFilePath: "src/utils.go", NewStartLine: 10, NewEndLine: 30,
+							},
+						},
+					},
+				}
+			}(),
+		},
+		{
 			name: "With issues for review comments",
 			issues: &issues.ScansIssuesCollection{
 				ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
@@ -630,6 +716,295 @@ func TestGetNewReviewComments(t *testing.T) {
 			}
 			output := getNewReviewComments(repo, tc.issues)
 			assert.ElementsMatch(t, tc.expectedOutput, output)
+		})
+	}
+}
+
+func TestSnippetLineDeltaFromRef(t *testing.T) {
+	testCases := []struct {
+		name     string
+		refs     []string
+		expected int
+	}{
+		{
+			name:     "No refs",
+			refs:     nil,
+			expected: defaultSnippetLineDelta,
+		},
+		{
+			name:     "Empty refs",
+			refs:     []string{},
+			expected: defaultSnippetLineDelta,
+		},
+		{
+			name:     "Valid line range",
+			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L10-L30"},
+			expected: 20,
+		},
+		{
+			name:     "No matching pattern",
+			refs:     []string{"https://github.com/org/repo/blob/main/file.go"},
+			expected: defaultSnippetLineDelta,
+		},
+		{
+			name:     "End less than start",
+			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L30-L10"},
+			expected: defaultSnippetLineDelta,
+		},
+		{
+			name:     "Equal start and end",
+			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L10-L10"},
+			expected: defaultSnippetLineDelta,
+		},
+		{
+			name:     "First ref invalid, second valid",
+			refs:     []string{"https://example.com/no-range", "https://github.com/org/repo/blob/main/file.go#L5-L15"},
+			expected: 10,
+		},
+		{
+			name:     "Single line span",
+			refs:     []string{"https://github.com/org/repo/blob/main/file.go#L1-L2"},
+			expected: 1,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, snippetLineDeltaFromRef(tc.refs))
+		})
+	}
+}
+
+func TestGenerateSnippetReviewComment(t *testing.T) {
+	writer := &outputwriter.StandardOutput{}
+	snippetRef := "https://github.com/org/repo/blob/main/utils.go#L10-L30"
+	snippetLicense := formats.LicenseViolationRow{
+		LicenseRow: formats.LicenseRow{
+			LicenseKey: "MIT",
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+				ImpactedDependencyName:    "snippet-dep",
+				ImpactedDependencyVersion: "snippet",
+			},
+			ImpactPaths: [][]formats.ComponentRow{
+				{
+					{Name: "root", Version: "1.0"},
+					{
+						Name:    "snippet-dep",
+						Version: "1.0",
+						Evidences: []formats.Location{
+							{
+								File:               "src/utils.go",
+								StartLine:          10,
+								ExternalReferences: []string{snippetRef},
+							},
+						},
+					},
+				},
+			},
+		},
+		ViolationContext: formats.ViolationContext{
+			Watch:    "watch1",
+			Policies: []string{"policy1"},
+		},
+	}
+
+	testCases := []struct {
+		name           string
+		issues         *issues.ScansIssuesCollection
+		expectedOutput []ReviewComment
+	}{
+		{
+			name:           "No license violations",
+			issues:         &issues.ScansIssuesCollection{},
+			expectedOutput: nil,
+		},
+		{
+			name: "No snippet license violations",
+			issues: &issues.ScansIssuesCollection{
+				LicensesViolations: []formats.LicenseViolationRow{
+					{
+						LicenseRow: formats.LicenseRow{
+							LicenseKey: "Apache-2.0",
+							ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+								ImpactedDependencyVersion: "1.0.0",
+							},
+						},
+					},
+				},
+			},
+			expectedOutput: nil,
+		},
+		{
+			name: "Single snippet violation",
+			issues: &issues.ScansIssuesCollection{
+				LicensesViolations: []formats.LicenseViolationRow{snippetLicense},
+			},
+			expectedOutput: []ReviewComment{
+				{
+					Location: formats.Location{
+						File:      "src/utils.go",
+						StartLine: 10,
+						EndLine:   30,
+					},
+					Type: SnippetComment,
+					CommentInfo: vcsclient.PullRequestComment{
+						CommentInfo: vcsclient.CommentInfo{
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+								true,
+								writer,
+								[]formats.LicenseViolationRow{snippetLicense},
+								[]string{snippetRef},
+							), writer),
+						},
+						PullRequestDiff: vcsclient.PullRequestDiff{
+							OriginalFilePath:  "src/utils.go",
+							OriginalStartLine: 10,
+							OriginalEndLine:   30,
+							NewFilePath:       "src/utils.go",
+							NewStartLine:      10,
+							NewEndLine:        30,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Multiple evidences at different locations",
+			issues: &issues.ScansIssuesCollection{
+				LicensesViolations: []formats.LicenseViolationRow{
+					{
+						LicenseRow: formats.LicenseRow{
+							LicenseKey: "GPL-3.0",
+							ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+								SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+								ImpactedDependencyVersion: "snippet",
+							},
+							ImpactPaths: [][]formats.ComponentRow{
+								{
+									{
+										Name:    "snippet-dep",
+										Version: "2.0",
+										Evidences: []formats.Location{
+											{
+												File:               "src/b.go",
+												StartLine:          50,
+												ExternalReferences: []string{"https://github.com/org/repo/blob/main/b.go#L50-L70"},
+											},
+											{
+												File:               "src/a.go",
+												StartLine:          5,
+												ExternalReferences: []string{"https://github.com/org/repo/blob/main/a.go#L5-L25"},
+											},
+										},
+									},
+								},
+							},
+						},
+						ViolationContext: formats.ViolationContext{Watch: "w1"},
+					},
+				},
+			},
+			expectedOutput: func() []ReviewComment {
+				licRow := formats.LicenseViolationRow{
+					LicenseRow: formats.LicenseRow{
+						LicenseKey: "GPL-3.0",
+						ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+							SeverityDetails:           formats.SeverityDetails{Severity: "Critical"},
+							ImpactedDependencyVersion: "snippet",
+						},
+						ImpactPaths: [][]formats.ComponentRow{
+							{
+								{
+									Name:    "snippet-dep",
+									Version: "2.0",
+									Evidences: []formats.Location{
+										{
+											File:               "src/b.go",
+											StartLine:          50,
+											ExternalReferences: []string{"https://github.com/org/repo/blob/main/b.go#L50-L70"},
+										},
+										{
+											File:               "src/a.go",
+											StartLine:          5,
+											ExternalReferences: []string{"https://github.com/org/repo/blob/main/a.go#L5-L25"},
+										},
+									},
+								},
+							},
+						},
+					},
+					ViolationContext: formats.ViolationContext{Watch: "w1"},
+				}
+				return []ReviewComment{
+					{
+						Location: formats.Location{File: "src/a.go", StartLine: 5, EndLine: 25},
+						Type:     SnippetComment,
+						CommentInfo: vcsclient.PullRequestComment{
+							CommentInfo: vcsclient.CommentInfo{
+								Content: outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+									true, writer,
+									[]formats.LicenseViolationRow{licRow},
+									[]string{"https://github.com/org/repo/blob/main/a.go#L5-L25"},
+								), writer),
+							},
+							PullRequestDiff: vcsclient.PullRequestDiff{
+								OriginalFilePath: "src/a.go", OriginalStartLine: 5, OriginalEndLine: 25,
+								NewFilePath: "src/a.go", NewStartLine: 5, NewEndLine: 25,
+							},
+						},
+					},
+					{
+						Location: formats.Location{File: "src/b.go", StartLine: 50, EndLine: 70},
+						Type:     SnippetComment,
+						CommentInfo: vcsclient.PullRequestComment{
+							CommentInfo: vcsclient.CommentInfo{
+								Content: outputwriter.GenerateReviewCommentContent(outputwriter.SnippetReviewContent(
+									true, writer,
+									[]formats.LicenseViolationRow{licRow},
+									[]string{"https://github.com/org/repo/blob/main/b.go#L50-L70"},
+								), writer),
+							},
+							PullRequestDiff: vcsclient.PullRequestDiff{
+								OriginalFilePath: "src/b.go", OriginalStartLine: 50, OriginalEndLine: 70,
+								NewFilePath: "src/b.go", NewStartLine: 50, NewEndLine: 70,
+							},
+						},
+					},
+				}
+			}(),
+		},
+		{
+			name: "Empty impact path is skipped",
+			issues: &issues.ScansIssuesCollection{
+				LicensesViolations: []formats.LicenseViolationRow{
+					{
+						LicenseRow: formats.LicenseRow{
+							LicenseKey: "MIT",
+							ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+								ImpactedDependencyVersion: "snippet",
+							},
+							ImpactPaths: [][]formats.ComponentRow{{}},
+						},
+					},
+				},
+			},
+			expectedOutput: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := generateSnippetReviewComment(tc.issues, writer)
+			if tc.expectedOutput == nil {
+				require.Empty(t, result)
+				return
+			}
+			require.Len(t, result, len(tc.expectedOutput))
+			for i := range tc.expectedOutput {
+				assert.Equal(t, tc.expectedOutput[i].Location, result[i].Location, "location mismatch at index %d", i)
+				assert.Equal(t, tc.expectedOutput[i].Type, result[i].Type, "type mismatch at index %d", i)
+				assert.Equal(t, tc.expectedOutput[i].CommentInfo.PullRequestDiff, result[i].CommentInfo.PullRequestDiff, "diff mismatch at index %d", i)
+				assert.Equal(t, tc.expectedOutput[i].CommentInfo.Content, result[i].CommentInfo.Content, "content mismatch at index %d", i)
+			}
 		})
 	}
 }
