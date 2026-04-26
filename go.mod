@@ -4,16 +4,16 @@ go 1.25.7
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.10.0
-	github.com/go-git/go-git/v5 v5.17.1
+	github.com/go-git/go-git/v5 v5.18.0
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.13.1-0.20260331040230-c3b53d1a24ac
 	github.com/jfrog/froggit-go v1.21.1
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260408205330-fb3f40fbcd22
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260402104745-7a0bc2c11d63
-	github.com/jfrog/jfrog-cli-security v1.26.6
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260401130923-f5a15b584a0d
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260416104146-471c3f71ce61
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260420010255-65b7a8d432af
+	github.com/jfrog/jfrog-cli-security v1.27.1
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260416101832-c47c1246283b
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
