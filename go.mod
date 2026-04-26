@@ -126,7 +126,7 @@ require (
 )
 
 // attiasas:fast_sast_diff
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260420081643-713bf2d22262
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260426124540-e7ba29cbdabf
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -135,6 +135,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // attiasas:add_chagned_files_to_git_ctx
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20260420064147-858bbdf9ec5b
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20260426111214-788a89d406bb
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master

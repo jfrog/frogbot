@@ -21,10 +21,10 @@ github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be h1:9AeTilPcZAjCFI
 github.com/anmitsu/go-shlex v0.0.0-20200514113438-38f4b401e2be/go.mod h1:ySMOLuWl6zY27l47sB3qLNK6tF2fkHG55UZxx8oIVo4=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5 h1:0CwZNZbxp69SHPdPJAN/hZIm0C4OItdklCFmMRWYpio=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=
-github.com/attiasas/jfrog-cli-security v0.0.0-20260420081643-713bf2d22262 h1:KCVThDnmeyVkcootRNFFAh1qIEDxjS5dQBuIRO8Uv6I=
-github.com/attiasas/jfrog-cli-security v0.0.0-20260420081643-713bf2d22262/go.mod h1:GoPPjglUUBHhLovzk7VaSjUoqIm4U5iEOeY2asKHSvM=
-github.com/attiasas/jfrog-client-go v0.0.0-20260420064147-858bbdf9ec5b h1:JGfUd7uoxR6VcYtEzYPW7vFkA6VJ6wnL4mAkrcxEkHM=
-github.com/attiasas/jfrog-client-go v0.0.0-20260420064147-858bbdf9ec5b/go.mod h1:sCE06+GngPoyrGO0c+vmhgMoVSP83UMNiZnIuNPzU8U=
+github.com/attiasas/jfrog-cli-security v0.0.0-20260426124540-e7ba29cbdabf h1:FE4OYWc0buMUYT1V8UA5CJ1PUalhpZeqSmD3/pKWAWY=
+github.com/attiasas/jfrog-cli-security v0.0.0-20260426124540-e7ba29cbdabf/go.mod h1:SQ+pAfOdylcdQv2zWEb9PfG/skVZ69EY8hxxxU+0UPQ=
+github.com/attiasas/jfrog-client-go v0.0.0-20260426111214-788a89d406bb h1:gyoSro/3P6DKuLCQ/E+B/hl7S2gtrt3oBgHiLOuWPQA=
+github.com/attiasas/jfrog-client-go v0.0.0-20260426111214-788a89d406bb/go.mod h1:sCE06+GngPoyrGO0c+vmhgMoVSP83UMNiZnIuNPzU8U=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0 h1:any4BmKE+jGIaMpnU8YgH/I2LPiLBufr6oMMlVBbn9M=
 github.com/bradleyjkemp/cupaloy/v2 v2.8.0/go.mod h1:bm7JXdkRd4BHJk9HpwqAI8BoAY1lps46Enkdqw6aRX0=
 github.com/bufbuild/protocompile v0.4.0 h1:LbFKd2XowZvQ/kajzguUp2DC9UEIQhIq77fZZlaQsNA=
