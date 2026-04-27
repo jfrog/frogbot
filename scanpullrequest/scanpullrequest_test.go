@@ -49,7 +49,7 @@ const (
 )
 
 func TestScanResultsToIssuesCollection(t *testing.T) {
-	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{EntitledForJas: true, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
+	auditResults := &results.SecurityCommandResults{ResultsMetaData: results.ResultsMetaData{Entitlements: results.Entitlements{Jas: true}, ResultContext: results.ResultContext{IncludeVulnerabilities: true}}, Targets: []*results.TargetResults{{
 		ScanTarget: results.ScanTarget{Target: "dummy"},
 		ScaResults: &results.ScaScanResults{
 			DeprecatedXrayResults: []services.ScanResponse{{
