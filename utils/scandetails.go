@@ -34,8 +34,9 @@ type ScanDetails struct {
 	configProfile       *xscservices.ConfigProfile
 	allowPartialResults bool
 
-	diffScan         bool
-	ResultsToCompare *results.SecurityCommandResults
+	diffScan             bool
+	ResultsToCompare     *results.SecurityCommandResults
+	SastChangedFilesOnly bool
 
 	results.ResultContext
 	MultiScanId string
@@ -61,6 +62,11 @@ func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
 
 func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResults) *ScanDetails {
 	sc.ResultsToCompare = results
+	return sc
+}
+
+func (sc *ScanDetails) SetSastChangedFilesOnly(sastChangedFilesOnly bool) *ScanDetails {
+	sc.SastChangedFilesOnly = sastChangedFilesOnly
 	return sc
 }
 
@@ -181,6 +187,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
+		SetSastChangedFilesMode(sc.SastChangedFilesOnly).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).

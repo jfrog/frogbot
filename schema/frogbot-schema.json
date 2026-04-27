@@ -136,6 +136,12 @@
         "description": "Handle vulnerabilities with fix versions only.",
         "title": "Handle vulnerabilities with fix versions only"
       },
+      "sastChangedFilesOnly": {
+        "type": "boolean",
+        "default": ["false"],
+        "description": "Only scan SAST vulnerabilities in changed files.",
+        "title": "Only scan SAST vulnerabilities in changed files"
+      },
 	  "allowedLicenses": {
 		"type": [
 		  "array",

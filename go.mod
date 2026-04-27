@@ -126,7 +126,7 @@ require (
 )
 
 // attiasas:fast_sast_diff
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260426124540-e7ba29cbdabf
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260427073643-28750a7ba794
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
