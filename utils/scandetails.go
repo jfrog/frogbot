@@ -248,13 +248,13 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	}
 	gitInfo.Target = &targetInfo
 	// Get PR modified files
-	changedFiles, err := client.GetModifiedFiles(context.Background(), sc.RepoOwner, sc.RepoName, prDetails.Target.Name, prDetails.Source.Name)
-	if err != nil {
-		log.Debug("Failed to get PR modified files for git diff context:", err.Error())
+	changedFiles, getModifiedErr := client.GetModifiedFiles(context.Background(), sc.RepoOwner, sc.RepoName, prDetails.Target.Name, prDetails.Source.Name)
+	if getModifiedErr != nil {
+		log.Warn("Failed to get PR modified files for git diff context:", getModifiedErr.Error())
 	} else {
 		gitInfo.ChangedFiles = changedFiles
 	}
-	return
+	return gitInfo, nil
 }
 
 func (sc *ScanDetails) getCommitContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (commitContext xscservices.CommitContext, err error) {

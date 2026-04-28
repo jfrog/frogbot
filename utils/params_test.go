@@ -18,6 +18,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/jfrog-cli-security/jas/sast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -297,6 +298,27 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 			assert.Equal(t, int64(1), configParams.PullRequestDetails.ID)
 		}
 	}
+}
+
+func TestScanSastChangedFilesOnlyEnv(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+
+	scan := &Scan{}
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.False(t, scan.SastChangedFilesOnly)
+
+	scan = &Scan{}
+	SetEnvAndAssert(t, map[string]string{sast.ChangedFilesModeEnvVar: "true"})
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.True(t, scan.SastChangedFilesOnly)
+
+	// Explicit YAML (true) wins; do not read env when the flag is already set.
+	scan = &Scan{SastChangedFilesOnly: true}
+	SetEnvAndAssert(t, map[string]string{sast.ChangedFilesModeEnvVar: "false"})
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.True(t, scan.SastChangedFilesOnly)
 }
 
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
