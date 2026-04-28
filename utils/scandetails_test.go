@@ -21,10 +21,10 @@ func TestSetSastChangedFilesOnly(t *testing.T) {
 
 func TestSetXscPRGitInfoContext_PopulatesChangedFiles(t *testing.T) {
 	const (
-		repoOwner      = "acme"
-		repoName       = "app"
-		sourceBranch   = "feature"
-		targetBranch   = "main"
+		repoOwner    = "acme"
+		repoName     = "app"
+		sourceBranch = "feature"
+		targetBranch = "main"
 	)
 	ctrl := gomock.NewController(t)
 	client := testdata.NewMockVcsClient(ctrl)

@@ -14,7 +14,6 @@ import (
 	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"gopkg.in/yaml.v2"
 
-	"github.com/jfrog/jfrog-cli-security/jas/sast"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
@@ -238,7 +237,7 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 		}
 	}
 	if !s.SastChangedFilesOnly {
-		if s.SastChangedFilesOnly, err = getBoolEnv(sast.ChangedFilesModeEnvVar, false); err != nil {
+		if s.SastChangedFilesOnly, err = getBoolEnv(ChangedFilesModeEnvVar, false); err != nil {
 			return
 		}
 	}

@@ -18,7 +18,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/jfrog/froggit-go/vcsutils"
-	"github.com/jfrog/jfrog-cli-security/jas/sast"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -310,13 +309,13 @@ func TestScanSastChangedFilesOnlyEnv(t *testing.T) {
 	assert.False(t, scan.SastChangedFilesOnly)
 
 	scan = &Scan{}
-	SetEnvAndAssert(t, map[string]string{sast.ChangedFilesModeEnvVar: "true"})
+	SetEnvAndAssert(t, map[string]string{ChangedFilesModeEnvVar: "true"})
 	assert.NoError(t, scan.setDefaultsIfNeeded())
 	assert.True(t, scan.SastChangedFilesOnly)
 
 	// Explicit YAML (true) wins; do not read env when the flag is already set.
 	scan = &Scan{SastChangedFilesOnly: true}
-	SetEnvAndAssert(t, map[string]string{sast.ChangedFilesModeEnvVar: "false"})
+	SetEnvAndAssert(t, map[string]string{ChangedFilesModeEnvVar: "false"})
 	assert.NoError(t, scan.setDefaultsIfNeeded())
 	assert.True(t, scan.SastChangedFilesOnly)
 }

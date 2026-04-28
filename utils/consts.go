@@ -76,12 +76,14 @@ const (
 	DepsRepoEnv                        = "JF_DEPS_REPO"
 	MinSeverityEnv                     = "JF_MIN_SEVERITY"
 	FixableOnlyEnv                     = "JF_FIXABLE_ONLY"
-	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	DetectionOnlyEnv                   = "JF_SKIP_AUTOFIX"
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
 	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
 	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
 	WatchesDelimiter                   = ","
+	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
+	// ChangedFilesModeEnvVar enables using GitContext changed files (scoped per target) as SAST scan roots.
+	ChangedFilesModeEnvVar = "JF_SAST_CHANGED_FILES_MODE"
 
 	// Email related environment variables
 	//#nosec G101 -- False positive - no hardcoded credentials.
