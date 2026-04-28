@@ -13,7 +13,7 @@ require (
 	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260416104146-471c3f71ce61
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260420010255-65b7a8d432af
 	github.com/jfrog/jfrog-cli-security v1.27.1
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260416101832-c47c1246283b
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260428070955-750b933dc5c7
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -126,7 +126,7 @@ require (
 )
 
 // attiasas:fast_sast_diff
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260427143351-4ee32f1db7e1
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260427100031-aee26841d7de
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -134,7 +134,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// attiasas:add_chagned_files_to_git_ctx
-replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20260427080430-a2f591c32959
+// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
