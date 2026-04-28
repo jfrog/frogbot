@@ -193,7 +193,7 @@ func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository 
 			log.Warn(err)
 		}
 
-		if *repository.Params.Git.UploadSbomToVcs && scanResults.EntitledForJas {
+		if *repository.Params.Git.UploadSbomToVcs && scanResults.Entitlements.Jas {
 			if err := utils.UploadSbomSnapshotToGithubDependencyGraph(repository.Params.Git.RepoOwner, repository.Params.Git.RepoName, scanResults, sr.scanDetails.Client(), sr.scanDetails.BaseBranch()); err != nil {
 				log.Warn(err)
 			}
@@ -208,7 +208,7 @@ func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	sr.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
+	sr.OutputWriter.SetJasOutputFlags(auditResults.Entitlements.Jas, auditResults.HasJasScansResults(jasutils.Applicability))
 	sr.projectTech = auditResults.GetTechnologies(sr.projectTech...)
 	return auditResults, nil
 }
