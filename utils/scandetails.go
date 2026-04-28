@@ -111,6 +111,7 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
+		SetSastChangedFilesMode(sc.SastChangedFilesMode).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
@@ -173,7 +174,7 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	// Get PR modified files
 	changedFiles, err := client.GetModifiedFiles(context.Background(), sc.RepoOwner, sc.RepoName, prDetails.Target.Name, prDetails.Source.Name)
 	if err != nil {
-		log.Debug("Failed to get PR modified files for git diff context:", err.Error())
+		log.Warn("Failed to get PR modified files for git diff context:", err.Error())
 	} else {
 		gitInfo.ChangedFiles = changedFiles
 	}
