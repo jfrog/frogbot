@@ -242,7 +242,7 @@ func buildIdentifiers(v *formats.VulnerabilityOrViolationRow) []Identifier {
 		if cve.Id != "" {
 			ids = append(ids, Identifier{
 				Type:  "cve",
-				Name:  "CVE",
+				Name:  cve.Id,
 				Value: cve.Id,
 				URL:   "https://nvd.nist.gov/vuln/detail/" + cve.Id,
 			})
@@ -251,15 +251,25 @@ func buildIdentifiers(v *formats.VulnerabilityOrViolationRow) []Identifier {
 	if v.IssueId != "" && !strings.HasPrefix(strings.ToUpper(v.IssueId), "CVE-") {
 		ids = append(ids, Identifier{
 			Type:  "xray",
-			Name:  "Xray",
+			Name:  v.IssueId,
 			Value: v.IssueId,
 		})
 	}
 	if len(ids) == 0 {
+		issue := strings.TrimSpace(v.IssueId)
+		if issue != "" && strings.HasPrefix(strings.ToUpper(issue), "CVE-") {
+			return []Identifier{{
+				Type:  "cve",
+				Name:  issue,
+				Value: issue,
+				URL:   "https://nvd.nist.gov/vuln/detail/" + issue,
+			}}
+		}
+		fallback := v.ImpactedDependencyName + "@" + v.ImpactedDependencyVersion
 		ids = append(ids, Identifier{
 			Type:  "other",
-			Name:  "JFrog Xray",
-			Value: v.ImpactedDependencyName + "@" + v.ImpactedDependencyVersion,
+			Name:  fallback,
+			Value: fallback,
 		})
 	}
 	return ids
