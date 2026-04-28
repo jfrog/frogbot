@@ -299,6 +299,27 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl, basicAuth bool, co
 	}
 }
 
+func TestScanSastChangedFilesOnlyEnv(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+
+	scan := &Scan{}
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.False(t, scan.SastChangedFilesOnly)
+
+	scan = &Scan{}
+	SetEnvAndAssert(t, map[string]string{ChangedFilesModeEnvVar: "true"})
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.True(t, scan.SastChangedFilesOnly)
+
+	// Explicit YAML (true) wins; do not read env when the flag is already set.
+	scan = &Scan{SastChangedFilesOnly: true}
+	SetEnvAndAssert(t, map[string]string{ChangedFilesModeEnvVar: "false"})
+	assert.NoError(t, scan.setDefaultsIfNeeded())
+	assert.True(t, scan.SastChangedFilesOnly)
+}
+
 func TestExtractInstallationCommandFromEnv(t *testing.T) {
 	defer func() {
 		assert.NoError(t, SanitizeEnv())
