@@ -881,7 +881,7 @@ func TestGradleFixVulnerabilityIfExists(t *testing.T) {
 
 	gph := GradlePackageHandler{}
 
-	descriptorFiles, err := gph.GetAllDescriptorFilesFullPaths([]string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix})
+	descriptorFiles, err := getAllGradleDescriptorFilesFullPaths()
 	assert.NoError(t, err)
 
 	for _, descriptorFile := range descriptorFiles {
@@ -996,6 +996,49 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 
 		var cph CommonPackageHandler
 		descriptorFilesFullPaths, err := cph.GetAllDescriptorFilesFullPaths(testcase.suffixesToSearch, testcase.patternsToExclude...)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
+
+		assert.NoError(t, os.Chdir(currDir))
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}
+}
+
+func TestGetAllGradleDescriptorFilesFullPaths(t *testing.T) {
+	var testcases = []struct {
+		testProjectRepo        string
+		expectedResultSuffixes []string
+		patternsToExclude      []string
+	}{
+		{
+			testProjectRepo:        "gradle",
+			expectedResultSuffixes: []string{"build.gradle", filepath.Join("innerProjectForTest", "build.gradle.kts")},
+		},
+		{
+			testProjectRepo:        "gradle",
+			expectedResultSuffixes: []string{"build.gradle"},
+			patternsToExclude:      []string{".*innerProjectForTest.*"},
+		},
+	}
+
+	currDir, outerErr := os.Getwd()
+	assert.NoError(t, outerErr)
+
+	for _, testcase := range testcases {
+		tmpDir, err := os.MkdirTemp("", "")
+		assert.NoError(t, err)
+		assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", testcase.testProjectRepo), tmpDir, true, nil))
+		assert.NoError(t, os.Chdir(tmpDir))
+
+		finalDirPath, err := os.Getwd()
+		assert.NoError(t, err)
+
+		var expectedResults []string
+		for _, suffix := range testcase.expectedResultSuffixes {
+			expectedResults = append(expectedResults, filepath.Join(finalDirPath, suffix))
+		}
+
+		descriptorFilesFullPaths, err := getAllGradleDescriptorFilesFullPaths(testcase.patternsToExclude...)
 		assert.NoError(t, err)
 		assert.ElementsMatch(t, expectedResults, descriptorFilesFullPaths)
 
