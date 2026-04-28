@@ -34,8 +34,9 @@ type ScanDetails struct {
 	configProfile       *xscservices.ConfigProfile
 	allowPartialResults bool
 
-	diffScan         bool
-	ResultsToCompare *results.SecurityCommandResults
+	diffScan             bool
+	ResultsToCompare     *results.SecurityCommandResults
+	SastChangedFilesOnly bool
 
 	results.ResultContext
 	MultiScanId string
@@ -61,6 +62,11 @@ func (sc *ScanDetails) SetDiffScan(diffScan bool) *ScanDetails {
 
 func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResults) *ScanDetails {
 	sc.ResultsToCompare = results
+	return sc
+}
+
+func (sc *ScanDetails) SetSastChangedFilesOnly(sastChangedFilesOnly bool) *ScanDetails {
+	sc.SastChangedFilesOnly = sastChangedFilesOnly
 	return sc
 }
 
@@ -151,7 +157,7 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
+func (sc *ScanDetails) RunInstallAndAudit(baseDir string, workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
@@ -171,16 +177,21 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetUseJas(!sc.DisableJas()).
 		SetConfigProfile(sc.configProfile)
 
+	fullPathWorkDirs := GetFullPathWorkingDirs(workDirs, baseDir)
+
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
 		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
 		SetViolationGenerator(local.NewDeprecatedViolationGenerator()).
-		SetWorkingDirs(workDirs).
+		SetWorkingDirs(fullPathWorkDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
+		SetGitContext(sc.XscGitInfoContext).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
+		SetSastChangedFilesMode(sc.SastChangedFilesOnly).
+		SetRootDir(baseDir).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
@@ -202,12 +213,12 @@ func (sc *ScanDetails) SetXscGitInfoContext(scannedBranch, gitProject string, cl
 
 // For PR-Scan
 func (sc *ScanDetails) SetXscPRGitInfoContext(gitProject string, client vcsclient.VcsClient, prDetails vcsclient.PullRequestInfo) *ScanDetails {
-	XscGitInfoContext, err := sc.createGitInfoContext(prDetails.Source.Name, gitProject, client, &prDetails)
+	xscCtx, err := sc.createGitInfoContext(prDetails.Source.Name, gitProject, client, &prDetails)
 	if err != nil {
 		log.Debug("Failed to create a GitInfoContext for Xsc due to the following error:", err.Error())
 		return sc
 	}
-	sc.XscGitInfoContext = XscGitInfoContext
+	sc.XscGitInfoContext = xscCtx
 	return sc
 }
 
@@ -239,7 +250,14 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 		return nil, err
 	}
 	gitInfo.Target = &targetInfo
-	return
+	// Get PR modified files
+	changedFiles, getModifiedErr := client.GetModifiedFiles(context.Background(), sc.RepoOwner, sc.RepoName, prDetails.Target.Name, prDetails.Source.Name)
+	if getModifiedErr != nil {
+		log.Warn("Failed to get PR modified files for git diff context:", getModifiedErr.Error())
+	} else {
+		gitInfo.ChangedFiles = changedFiles
+	}
+	return gitInfo, nil
 }
 
 func (sc *ScanDetails) getCommitContext(scannedBranch, gitProject string, client vcsclient.VcsClient) (commitContext xscservices.CommitContext, err error) {
