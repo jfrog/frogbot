@@ -127,7 +127,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 			identifierTypes: []string{"cve", "xray"},
 		},
 		{
-			name: "contextual analysis in description",
+			name: "contextual analysis in reachable detail",
 			row: formats.VulnerabilityOrViolationRow{
 				IssueId: "XRAY-99",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
@@ -203,10 +203,32 @@ func TestVulnerabilityToReport(t *testing.T) {
 			assert.Equal(t, tt.wantSeverity, got.Severity)
 			assert.Equal(t, tt.wantManifest, got.Location.File)
 			if tt.name == "CVE name and link" {
-				assert.Equal(t, "CVE-2021-1234 (Not Covered).\n\nTest summary", got.Description)
+				assert.Equal(t, "Test summary", got.Description)
+				require.NotNil(t, got.Details)
+				assert.Equal(t, "named-list", got.Details.Type)
+				item := got.Details.Items["reachable"]
+				assert.Equal(t, "Reachable", item.Name)
+				assert.Equal(t, "text", item.Type)
+				assert.Equal(t, "CVE-2021-1234 (Not Covered).", item.Value)
 			}
-			if tt.name == "contextual analysis in description" {
-				assert.Equal(t, "CVE-2023-1 (Applicable). CVE-2023-2 (Not Applicable).\n\nDetails here", got.Description)
+			if tt.name == "contextual analysis in reachable detail" {
+				assert.Equal(t, "Details here", got.Description)
+				require.NotNil(t, got.Details)
+				item := got.Details.Items["reachable"]
+				assert.Equal(t, "CVE-2023-1 (Applicable). CVE-2023-2 (Not Applicable).", item.Value)
+			}
+			if tt.name == "non-CVE issue id adds xray identifier" {
+				assert.Empty(t, got.Description)
+				require.NotNil(t, got.Details)
+				assert.Equal(t, jasutils.NotCovered.String(), got.Details.Items["reachable"].Value)
+			}
+			if tt.name == "CVE from issueId when cves slice empty" {
+				assert.Equal(t, "from issue id only", got.Description)
+				require.NotNil(t, got.Details)
+				assert.Equal(t, jasutils.NotCovered.String(), got.Details.Items["reachable"].Value)
+			}
+			if tt.name == "fallback identifier when no CVE or issue id" {
+				assert.Nil(t, got.Details)
 			}
 			if tt.wantSolution != "" {
 				assert.Equal(t, tt.wantSolution, got.Solution)
@@ -238,6 +260,10 @@ func TestGitLabReportJSON_identifierValueIsCVE(t *testing.T) {
 	assert.Contains(t, string(raw), `"type":"cve"`)
 	assert.Contains(t, string(raw), `"name":"CVE-2021-9999"`)
 	assert.Contains(t, string(raw), `"value":"CVE-2021-9999"`)
+	assert.Contains(t, string(raw), `"details":`)
+	assert.Contains(t, string(raw), `"type":"named-list"`)
+	assert.Contains(t, string(raw), `"name":"Reachable"`)
+	assert.Contains(t, string(raw), `"value":"CVE-2021-9999 (Not Covered)."`)
 }
 
 func scanResultsWithSbomOnly() *results.SecurityCommandResults {
