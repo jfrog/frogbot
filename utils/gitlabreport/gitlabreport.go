@@ -56,14 +56,28 @@ type Vendor struct {
 }
 
 type VulnerabilityReport struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name,omitempty"`
-	Description string       `json:"description,omitempty"`
-	Severity    string       `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
-	Solution    string       `json:"solution,omitempty"`
-	Identifiers []Identifier `json:"identifiers"`
-	Location    Location     `json:"location"`
-	Links       []Link       `json:"links,omitempty"`
+	ID          string            `json:"id"`
+	Name        string            `json:"name,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Severity    string            `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
+	Solution    string            `json:"solution,omitempty"`
+	Identifiers []Identifier      `json:"identifiers"`
+	Location    Location          `json:"location"`
+	Links       []Link            `json:"links,omitempty"`
+	Details     *DetailsNamedList `json:"details,omitempty"` // e.g. Reachable (contextual analysis); see dependency-scanning schema `details`
+}
+
+// DetailsNamedList is GitLab's named-list detail block (security report schema).
+type DetailsNamedList struct {
+	Type  string                         `json:"type"` // must be "named-list"
+	Items map[string]DetailNamedListItem `json:"items"`
+}
+
+// DetailNamedListItem merges named_field (name) with a detail payload (e.g. type "text" + value).
+type DetailNamedListItem struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"` // "text"
+	Value string `json:"value"`
 }
 
 type Identifier struct {
@@ -192,9 +206,14 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 	severity := normalizeSeverity(getSeverity(v))
 	// GitLab's vulnerability list "Description" column is built from the finding title (name) and
 	// manifest path — it does not show the JSON description body in that column. Include
-	// contextual analysis in name so it appears in the list; description still holds full text.
+	// contextual analysis in name so it appears in the list; description holds summary only.
 	name := buildVulnerabilityNameWithContextualAnalysis(v)
-	desc := buildGitLabDescription(v)
+	desc := strings.TrimSpace(getSummary(v))
+	reach := contextualAnalysisReachabilityText(v)
+	var details *DetailsNamedList
+	if strings.TrimSpace(reach) != "" {
+		details = buildReachabilityNamedList(reach)
+	}
 	solution := ""
 	if len(v.FixedVersions) > 0 {
 		solution = fmt.Sprintf("Upgrade %s to version %s or later.", v.ImpactedDependencyName, v.FixedVersions[0])
@@ -214,6 +233,7 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 		Identifiers: identifiers,
 		Location:    location,
 		Links:       links,
+		Details:     details,
 	}
 }
 
@@ -317,18 +337,29 @@ func aggregatedContextualAnalysisDisplay(v *formats.VulnerabilityOrViolationRow)
 	return st.String()
 }
 
-// buildGitLabDescription prepends contextual analysis lines in the form "CVE-ID (status)." for each CVE,
-// then the vulnerability summary (when present).
-func buildGitLabDescription(v *formats.VulnerabilityOrViolationRow) string {
-	prefix := contextualAnalysisDescriptionPrefix(v)
-	summary := getSummary(v)
-	switch {
-	case prefix != "" && summary != "":
-		return prefix + "\n\n" + summary
-	case prefix != "":
-		return prefix
-	default:
-		return summary
+// contextualAnalysisReachabilityText returns contextual analysis (JAS applicability) for the
+// Reachable detail field: per-CVE lines when available, otherwise the row-level status when the
+// finding has a titled vulnerability.
+func contextualAnalysisReachabilityText(v *formats.VulnerabilityOrViolationRow) string {
+	if s := contextualAnalysisDescriptionPrefix(v); strings.TrimSpace(s) != "" {
+		return strings.TrimSpace(s)
+	}
+	if buildVulnerabilityNameWithContextualAnalysis(v) == "" {
+		return ""
+	}
+	return aggregatedContextualAnalysisDisplay(v)
+}
+
+func buildReachabilityNamedList(reachabilityText string) *DetailsNamedList {
+	return &DetailsNamedList{
+		Type: "named-list",
+		Items: map[string]DetailNamedListItem{
+			"reachable": {
+				Name:  "Reachable",
+				Type:  "text",
+				Value: reachabilityText,
+			},
+		},
 	}
 }
 
