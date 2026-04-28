@@ -17,8 +17,6 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
-
-	securityUtils "github.com/jfrog/jfrog-cli-security/utils"
 )
 
 type ScanDetails struct {
