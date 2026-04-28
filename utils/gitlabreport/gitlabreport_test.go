@@ -177,6 +177,24 @@ func TestVulnerabilityToReport(t *testing.T) {
 			wantManifest:    "pom.xml",
 			identifierTypes: []string{"other"},
 		},
+		{
+			name: "CVE from issueId when cves slice empty",
+			row: formats.VulnerabilityOrViolationRow{
+				IssueId: "CVE-2020-9999",
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					ImpactedDependencyName:    "dep",
+					ImpactedDependencyVersion: "1.0.0",
+					SeverityDetails:           formats.SeverityDetails{Severity: "high"},
+				},
+				Cves:       nil,
+				Summary:    "from issue id only",
+				Technology: techutils.Maven,
+			},
+			wantName:        "CVE-2020-9999 (Not Covered)",
+			wantSeverity:    "High",
+			wantManifest:    "pom.xml",
+			identifierTypes: []string{"cve"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -196,9 +214,30 @@ func TestVulnerabilityToReport(t *testing.T) {
 			require.Len(t, got.Identifiers, len(tt.identifierTypes))
 			for i, wantType := range tt.identifierTypes {
 				assert.Equal(t, wantType, got.Identifiers[i].Type)
+				assert.NotEmpty(t, got.Identifiers[i].Value, "identifier value must be set for GitLab vulnerability report")
+				assert.Equal(t, got.Identifiers[i].Value, got.Identifiers[i].Name, "identifier name should match value for GitLab UI")
 			}
 		})
 	}
+}
+
+func TestGitLabReportJSON_identifierValueIsCVE(t *testing.T) {
+	row := formats.VulnerabilityOrViolationRow{
+		IssueId: "XRAY-1",
+		ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+			ImpactedDependencyName:    "lib",
+			ImpactedDependencyVersion: "1.0.0",
+			SeverityDetails:           formats.SeverityDetails{Severity: "high"},
+		},
+		Cves:       []formats.CveRow{{Id: "CVE-2021-9999"}},
+		Technology: techutils.Npm,
+	}
+	rep := vulnerabilityToReport(&row)
+	raw, err := json.Marshal(rep)
+	require.NoError(t, err)
+	assert.Contains(t, string(raw), `"type":"cve"`)
+	assert.Contains(t, string(raw), `"name":"CVE-2021-9999"`)
+	assert.Contains(t, string(raw), `"value":"CVE-2021-9999"`)
 }
 
 func scanResultsWithSbomOnly() *results.SecurityCommandResults {
