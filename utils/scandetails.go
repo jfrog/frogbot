@@ -17,6 +17,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
+
+	securityUtils "github.com/jfrog/jfrog-cli-security/utils"
 )
 
 type ScanDetails struct {
@@ -157,7 +159,7 @@ func (sc *ScanDetails) AllowPartialResults() bool {
 	return sc.allowPartialResults
 }
 
-func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
+func (sc *ScanDetails) RunInstallAndAudit(baseDir string, workDirs ...string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
@@ -177,11 +179,13 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetUseJas(!sc.DisableJas()).
 		SetConfigProfile(sc.configProfile)
 
+	fullPathWorkDirs := GetFullPathWorkingDirs(workDirs, baseDir)
+
 	auditParams := audit.NewAuditParams().
 		SetBomGenerator(buildinfo.NewBuildInfoBomGenerator()).
 		SetScaScanStrategy(scangraph.NewScanGraphStrategy()).
 		SetViolationGenerator(local.NewDeprecatedViolationGenerator()).
-		SetWorkingDirs(workDirs).
+		SetWorkingDirs(fullPathWorkDirs).
 		SetMinSeverityFilter(sc.MinSeverityFilter()).
 		SetFixableOnly(sc.FixableOnly()).
 		SetGraphBasicParams(auditBasicParams).
@@ -189,6 +193,7 @@ func (sc *ScanDetails) RunInstallAndAudit(workDirs ...string) (auditResults *res
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
 		SetSastChangedFilesMode(sc.SastChangedFilesOnly).
+		SetRootDir(baseDir).
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).

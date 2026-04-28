@@ -329,13 +329,13 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 }
 
 func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd string) (scanResults *results.SecurityCommandResults, err error) {
-	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)...)
+	scanResults = scanDetails.RunInstallAndAudit(targetBranchWd, scanDetails.Project.WorkingDirs...)
 	err = scanResults.GetErrors()
 	return
 }
 
 func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, scanResults *results.SecurityCommandResults, err error) {
-	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
+	scanResults = scanDetails.RunInstallAndAudit(sourceBranchWd, scanDetails.Project.WorkingDirs...)
 	if err = scanResults.GetErrors(); err != nil {
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
