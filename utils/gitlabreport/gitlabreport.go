@@ -278,21 +278,98 @@ func buildIdentifiers(v *formats.VulnerabilityOrViolationRow) []Identifier {
 	if len(ids) == 0 {
 		issue := strings.TrimSpace(v.IssueId)
 		if issue != "" && strings.HasPrefix(strings.ToUpper(issue), "CVE-") {
-			return []Identifier{{
+			ids = append(ids, Identifier{
 				Type:  "cve",
 				Name:  issue,
 				Value: issue,
 				URL:   "https://nvd.nist.gov/vuln/detail/" + issue,
-			}}
+			})
+		} else {
+			fallback := v.ImpactedDependencyName + "@" + v.ImpactedDependencyVersion
+			ids = append(ids, Identifier{
+				Type:  "other",
+				Name:  fallback,
+				Value: fallback,
+			})
 		}
-		fallback := v.ImpactedDependencyName + "@" + v.ImpactedDependencyVersion
-		ids = append(ids, Identifier{
-			Type:  "other",
-			Name:  fallback,
-			Value: fallback,
-		})
+	}
+	return appendUniqueCWEIdentifiers(ids, v)
+}
+
+// appendUniqueCWEIdentifiers adds GitLab dependency-scanning identifiers with type "cwe" from each
+// CVE row's Cwe list (Xray simple JSON). GitLab aggregates these for dashboards such as "Top 10 CWEs".
+func appendUniqueCWEIdentifiers(ids []Identifier, v *formats.VulnerabilityOrViolationRow) []Identifier {
+	seen := make(map[string]struct{})
+	for _, id := range ids {
+		if id.Type == "cwe" {
+			seen[strings.ToUpper(id.Value)] = struct{}{}
+		}
+	}
+	for _, cve := range v.Cves {
+		for _, raw := range cve.Cwe {
+			canon := normalizeCweID(raw)
+			if canon == "" {
+				continue
+			}
+			key := strings.ToUpper(canon)
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			id := Identifier{
+				Type:  "cwe",
+				Name:  canon,
+				Value: canon,
+			}
+			if u := cweMitreDefinitionsURL(canon); u != "" {
+				id.URL = u
+			}
+			ids = append(ids, id)
+		}
 	}
 	return ids
+}
+
+func normalizeCweID(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	u := strings.ToUpper(raw)
+	if strings.HasPrefix(u, "CWE-") {
+		n := strings.TrimPrefix(u, "CWE-")
+		n = strings.TrimSpace(n)
+		if cweNumericID(n) != "" {
+			return "CWE-" + cweNumericID(n)
+		}
+		return ""
+	}
+	if cweNumericID(u) != "" {
+		return "CWE-" + cweNumericID(u)
+	}
+	return ""
+}
+
+// cweNumericID returns digits-only CWE id, or empty if invalid.
+func cweNumericID(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return ""
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return ""
+		}
+	}
+	return s
+}
+
+func cweMitreDefinitionsURL(cweCanon string) string {
+	n := cweNumericID(strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(cweCanon)), "CWE-"))
+	if n == "" {
+		return ""
+	}
+	return "https://cwe.mitre.org/data/definitions/" + n + ".html"
 }
 
 func getSeverity(v *formats.VulnerabilityOrViolationRow) string {

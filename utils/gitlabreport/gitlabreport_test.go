@@ -3,6 +3,7 @@ package gitlabreport
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -115,7 +116,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 					ImpactedDependencyVersion: "4.17.20",
 					SeverityDetails:           formats.SeverityDetails{Severity: "high"},
 				},
-				Cves:          []formats.CveRow{{Id: "CVE-2021-1234"}},
+				Cves:          []formats.CveRow{{Id: "CVE-2021-1234", Cwe: []string{"CWE-502", "502"}}}, // duplicate normalized → one CWE id
 				Summary:       "Test summary",
 				Technology:    techutils.Npm,
 				FixedVersions: []string{"4.17.21"},
@@ -124,7 +125,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 			wantSeverity:    "High",
 			wantManifest:    "package-lock.json",
 			wantSolution:    "Upgrade lodash to version 4.17.21 or later.",
-			identifierTypes: []string{"cve", "xray"},
+			identifierTypes: []string{"cve", "xray", "cwe"},
 		},
 		{
 			name: "contextual analysis in reachable detail",
@@ -136,8 +137,8 @@ func TestVulnerabilityToReport(t *testing.T) {
 					SeverityDetails:           formats.SeverityDetails{Severity: "low"},
 				},
 				Cves: []formats.CveRow{
-					{Id: "CVE-2023-1", Applicability: &formats.Applicability{Status: jasutils.Applicable.String()}},
-					{Id: "CVE-2023-2", Applicability: &formats.Applicability{Status: jasutils.NotApplicable.String()}},
+					{Id: "CVE-2023-1", Cwe: []string{"CWE-79"}, Applicability: &formats.Applicability{Status: jasutils.Applicable.String()}},
+					{Id: "CVE-2023-2", Cwe: []string{"cwe-89"}, Applicability: &formats.Applicability{Status: jasutils.NotApplicable.String()}},
 				},
 				Summary:    "Details here",
 				Technology: techutils.Npm,
@@ -145,7 +146,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 			wantName:        "CVE-2023-1 (Applicable)",
 			wantSeverity:    "Low",
 			wantManifest:    "package-lock.json",
-			identifierTypes: []string{"cve", "cve", "xray"},
+			identifierTypes: []string{"cve", "cve", "xray", "cwe", "cwe"},
 		},
 		{
 			name: "non-CVE issue id adds xray identifier",
@@ -156,12 +157,13 @@ func TestVulnerabilityToReport(t *testing.T) {
 					ImpactedDependencyVersion: "1.0.0",
 					SeverityDetails:           formats.SeverityDetails{Severity: "low"},
 				},
+				Cves:       []formats.CveRow{{Cwe: []string{"20"}}},
 				Technology: techutils.Go,
 			},
 			wantName:        "XRAY-100 (Not Covered)",
 			wantSeverity:    "Low",
 			wantManifest:    "go.sum",
-			identifierTypes: []string{"xray"},
+			identifierTypes: []string{"xray", "cwe"},
 		},
 		{
 			name: "fallback identifier when no CVE or issue id",
@@ -170,12 +172,13 @@ func TestVulnerabilityToReport(t *testing.T) {
 					ImpactedDependencyName:    "orphan",
 					ImpactedDependencyVersion: "0.0.1",
 				},
+				Cves:       []formats.CveRow{{Cwe: []string{"CWE-787"}}},
 				Technology: techutils.Maven,
 			},
 			wantName:        "",
 			wantSeverity:    "Unknown",
 			wantManifest:    "pom.xml",
-			identifierTypes: []string{"other"},
+			identifierTypes: []string{"other", "cwe"},
 		},
 		{
 			name: "CVE from issueId when cves slice empty",
@@ -186,14 +189,14 @@ func TestVulnerabilityToReport(t *testing.T) {
 					ImpactedDependencyVersion: "1.0.0",
 					SeverityDetails:           formats.SeverityDetails{Severity: "high"},
 				},
-				Cves:       nil,
+				Cves:       []formats.CveRow{{Cwe: []string{"22"}}},
 				Summary:    "from issue id only",
 				Technology: techutils.Maven,
 			},
 			wantName:        "CVE-2020-9999 (Not Covered)",
 			wantSeverity:    "High",
 			wantManifest:    "pom.xml",
-			identifierTypes: []string{"cve"},
+			identifierTypes: []string{"cve", "cwe"},
 		},
 	}
 	for _, tt := range tests {
@@ -251,7 +254,7 @@ func TestGitLabReportJSON_identifierValueIsCVE(t *testing.T) {
 			ImpactedDependencyVersion: "1.0.0",
 			SeverityDetails:           formats.SeverityDetails{Severity: "high"},
 		},
-		Cves:       []formats.CveRow{{Id: "CVE-2021-9999"}},
+		Cves:       []formats.CveRow{{Id: "CVE-2021-9999", Cwe: []string{"1004"}}},
 		Technology: techutils.Npm,
 	}
 	rep := vulnerabilityToReport(&row)
@@ -264,6 +267,27 @@ func TestGitLabReportJSON_identifierValueIsCVE(t *testing.T) {
 	assert.Contains(t, string(raw), `"type":"named-list"`)
 	assert.Contains(t, string(raw), `"name":"Reachable"`)
 	assert.Contains(t, string(raw), `"value":"CVE-2021-9999 (Not Covered)."`)
+	assert.Contains(t, string(raw), `"type":"cwe"`)
+	assert.Contains(t, string(raw), `"name":"CWE-1004"`)
+	assert.Contains(t, string(raw), `"value":"CWE-1004"`)
+}
+
+func TestNormalizeCweID(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"CWE-79", "CWE-79"},
+		{"cwe-89", "CWE-89"},
+		{"787", "CWE-787"},
+		{"  22  ", "CWE-22"},
+		{"", ""},
+		{"CWE-", ""},
+		{"CWE-notnum", ""},
+		{"nope", ""},
+	}
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%q", tt.in), func(t *testing.T) {
+			assert.Equal(t, tt.want, normalizeCweID(tt.in))
+		})
+	}
 }
 
 func scanResultsWithSbomOnly() *results.SecurityCommandResults {
