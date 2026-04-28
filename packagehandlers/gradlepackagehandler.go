@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+
 	"github.com/jfrog/frogbot/v2/utils"
 )
 
@@ -21,8 +23,6 @@ const (
 // Regexp pattern for "map" format dependencies
 // Example: group: "junit", name: "junit", version: "1.0.0" | group = "junit", name = "junit", version = "1.0.0"
 var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
-
-var gradleDescriptorsSuffixes = []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix}
 
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
@@ -56,7 +56,7 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
 	var descriptorFilesFullPaths []string
-	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths(gradleDescriptorsSuffixes)
+	descriptorFilesFullPaths, err = getAllGradleDescriptorFilesFullPaths()
 	if err != nil {
 		return
 	}
@@ -76,6 +76,63 @@ func (gph *GradlePackageHandler) updateDirectDependency(vulnDetails *utils.Vulne
 		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
 	}
 	return
+}
+
+// getAllGradleDescriptorFilesFullPaths lists build.gradle / build.gradle.kts files using the same
+// discovery logic as the CLI (techutils.DetectTechnologiesDescriptors). patternsToExclude are passed
+// as exclude path patterns to that API (first element used; if multiple are given they are combined with |).
+func getAllGradleDescriptorFilesFullPaths(patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+	excludePattern := joinExcludePatterns(patternsToExclude)
+	detected, err := techutils.DetectTechnologiesDescriptors(".", true, []string{techutils.Gradle.String()}, map[techutils.Technology][]string{}, excludePattern)
+	if err != nil {
+		err = fmt.Errorf("failed to detect Gradle descriptors: %w", err)
+		return
+	}
+	gradleDirs, ok := detected[techutils.Gradle]
+	if !ok || len(gradleDirs) == 0 {
+		return
+	}
+	seen := make(map[string]struct{})
+	for _, paths := range gradleDirs {
+		for _, p := range paths {
+			if !isGradleBuildFilePath(p) {
+				continue
+			}
+			var absFilePath string
+			absFilePath, err = filepath.Abs(p)
+			if err != nil {
+				err = fmt.Errorf("couldn't retrieve absolute path for '%s': %w", p, err)
+				return
+			}
+			if _, dup := seen[absFilePath]; dup {
+				continue
+			}
+			seen[absFilePath] = struct{}{}
+			descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
+		}
+	}
+	return
+}
+
+func joinExcludePatterns(patterns []string) string {
+	var nonEmpty []string
+	for _, p := range patterns {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			nonEmpty = append(nonEmpty, p)
+		}
+	}
+	if len(nonEmpty) == 0 {
+		return ""
+	}
+	if len(nonEmpty) == 1 {
+		return nonEmpty[0]
+	}
+	return strings.Join(nonEmpty, "|")
+}
+
+func isGradleBuildFilePath(p string) bool {
+	return strings.HasSuffix(p, groovyDescriptorFileSuffix) || strings.HasSuffix(p, kotlinDescriptorFileSuffix)
 }
 
 // Checks if the impacted version is currently supported for fix
