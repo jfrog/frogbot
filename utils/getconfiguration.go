@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -511,5 +512,11 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
+	profileString, err := json.Marshal(configProfile)
+	if err != nil {
+		err = nil
+		return
+	}
+	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
 	return
 }
