@@ -56,15 +56,17 @@ type Vendor struct {
 }
 
 type VulnerabilityReport struct {
-	ID          string                         `json:"id"`
-	Name        string                         `json:"name,omitempty"`
-	Description string                         `json:"description,omitempty"`
-	Severity    string                         `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
-	Solution    string                         `json:"solution,omitempty"`
-	Identifiers []Identifier                   `json:"identifiers"`
-	Location    Location                       `json:"location"`
-	Links       []Link                         `json:"links,omitempty"`
-	Details     map[string]DetailNamedListItem `json:"details,omitempty"` // named-list *items* only; see schema note on buildReachabilityDetails
+	ID          string       `json:"id"`
+	Name        string       `json:"name,omitempty"`
+	Description string       `json:"description,omitempty"`
+	Severity    string       `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
+	Solution    string       `json:"solution,omitempty"`
+	Identifiers []Identifier `json:"identifiers"`
+	Location    Location     `json:"location"`
+	Links       []Link       `json:"links,omitempty"`
+	// Details is optional per GitLab schema (named-list item map). Reachable is set on CycloneDX
+	// components (gitlab:dependency_scanning_component:reachability), not here.
+	Details map[string]DetailNamedListItem `json:"details,omitempty"`
 }
 
 // DetailNamedListItem merges named_field (name) with a detail payload (e.g. type "text" + value).
@@ -206,11 +208,6 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 	// contextual analysis in name so it appears in the list; description holds summary only.
 	name := buildVulnerabilityNameWithContextualAnalysis(v)
 	desc := strings.TrimSpace(getSummary(v))
-	reach := contextualAnalysisReachabilityText(v)
-	var details map[string]DetailNamedListItem
-	if strings.TrimSpace(reach) != "" {
-		details = buildReachabilityDetails(reach)
-	}
 	solution := ""
 	if len(v.FixedVersions) > 0 {
 		solution = fmt.Sprintf("Upgrade %s to version %s or later.", v.ImpactedDependencyName, v.FixedVersions[0])
@@ -230,7 +227,6 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 		Identifiers: identifiers,
 		Location:    location,
 		Links:       links,
-		Details:     details,
 	}
 }
 
@@ -409,52 +405,6 @@ func aggregatedContextualAnalysisDisplay(v *formats.VulnerabilityOrViolationRow)
 		return jasutils.NotCovered.String()
 	}
 	return st.String()
-}
-
-// contextualAnalysisReachabilityText returns contextual analysis (JAS applicability) for the
-// Reachable detail field: per-CVE lines when available, otherwise the row-level status when the
-// finding has a titled vulnerability.
-func contextualAnalysisReachabilityText(v *formats.VulnerabilityOrViolationRow) string {
-	if s := contextualAnalysisDescriptionPrefix(v); strings.TrimSpace(s) != "" {
-		return strings.TrimSpace(s)
-	}
-	if buildVulnerabilityNameWithContextualAnalysis(v) == "" {
-		return ""
-	}
-	return aggregatedContextualAnalysisDisplay(v)
-}
-
-func buildReachabilityDetails(reachabilityText string) map[string]DetailNamedListItem {
-	return map[string]DetailNamedListItem{
-		"reachable": {
-			Name:  "Reachable",
-			Type:  "text",
-			Value: reachabilityText,
-		},
-	}
-}
-
-// contextualAnalysisDescriptionPrefix builds "CVE-2024-1 (Applicable). CVE-2024-2 (Not Applicable)." per CVE row.
-// When a CVE has no applicability assessment, status is "Not Covered".
-func contextualAnalysisDescriptionPrefix(v *formats.VulnerabilityOrViolationRow) string {
-	var b strings.Builder
-	for _, cve := range v.Cves {
-		if cve.Id == "" {
-			continue
-		}
-		status := jasutils.NotCovered.String()
-		if cve.Applicability != nil && cve.Applicability.Status != "" {
-			status = cve.Applicability.Status
-		}
-		if b.Len() > 0 {
-			b.WriteString(" ")
-		}
-		b.WriteString(cve.Id)
-		b.WriteString(" (")
-		b.WriteString(status)
-		b.WriteString(").")
-	}
-	return b.String()
 }
 
 func sortVulnerabilityRowsForGitLab(vulns []formats.VulnerabilityOrViolationRow) {
