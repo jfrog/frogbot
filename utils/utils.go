@@ -501,6 +501,7 @@ func writeCycloneDxToDir(outputDir string, scanResults *results.SecurityCommandR
 		return fmt.Errorf("convert to CycloneDX: %w", err)
 	}
 	bom := fullBom.BOM
+	gitlabreport.EnrichCycloneDXBOMForGitLabReachability(&bom, scanResults)
 	path := filepath.Join(outputDir, cyclonedxOutputFilename)
 	f, err := os.Create(path)
 	if err != nil {

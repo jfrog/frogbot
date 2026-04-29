@@ -207,27 +207,19 @@ func TestVulnerabilityToReport(t *testing.T) {
 			assert.Equal(t, tt.wantManifest, got.Location.File)
 			if tt.name == "CVE name and link" {
 				assert.Equal(t, "Test summary", got.Description)
-				require.Contains(t, got.Details, "reachable")
-				item := got.Details["reachable"]
-				assert.Equal(t, "Reachable", item.Name)
-				assert.Equal(t, "text", item.Type)
-				assert.Equal(t, "CVE-2021-1234 (Not Covered).", item.Value)
+				assert.Nil(t, got.Details)
 			}
 			if tt.name == "contextual analysis in reachable detail" {
 				assert.Equal(t, "Details here", got.Description)
-				require.Contains(t, got.Details, "reachable")
-				item := got.Details["reachable"]
-				assert.Equal(t, "CVE-2023-1 (Applicable). CVE-2023-2 (Not Applicable).", item.Value)
+				assert.Nil(t, got.Details)
 			}
 			if tt.name == "non-CVE issue id adds xray identifier" {
 				assert.Empty(t, got.Description)
-				require.Contains(t, got.Details, "reachable")
-				assert.Equal(t, jasutils.NotCovered.String(), got.Details["reachable"].Value)
+				assert.Nil(t, got.Details)
 			}
 			if tt.name == "CVE from issueId when cves slice empty" {
 				assert.Equal(t, "from issue id only", got.Description)
-				require.Contains(t, got.Details, "reachable")
-				assert.Equal(t, jasutils.NotCovered.String(), got.Details["reachable"].Value)
+				assert.Nil(t, got.Details)
 			}
 			if tt.name == "fallback identifier when no CVE or issue id" {
 				assert.Nil(t, got.Details)
@@ -262,11 +254,8 @@ func TestGitLabReportJSON_identifierValueIsCVE(t *testing.T) {
 	assert.Contains(t, string(raw), `"type":"cve"`)
 	assert.Contains(t, string(raw), `"name":"CVE-2021-9999"`)
 	assert.Contains(t, string(raw), `"value":"CVE-2021-9999"`)
-	assert.Contains(t, string(raw), `"details":`)
-	assert.Contains(t, string(raw), `"reachable":{`)
-	assert.Contains(t, string(raw), `"name":"Reachable"`)
-	assert.Contains(t, string(raw), `"value":"CVE-2021-9999 (Not Covered)."`)
-	assert.NotContains(t, string(raw), `"details":{"type":"named-list"`)
+	assert.NotContains(t, string(raw), `"reachable"`)
+	assert.NotContains(t, string(raw), `"details":`)
 	assert.Contains(t, string(raw), `"type":"cwe"`)
 	assert.Contains(t, string(raw), `"name":"CWE-1004"`)
 	assert.Contains(t, string(raw), `"value":"CWE-1004"`)
