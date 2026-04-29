@@ -512,9 +512,8 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
-	profileString, err := json.Marshal(configProfile)
-	if err != nil {
-		err = nil
+	profileString, e := json.Marshal(configProfile)
+	if e != nil {
 		return
 	}
 	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
