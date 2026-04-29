@@ -170,6 +170,7 @@ type Scan struct {
 	AvoidPreviousPrCommentsDeletion bool      `yaml:"avoidPreviousPrCommentsDeletion,omitempty"`
 	MinSeverity                     string    `yaml:"minSeverity,omitempty"`
 	DisableJas                      bool      `yaml:"disableJas,omitempty"`
+	SastChangedFilesOnly            bool      `yaml:"sastChangedFilesOnly,omitempty"`
 	AddPrCommentOnSuccess           bool      `yaml:"addPrCommentOnSuccess,omitempty"`
 	AllowedLicenses                 []string  `yaml:"allowedLicenses,omitempty"`
 	Projects                        []Project `yaml:"projects,omitempty"`
@@ -233,6 +234,11 @@ func (s *Scan) setDefaultsIfNeeded() (err error) {
 	}
 	if !s.DisableJas {
 		if s.DisableJas, err = getBoolEnv(DisableJasEnv, false); err != nil {
+			return
+		}
+	}
+	if !s.SastChangedFilesOnly {
+		if s.SastChangedFilesOnly, err = getBoolEnv(ChangedFilesModeEnvVar, false); err != nil {
 			return
 		}
 	}

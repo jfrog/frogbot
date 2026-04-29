@@ -250,6 +250,7 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 		SetConfigProfile(repoConfig.ConfigProfile).
 		SetSkipAutoInstall(repoConfig.SkipAutoInstall).
 		SetDisableJas(repoConfig.DisableJas).
+		SetSastChangedFilesOnly(repoConfig.SastChangedFilesOnly).
 		SetXscPRGitInfoContext(repoConfig.Project, client, repoConfig.PullRequestDetails).
 		SetDiffScan(!repoConfig.IncludeAllVulnerabilities).
 		SetAllowPartialResults(repoConfig.AllowPartialResults)
@@ -307,7 +308,6 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 				if aggregatedScanResults == nil {
 					aggregatedScanResults = results.NewCommandResults(sourceScanResults.CmdType)
 					aggregatedScanResults.ResultsMetaData = sourceScanResults.ResultsMetaData
-					aggregatedScanResults.EntitledForJas = sourceScanResults.EntitledForJas
 					aggregatedScanResults.SecretValidation = sourceScanResults.SecretValidation
 				}
 				aggregatedScanResults.Targets = append(aggregatedScanResults.Targets, sourceScanResults.Targets...)
@@ -329,19 +329,19 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 }
 
 func auditPullRequestTargetCode(scanDetails *utils.ScanDetails, targetBranchWd string) (scanResults *results.SecurityCommandResults, err error) {
-	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, targetBranchWd)...)
+	scanResults = scanDetails.RunInstallAndAudit(targetBranchWd, scanDetails.Project.WorkingDirs...)
 	err = scanResults.GetErrors()
 	return
 }
 
 func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils.ScanDetails, sourceBranchWd, targetBranchWd string) (issuesCollection *issues.ScansIssuesCollection, scanResults *results.SecurityCommandResults, err error) {
-	scanResults = scanDetails.RunInstallAndAudit(utils.GetFullPathWorkingDirs(scanDetails.Project.WorkingDirs, sourceBranchWd)...)
+	scanResults = scanDetails.RunInstallAndAudit(sourceBranchWd, scanDetails.Project.WorkingDirs...)
 	if err = scanResults.GetErrors(); err != nil {
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
 	}
 	// Set JAS output flags based on the scan results
-	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
+	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.Entitlements.Jas, scanResults.HasJasScansResults(jasutils.Applicability))
 	workingDirs := []string{strings.TrimPrefix(sourceBranchWd, string(filepath.Separator))}
 	if !repoConfig.IncludeAllVulnerabilities && targetBranchWd != "" && scanDetails.ResultsToCompare != nil {
 		// Diff scan - calculated at audit source scan, make sure to include target branch working dir when converting to issues

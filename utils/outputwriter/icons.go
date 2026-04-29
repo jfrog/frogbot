@@ -27,12 +27,14 @@ const (
 	notApplicableLowSeveritySource      ImageSource = "v2/notApplicableLow.png"
 	unknownSeveritySource               ImageSource = "v2/applicableUnknownSeverity.png"
 	notApplicableUnknownSeveritySource  ImageSource = "v2/notApplicableUnknown.png"
+	noIssuesSource                      ImageSource = "v2/noIssues.png"
 
 	smallCriticalSeveritySource ImageSource = "v2/smallCritical.svg"
 	smallHighSeveritySource     ImageSource = "v2/smallHigh.svg"
 	smallMediumSeveritySource   ImageSource = "v2/smallMedium.svg"
 	smallLowSeveritySource      ImageSource = "v2/smallLow.svg"
 	smallUnknownSeveritySource  ImageSource = "v2/smallUnknown.svg"
+	smallNoIssuesSource         ImageSource = "v2/smallNoIssues.svg"
 )
 
 func getSeverityTag(iconName IconName, applicability string) string {
@@ -56,6 +58,8 @@ func getNotApplicableIconTags(iconName IconName) string {
 		return GetIconTag(notApplicableMediumSeveritySource, "medium (not applicable)") + "<br>"
 	case "low":
 		return GetIconTag(notApplicableLowSeveritySource, "low (not applicable)") + "<br>"
+	case "scanned - no issues":
+		return GetIconTag(noIssuesSource, "scanned - no issues found") + "<br>"
 	}
 	return GetIconTag(notApplicableUnknownSeveritySource, "unknown (not applicable)") + "<br>"
 }
@@ -70,6 +74,8 @@ func getApplicableIconTags(iconName IconName) string {
 		return GetIconTag(mediumSeveritySource, "medium") + "<br>"
 	case "low":
 		return GetIconTag(lowSeveritySource, "low") + "<br>"
+	case "scanned - no issues":
+		return GetIconTag(noIssuesSource, "scanned - no issues found") + "<br>"
 	}
 	return GetIconTag(unknownSeveritySource, "unknown") + "<br>"
 }
@@ -84,6 +90,8 @@ func getSmallApplicableIconTags(iconName IconName) string {
 		return GetImgTag(smallMediumSeveritySource, "")
 	case "low":
 		return GetImgTag(smallLowSeveritySource, "")
+	case "scanned - no issues":
+		return GetImgTag(smallNoIssuesSource, "")
 	}
 	return GetImgTag(smallUnknownSeveritySource, "")
 }

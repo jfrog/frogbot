@@ -170,6 +170,13 @@ func (cfp *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Reposito
 	return
 }
 
+func getWorkingDirs(baseDir string, projectWorkingDirs []string) []string {
+	if len(projectWorkingDirs) == 0 {
+		return []string{baseDir}
+	}
+	return projectWorkingDirs
+}
+
 func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (bool, int, error) {
 	var isFixNeeded bool
 	shouldFailBuild := false
@@ -178,11 +185,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 	// The value is a map of vulnerable package names -> the scanDetails of the vulnerable packages.
 	// That means we have a map of all the vulnerabilities that were found in a specific folder, along with their full scanDetails.
 	vulnerabilitiesByPathMap := make(map[string]map[string]*utils.VulnerabilityDetails)
-	projectFullPathWorkingDirs := utils.GetFullPathWorkingDirs(cfp.scanDetails.Project.WorkingDirs, cfp.baseWd)
-	for _, fullPathWd := range projectFullPathWorkingDirs {
-		scanResults, err := cfp.scan(fullPathWd)
+	for _, pathWd := range getWorkingDirs(cfp.baseWd, cfp.scanDetails.Project.WorkingDirs) {
+		scanResults, err := cfp.scan(cfp.baseWd, pathWd)
 		if err != nil {
-			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", fullPathWd), err); err != nil {
+			if err = utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("An error occurred during Audit execution for '%s' working directory. Fixes will be skipped for this working directory", pathWd), err); err != nil {
 				return shouldFailBuild, totalFindings, err
 			}
 			continue
@@ -196,7 +202,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 				log.Warn(err)
 			}
 
-			if *repository.UploadSbomToVcs && scanResults.EntitledForJas {
+			if *repository.UploadSbomToVcs && scanResults.Entitlements.Jas {
 				if err = utils.UploadSbomSnapshotToGithubDependencyGraph(repository.RepoOwner, repository.RepoName, cfp.scanDetails.ServerDetails, cfp.XrayVersion, scanResults, cfp.scanDetails.Client(), cfp.scanDetails.BaseBranch(), repository.Params.JFrogPlatform.JFrogProjectKey); err != nil {
 					log.Warn(err)
 				}
@@ -258,14 +264,18 @@ func (cfp *ScanRepositoryCmd) populateTargetResultsInVulnMap(target *results.Tar
 }
 
 // Audit the dependencies of the current commit.
-func (cfp *ScanRepositoryCmd) scan(currentWorkingDir string) (*results.SecurityCommandResults, error) {
+func (cfp *ScanRepositoryCmd) scan(baseDir, currentWorkingDir string) (*results.SecurityCommandResults, error) {
+	workingDirs := []string{}
+	if baseDir != currentWorkingDir {
+		workingDirs = append(workingDirs, currentWorkingDir)
+	}
 	// Audit commit code
-	auditResults := cfp.scanDetails.RunInstallAndAudit(currentWorkingDir)
+	auditResults := cfp.scanDetails.RunInstallAndAudit(baseDir, workingDirs...)
 	if err := auditResults.GetErrors(); err != nil {
 		return nil, err
 	}
 	log.Info("Xray scan completed")
-	cfp.OutputWriter.SetJasOutputFlags(auditResults.EntitledForJas, auditResults.HasJasScansResults(jasutils.Applicability))
+	cfp.OutputWriter.SetJasOutputFlags(auditResults.Entitlements.Jas, auditResults.HasJasScansResults(jasutils.Applicability))
 	cfp.projectTech = auditResults.GetTechnologies(cfp.projectTech...)
 	return auditResults, nil
 }
