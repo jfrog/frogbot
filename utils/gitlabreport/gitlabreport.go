@@ -56,21 +56,15 @@ type Vendor struct {
 }
 
 type VulnerabilityReport struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name,omitempty"`
-	Description string            `json:"description,omitempty"`
-	Severity    string            `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
-	Solution    string            `json:"solution,omitempty"`
-	Identifiers []Identifier      `json:"identifiers"`
-	Location    Location          `json:"location"`
-	Links       []Link            `json:"links,omitempty"`
-	Details     *DetailsNamedList `json:"details,omitempty"` // e.g. Reachable (contextual analysis); see dependency-scanning schema `details`
-}
-
-// DetailsNamedList is GitLab's named-list detail block (security report schema).
-type DetailsNamedList struct {
-	Type  string                         `json:"type"` // must be "named-list"
-	Items map[string]DetailNamedListItem `json:"items"`
+	ID          string                         `json:"id"`
+	Name        string                         `json:"name,omitempty"`
+	Description string                         `json:"description,omitempty"`
+	Severity    string                         `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
+	Solution    string                         `json:"solution,omitempty"`
+	Identifiers []Identifier                   `json:"identifiers"`
+	Location    Location                       `json:"location"`
+	Links       []Link                         `json:"links,omitempty"`
+	Details     map[string]DetailNamedListItem `json:"details,omitempty"` // named-list *items* only; see schema note on buildReachabilityDetails
 }
 
 // DetailNamedListItem merges named_field (name) with a detail payload (e.g. type "text" + value).
@@ -124,8 +118,11 @@ func ConvertToGitLabDependencyScanningReport(scanResults *results.SecurityComman
 		}, nil
 	}
 
+	// Always include SCA vulnerabilities in this export. scanResults.IncludesVulnerabilities()
+	// reflects the interactive scan context (e.g. violation-only views); when false, jfrog-cli-security
+	// skips ParseCVEs and the GitLab JSON would be empty even with many SBOM CVEs — wrong for CI reports.
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
-		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
+		IncludeVulnerabilities: true,
 		HasViolationContext:    scanResults.HasViolationContext(),
 	})
 	simpleJSON, err := convertor.ConvertToSimpleJson(scanResults)
@@ -210,9 +207,9 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 	name := buildVulnerabilityNameWithContextualAnalysis(v)
 	desc := strings.TrimSpace(getSummary(v))
 	reach := contextualAnalysisReachabilityText(v)
-	var details *DetailsNamedList
+	var details map[string]DetailNamedListItem
 	if strings.TrimSpace(reach) != "" {
-		details = buildReachabilityNamedList(reach)
+		details = buildReachabilityDetails(reach)
 	}
 	solution := ""
 	if len(v.FixedVersions) > 0 {
@@ -427,15 +424,12 @@ func contextualAnalysisReachabilityText(v *formats.VulnerabilityOrViolationRow) 
 	return aggregatedContextualAnalysisDisplay(v)
 }
 
-func buildReachabilityNamedList(reachabilityText string) *DetailsNamedList {
-	return &DetailsNamedList{
-		Type: "named-list",
-		Items: map[string]DetailNamedListItem{
-			"reachable": {
-				Name:  "Reachable",
-				Type:  "text",
-				Value: reachabilityText,
-			},
+func buildReachabilityDetails(reachabilityText string) map[string]DetailNamedListItem {
+	return map[string]DetailNamedListItem{
+		"reachable": {
+			Name:  "Reachable",
+			Type:  "text",
+			Value: reachabilityText,
 		},
 	}
 }

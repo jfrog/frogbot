@@ -494,7 +494,7 @@ func writeCycloneDxToDir(outputDir string, scanResults *results.SecurityCommandR
 	}
 	fullBom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		HasViolationContext:    scanResults.HasViolationContext(),
-		IncludeVulnerabilities: scanResults.IncludesVulnerabilities(),
+		IncludeVulnerabilities: true,
 		IncludeSbom:            true,
 	}).ConvertToCycloneDx(scanResults)
 	if err != nil {
