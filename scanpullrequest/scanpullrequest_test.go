@@ -1421,9 +1421,12 @@ func createGitLabHandler(t *testing.T, testDir string, params GitServerParams) h
 			assert.NotEmpty(t, buf.String())
 
 			var expectedResponse []byte
-			if strings.Contains(params.RepoName, "multi-dir") {
+			switch {
+			case strings.Contains(params.RepoName, "multi-dir"):
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response_multi_dir.md"))
-			} else {
+			case strings.Contains(params.RepoName, "subdir"):
+				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response_subdir.md"))
+			default:
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response.md"))
 			}
 			assert.JSONEq(t, string(expectedResponse), buf.String())
