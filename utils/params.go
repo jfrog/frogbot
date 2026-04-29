@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -887,26 +888,33 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 		return
 	}
 
-	// Attempt to get the config profile by profile's name
 	profileName := getTrimmedEnv(JfrogConfigProfileEnv)
 	if profileName != "" {
+		// Attempt to get the config profile by profile's name
 		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile by provided name '%s'", profileName))
 		if configProfile, err = xsc.GetConfigProfileByName(xrayVersion, jfrogServer, profileName, projectKey); err != nil || configProfile == nil {
 			return
 		}
-		err = verifyConfigProfileValidity(configProfile)
+	} else {
+		// Getting repository's url in order to get repository HTTP url
+		if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
+			return
+		}
+		// Attempt to get a config profile associated with the repo URL
+		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
+		if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
+			return
+		}
+	}
+	if err = verifyConfigProfileValidity(configProfile); err != nil {
 		return
 	}
-	// Getting repository's url in order to get repository HTTP url
-	if repoCloneUrl, err = gitParams.GetRepositoryHttpsCloneUrl(gitClient); err != nil {
+
+	profileString, e := json.Marshal(configProfile)
+	if e != nil {
 		return
 	}
-	// Attempt to get a config profile associated with the repo URL
-	log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
-		return
-	}
-	err = verifyConfigProfileValidity(configProfile)
+	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
 	return
 }
 
