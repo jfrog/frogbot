@@ -904,9 +904,8 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 		return
 	}
 
-	profileString, err := json.Marshal(configProfile)
-	if err != nil {
-		err = nil
+	profileString, e := json.Marshal(configProfile)
+	if e != nil {
 		return
 	}
 	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
