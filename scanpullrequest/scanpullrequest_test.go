@@ -1422,7 +1422,7 @@ func createGitLabHandler(t *testing.T, testDir string, params GitServerParams) h
 
 			var expectedResponse []byte
 			switch {
-			case strings.Contains(params.RepoName, "multi-dir"), strings.Contains(params.RepoName, "subdir"):
+			case strings.Contains(params.RepoName, "multi-dir"):
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response_multi_dir.md"))
 			case strings.Contains(params.RepoName, "subdir"):
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response_subdir.md"))
