@@ -8,11 +8,14 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -29,6 +32,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
+	"github.com/jfrog/frogbot/v2/utils/gitlabreport"
 	"github.com/jfrog/frogbot/v2/utils/issues"
 )
 
@@ -49,7 +53,8 @@ const (
 	skipIndirectVulnerabilitiesMsg = "\n%s is an indirect dependency that will not be updated to version %s.\nFixing indirect dependencies can potentially cause conflicts with other dependencies that depend on the previous version.\nFrogbot skips this to avoid potential incompatibilities and breaking changes."
 	skipBuildToolDependencyMsg     = "Skipping vulnerable package %s since it is not defined in your package descriptor file. " +
 		"Update %s version to %s to fix this vulnerability."
-	JfrogHomeDirEnv = "JFROG_CLI_HOME_DIR"
+	JfrogHomeDirEnv         = "JFROG_CLI_HOME_DIR"
+	cyclonedxOutputFilename = "cyclonedx.json"
 )
 
 var (
@@ -466,4 +471,55 @@ func CreateErrorIfFailUponScannerErrorEnabled(fail bool, messageForLog string, e
 		return nil
 	}
 	return err
+}
+
+func WriteScanResultsToDir(outputDir string, scanResults *results.SecurityCommandResults, startTime time.Time) error {
+	if outputDir == "" {
+		return fmt.Errorf("output directory is required")
+	}
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
+	}
+	endTime := time.Now().UTC()
+
+	if err := writeCycloneDxToDir(outputDir, scanResults); err != nil {
+		return fmt.Errorf("write CycloneDX: %w", err)
+	}
+	report, err := gitlabreport.ConvertToGitLabDependencyScanningReport(scanResults, startTime, endTime, FrogbotVersion)
+	if err != nil {
+		return fmt.Errorf("convert to GitLab report: %w", err)
+	}
+	if err = gitlabreport.WriteDependencyScanningReport(outputDir, report); err != nil {
+		return fmt.Errorf("write GitLab report: %w", err)
+	}
+	log.Info(fmt.Sprintf("Scan results written to %s (CycloneDX and GitLab dependency-scanning format)", outputDir))
+	return nil
+}
+
+func writeCycloneDxToDir(outputDir string, scanResults *results.SecurityCommandResults) error {
+	if scanResults == nil {
+		return fmt.Errorf("scan results are required")
+	}
+	fullBom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
+		HasViolationContext:    scanResults.HasViolationContext(),
+		IncludeVulnerabilities: true,
+		IncludeSbom:            true,
+	}).ConvertToCycloneDx(scanResults)
+	if err != nil {
+		return fmt.Errorf("convert to CycloneDX: %w", err)
+	}
+	bom := fullBom.BOM
+	gitlabreport.EnrichCycloneDXBOMForGitLabReachability(&bom, scanResults)
+	path := filepath.Join(outputDir, cyclonedxOutputFilename)
+	f, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	encoder := cyclonedx.NewBOMEncoder(f, cyclonedx.BOMFileFormatJSON)
+	if err = encoder.Encode(&bom); err != nil {
+		return fmt.Errorf("encode CycloneDX: %w", err)
+	}
+	log.Info(fmt.Sprintf("CycloneDX SBOM written to %s", path))
+	return nil
 }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/packageupdaters"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/packageupdaters"
 
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
@@ -154,8 +155,15 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 	totalFindings = getTotalFindingsFromScanResults(scanResults)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 
+	if repository.Params.Git.GitProvider == vcsutils.GitLab && repository.Params.Git.GitlabScanResultsOutputDir != "" {
+		log.Debug(fmt.Sprintf("Trying to save scan results to directory: %s", repository.Params.Git.GitlabScanResultsOutputDir))
+		if writeErr := utils.WriteScanResultsToDir(repository.Params.Git.GitlabScanResultsOutputDir, scanResults, sr.scanDetails.StartTime); writeErr != nil {
+			log.Warn(fmt.Sprintf("Failed to write scan results to directory: %s", writeErr.Error()))
+		}
+	}
+
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
-		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's coniguration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
+		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's configuration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
 		return totalFindings, nil
 	}
 
