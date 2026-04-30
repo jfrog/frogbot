@@ -15,7 +15,7 @@
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>5 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 4 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>5 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 5 High<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -25,7 +25,7 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Dependency Path                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | ----------------------------------- |
-| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-33750 | Not Covered | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-33750 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
@@ -39,8 +39,8 @@
 ### Vulnerability Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Not Covered |
-| **CVSS V3:** | 6.5 |
+| **Contextual Analysis:** | Not Applicable |
+| **CVSS V3:** | 7.5 |
 | **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.13<br></details> |
 
 ### Impact
