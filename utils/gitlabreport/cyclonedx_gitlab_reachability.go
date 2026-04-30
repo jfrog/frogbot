@@ -69,6 +69,15 @@ func EnrichCycloneDXBOMForGitLabReachability(bom *cyclonedx.BOM, scanResults *re
 		mergeRowReachability(depInfo, &simpleJSON.SecurityViolations[i])
 	}
 
+	// When the whole scan uses one lockfile (typical), set it on metadata too so GitLab can
+	// correlate SBOM reachability with dependency-scanning findings (per taxonomy).
+	if unique := uniqueNonEmptyInputFilesFromDepInfo(depInfo); len(unique) == 1 {
+		bom.Metadata.Properties = cdxutils.AppendProperties(bom.Metadata.Properties, cyclonedx.Property{
+			Name:  gitlabDependencyScanningInputFilePath,
+			Value: unique[0],
+		})
+	}
+
 	if bom.Metadata.Component != nil {
 		walkComponentTree(bom.Metadata.Component, depInfo)
 	}
@@ -79,6 +88,32 @@ func EnrichCycloneDXBOMForGitLabReachability(bom *cyclonedx.BOM, scanResults *re
 type depReachInfo struct {
 	rank      reachRank
 	inputFile string
+}
+
+func uniqueNonEmptyInputFilesFromDepInfo(depInfo map[string]*depReachInfo) []string {
+	seen := make(map[string]struct{})
+	for _, info := range depInfo {
+		if info == nil || info.rank <= reachNone {
+			continue
+		}
+		f := strings.TrimSpace(info.inputFile)
+		if f == "" {
+			continue
+		}
+		seen[f] = struct{}{}
+	}
+	if len(seen) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(seen))
+	for f := range seen {
+		out = append(out, f)
+	}
+	if len(out) == 1 {
+		return out
+	}
+	// Multiple lockfiles in one BOM: do not guess metadata-level path.
+	return nil
 }
 
 func mergeRowReachability(depInfo map[string]*depReachInfo, v *formats.VulnerabilityOrViolationRow) {
