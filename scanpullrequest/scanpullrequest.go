@@ -167,7 +167,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		return
 	}
 	// Set JAS output flags based on the scan results
-	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.EntitledForJas, scanResults.HasJasScansResults(jasutils.Applicability))
+	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.Entitlements.Jas, scanResults.HasJasScansResults(jasutils.Applicability))
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
 
 	log.Debug("Diff scan - converting to new issues...")

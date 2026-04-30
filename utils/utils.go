@@ -184,9 +184,13 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 }
 
 func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, err := GenerateFrogbotSarifReport(scanResults)
+	report, hasRuns, err := GenerateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
+	}
+	if !hasRuns {
+		log.Info("No runs found in the SARIF report, skipping upload to GitHub Security Tab")
+		return nil
 	}
 	_, err = client.UploadCodeScanning(context.Background(), repo.RepoOwner, repo.RepoName, branch, report)
 	if err != nil {
@@ -200,7 +204,6 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	if scanResults == nil {
 		return fmt.Errorf("got an empty scan results")
 	}
-
 	cyclonedxWithSbom, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{HasViolationContext: scanResults.HasViolationContext(), IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), IncludeSbom: true}).ConvertToCycloneDx(scanResults)
 	if err != nil {
 		return fmt.Errorf("failed to convert results to CycloneDX format: %w", err)
@@ -233,16 +236,21 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, error) {
+func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, bool, error) {
+	if extendedResults == nil {
+		return "", false, fmt.Errorf("got an empty scan results")
+	}
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: extendedResults.IncludesVulnerabilities(),
 		HasViolationContext:    extendedResults.HasViolationContext(),
 	})
 	sarifReport, err := convertor.ConvertToSarif(extendedResults)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
-	return output.WriteSarifResultsAsString(sarifReport, false)
+	hasRuns := sarifReport != nil && len(sarifReport.Runs) > 0
+	stringReport, err := output.WriteSarifResultsAsString(sarifReport, false)
+	return stringReport, hasRuns, err
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
