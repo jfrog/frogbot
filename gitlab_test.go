@@ -36,7 +36,7 @@ func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
-	t.Fail()
+	t.Fatal("ScanPullRequest integration test is not yet implemented")
 	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }

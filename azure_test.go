@@ -37,7 +37,7 @@ func azureReposTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDet
 }
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
-	t.Fail()
+	t.Fatal("ScanPullRequest integration test is not yet implemented")
 	azureClient, testDetails := azureReposTestsInit(t)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }

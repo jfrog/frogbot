@@ -64,7 +64,7 @@ func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTe
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	t.Fail()
+	t.Fatal("ScanPullRequest integration test is not yet implemented")
 	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
