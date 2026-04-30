@@ -195,8 +195,12 @@ func formatGitLabTime(t time.Time) string {
 func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) VulnerabilityReport {
 	id := deterministicVulnID(v.ImpactedDependencyName, v.ImpactedDependencyVersion, v.IssueId, v.Cves)
 	identifiers := buildIdentifiers(v)
+	manifestPath := rowPreferredInputFile(v)
+	if manifestPath == "" {
+		manifestPath = manifestFileForTechnology(v.Technology)
+	}
 	location := Location{
-		File: manifestFileForTechnology(v.Technology),
+		File: manifestPath,
 		Dependency: Dependency{
 			Package: Package{Name: v.ImpactedDependencyName},
 			Version: v.ImpactedDependencyVersion,
