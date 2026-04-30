@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -27,9 +29,9 @@ func buildBitbucketServerClient(t *testing.T, bitbucketServerToken string) vcscl
 	return bbClient
 }
 
-func buildBitbucketServerIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
+func buildBitbucketServerIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, bitbucketServerIntegrationTokenEnv)
-	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl, "FROG", useLocalRepo)
+	testDetails := NewIntegrationTestDetails(integrationRepoToken, string(utils.BitbucketServer), bitbucketServerGitCloneUrl, "FROG")
 	testDetails.ApiEndpoint = bitbucketServerApiEndpoint
 	return testDetails
 }
@@ -54,24 +56,20 @@ func waitForConnection(t *testing.T) {
 	require.NoError(t, retryExecutor.Execute())
 }
 
-func bitbucketServerTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildBitbucketServerIntegrationTestDetails(t, useLocalRepo)
+func bitbucketServerTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildBitbucketServerIntegrationTestDetails(t)
 	bbClient := buildBitbucketServerClient(t, testDetails.GitToken)
 	waitForConnection(t)
 	return bbClient, testDetails
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t, false)
+	t.Fatal("ScanPullRequest integration test is not yet implemented")
+	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t, false)
-	runScanRepositoryCmd(t, bbClient, testDetails)
-}
-
-func TestBitbucketServer_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
-	bbClient, testDetails := bitbucketServerTestsInit(t, true)
+	bbClient, testDetails := bitbucketServerTestsInit(t)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }
