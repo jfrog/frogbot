@@ -148,6 +148,7 @@ func (cph *CommonPackageUpdater) GetFixedPackageJSONManifest(content []byte, pac
 
 // UpdatePackageJSONDescriptor writes the fixed version for packageName to descriptorPath and returns original file bytes for rollback.
 func (cph *CommonPackageUpdater) UpdatePackageJSONDescriptor(descriptorPath, packageName, newVersion string) ([]byte, error) {
+	//#nosec G304 -- descriptorPath comes from vulnerability evidence in the scanned repository.
 	descriptorContent, err := os.ReadFile(descriptorPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
@@ -161,7 +162,7 @@ func (cph *CommonPackageUpdater) UpdatePackageJSONDescriptor(descriptorPath, pac
 		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
-	//#nosec G306 -- 0644 is correct for a checked-out source file; stricter permissions would break the git workflow.
+	//#nosec G306 G703 -- 0644 for checked-out source; path same trusted source as ReadFile above.
 	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
