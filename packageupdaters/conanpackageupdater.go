@@ -55,6 +55,7 @@ func (conan *ConanPackageUpdater) updateDirectDependency(vulnDetails *utils.Vuln
 }
 
 func (conan *ConanPackageUpdater) updateConanFile(conanFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+	//#nosec G304 -- descriptor path from scan workflow.
 	data, err := os.ReadFile(conanFilePath)
 	if err != nil {
 		return false, fmt.Errorf("an error occurred while attempting to read the requirements file '%s': %s", conanFilePath, err.Error())

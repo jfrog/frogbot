@@ -88,6 +88,7 @@ func isVersionSupportedForFix(impactedVersion string) bool {
 
 // Fixes all direct occurrences of the given vulnerability in the given descriptor file, if vulnerability occurs
 func (gph *GradlePackageUpdater) fixVulnerabilityIfExists(descriptorFilePath string, vulnDetails *utils.VulnerabilityDetails) (isFileChanged bool, err error) {
+	//#nosec G304 -- descriptor path from scan workflow.
 	byteFileContent, err := os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("couldn't read file '%s': %s", descriptorFilePath, err.Error())
