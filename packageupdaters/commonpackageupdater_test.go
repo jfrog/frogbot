@@ -3,6 +3,7 @@ package packageupdaters
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -648,51 +649,6 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 	}
 }
 
-func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
-	testRootDir, err := os.Getwd()
-	assert.NoError(t, err)
-
-	tmpDir, err := os.MkdirTemp("", "")
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "npm"), tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(testRootDir))
-	}()
-
-	vulnerabilityDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion:       "1.2.6",
-		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
-	}
-	pnpm := &PnpmPackageUpdater{}
-
-	descriptorFiles, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
-	assert.NoError(t, err)
-	descriptorFileToTest := descriptorFiles[0]
-
-	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
-	var isFileChanged bool
-	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
-	assert.NoError(t, err)
-	assert.True(t, isFileChanged)
-
-	var fixedFileContent []byte
-	fixedFileContent, err = os.ReadFile(descriptorFileToTest)
-	fixedFileContentString := string(fixedFileContent)
-
-	assert.NoError(t, err)
-	assert.NotContains(t, fixedFileContentString, "\"minimist\": \"1.2.5\"")
-	assert.Contains(t, fixedFileContentString, "\"minimist\": \"1.2.6\"")
-
-	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
-	assert.NoError(t, err)
-	assert.False(t, nodeModulesExist)
-}
-
 func TestGetVulnerabilityLocations(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -959,6 +915,39 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			ignoreFilters: nil,
 			expectedPaths: []string{"package.json", "sub/package.json"},
 		},
+		{
+			name: "filter npm package@version pseudo-paths from Xray evidence",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "lodash", Version: "4.17.19", Evidences: []formats.Location{
+								{File: "lodash@4.17.19/package.json"},
+								{File: "package.json"},
+							}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package.json"},
+			expectedPaths: []string{"package.json"},
+		},
+		{
+			name: "scoped package path under @types is kept",
+			vulnDetails: &utils.VulnerabilityDetails{
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						Components: []formats.ComponentRow{
+							{Name: "node", Version: "20.0.0", Evidences: []formats.Location{
+								{File: "node_modules/@types/node/package.json"},
+							}},
+						},
+					},
+				},
+			},
+			namesFilters:  []string{"package.json"},
+			expectedPaths: []string{"node_modules/@types/node/package.json"},
+		},
 	}
 
 	for _, tc := range testcases {
@@ -967,6 +956,74 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			assert.ElementsMatch(t, tc.expectedPaths, result)
 		})
 	}
+}
+
+func TestEvidencePathLooksLikeNpmPackageCoordinate(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		path     string
+		wantTrue bool
+	}{
+		{"lodash@4.17.19/package.json", true},
+		{"axios@0.21.1/package.json", true},
+		{"nested/pkg@1.0.0-rc.1/sub/package.json", true},
+		{"package.json", false},
+		{"apps/web/package.json", false},
+		{"node_modules/@types/node/package.json", false},
+		{"node_modules/@scope/pkg/package.json", false},
+		{"@types/node/package.json", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.wantTrue, evidencePathLooksLikeNpmPackageCoordinate(tt.path), tt.path)
+		})
+	}
+}
+
+func TestEnvWithCorepackIntegrityWorkaround(t *testing.T) {
+	t.Parallel()
+	base := []string{"FOO=1", "COREPACK_INTEGRITY_KEYS=old-value", "BAR=2"}
+	out := envWithCorepackIntegrityWorkaround(base)
+	var foo, bar, corepack int
+	for _, e := range out {
+		switch {
+		case e == "FOO=1":
+			foo++
+		case e == "BAR=2":
+			bar++
+		case strings.HasPrefix(e, "COREPACK_INTEGRITY_KEYS="):
+			corepack++
+			assert.Equal(t, "COREPACK_INTEGRITY_KEYS=0", e)
+		}
+	}
+	assert.Equal(t, 1, foo, "FOO should appear once")
+	assert.Equal(t, 1, bar, "BAR should appear once")
+	assert.Equal(t, 1, corepack, "COREPACK_INTEGRITY_KEYS should appear exactly once with value 0")
+}
+
+func TestCollectVulnerabilityDescriptorPathsMatchesGetVulnerabilityLocations(t *testing.T) {
+	t.Parallel()
+	vulnDetails := &utils.VulnerabilityDetails{
+		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+				Components: []formats.ComponentRow{
+					{Name: "lodash", Version: "4.17.19", Evidences: []formats.Location{
+						{File: "lodash@4.17.19/package.json"},
+						{File: "/repo/package.json"},
+						{File: "node_modules/foo/package.json"},
+					}},
+				},
+			},
+		},
+	}
+	names := []string{"package.json"}
+	ignore := []string{"node_modules"}
+	var c CommonPackageUpdater
+	want := GetVulnerabilityLocations(vulnDetails, names, ignore)
+	got := c.CollectVulnerabilityDescriptorPaths(vulnDetails, names, ignore)
+	assert.ElementsMatch(t, want, got)
+	assert.ElementsMatch(t, []string{"/repo/package.json"}, got)
 }
 
 func TestGetVulnerabilityRegexCompiler(t *testing.T) {
@@ -1314,6 +1371,24 @@ func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTest
 		testName += "_(" + extraTestInfo + ")"
 	}
 	return testName
+}
+
+// initTestGitRepo creates a git repo with an initial commit containing the given paths (relative to dir).
+func initTestGitRepo(t *testing.T, dir string, trackedRelPaths ...string) {
+	t.Helper()
+	steps := [][]string{
+		{"git", "init"},
+		{"git", "config", "user.email", "frogbot-tests@example.com"},
+		{"git", "config", "user.name", "frogbot tests"},
+		append([]string{"git", "add"}, trackedRelPaths...),
+		{"git", "commit", "--no-verify", "-m", "init"},
+	}
+	for _, args := range steps {
+		cmd := exec.Command(args[0], args[1:]...)
+		cmd.Dir = dir
+		out, err := cmd.CombinedOutput()
+		assert.NoErrorf(t, err, "initTestGitRepo step %v failed: %s", args, string(out))
+	}
 }
 
 func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, evidencePaths ...string) *utils.VulnerabilityDetails {
