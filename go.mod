@@ -127,7 +127,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+// attiasas:sast_diff_mode_config_option
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260504080453-f3990412ae1c
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -135,6 +136,7 @@ require (
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
+// attiasas:add_fast_sast_diff_config_option
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20260504075412-44250b5be46c
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
