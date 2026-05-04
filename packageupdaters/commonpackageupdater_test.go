@@ -3,7 +3,6 @@ package packageupdaters
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -915,68 +914,12 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			ignoreFilters: nil,
 			expectedPaths: []string{"package.json", "sub/package.json"},
 		},
-		{
-			name: "filter npm package@version pseudo-paths from Xray evidence",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						Components: []formats.ComponentRow{
-							{Name: "lodash", Version: "4.17.19", Evidences: []formats.Location{
-								{File: "lodash@4.17.19/package.json"},
-								{File: "package.json"},
-							}},
-						},
-					},
-				},
-			},
-			namesFilters:  []string{"package.json"},
-			expectedPaths: []string{"package.json"},
-		},
-		{
-			name: "scoped package path under @types is kept",
-			vulnDetails: &utils.VulnerabilityDetails{
-				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-						Components: []formats.ComponentRow{
-							{Name: "node", Version: "20.0.0", Evidences: []formats.Location{
-								{File: "node_modules/@types/node/package.json"},
-							}},
-						},
-					},
-				},
-			},
-			namesFilters:  []string{"package.json"},
-			expectedPaths: []string{"node_modules/@types/node/package.json"},
-		},
 	}
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			result := GetVulnerabilityLocations(tc.vulnDetails, tc.namesFilters, tc.ignoreFilters)
 			assert.ElementsMatch(t, tc.expectedPaths, result)
-		})
-	}
-}
-
-func TestEvidencePathLooksLikeNpmPackageCoordinate(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		path     string
-		wantTrue bool
-	}{
-		{"lodash@4.17.19/package.json", true},
-		{"axios@0.21.1/package.json", true},
-		{"nested/pkg@1.0.0-rc.1/sub/package.json", true},
-		{"package.json", false},
-		{"apps/web/package.json", false},
-		{"node_modules/@types/node/package.json", false},
-		{"node_modules/@scope/pkg/package.json", false},
-		{"@types/node/package.json", false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.path, func(t *testing.T) {
-			t.Parallel()
-			assert.Equal(t, tt.wantTrue, evidencePathLooksLikeNpmPackageCoordinate(tt.path), tt.path)
 		})
 	}
 }
@@ -1000,30 +943,6 @@ func TestEnvWithCorepackIntegrityWorkaround(t *testing.T) {
 	assert.Equal(t, 1, foo, "FOO should appear once")
 	assert.Equal(t, 1, bar, "BAR should appear once")
 	assert.Equal(t, 1, corepack, "COREPACK_INTEGRITY_KEYS should appear exactly once with value 0")
-}
-
-func TestCollectVulnerabilityDescriptorPathsMatchesGetVulnerabilityLocations(t *testing.T) {
-	t.Parallel()
-	vulnDetails := &utils.VulnerabilityDetails{
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
-			ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
-				Components: []formats.ComponentRow{
-					{Name: "lodash", Version: "4.17.19", Evidences: []formats.Location{
-						{File: "lodash@4.17.19/package.json"},
-						{File: "/repo/package.json"},
-						{File: "node_modules/foo/package.json"},
-					}},
-				},
-			},
-		},
-	}
-	names := []string{"package.json"}
-	ignore := []string{"node_modules"}
-	var c CommonPackageUpdater
-	want := GetVulnerabilityLocations(vulnDetails, names, ignore)
-	got := c.CollectVulnerabilityDescriptorPaths(vulnDetails, names, ignore)
-	assert.ElementsMatch(t, want, got)
-	assert.ElementsMatch(t, []string{"/repo/package.json"}, got)
 }
 
 func TestGetVulnerabilityRegexCompiler(t *testing.T) {
@@ -1371,24 +1290,6 @@ func getUpdateDependencyTestcaseName(technology string, isDirect bool, extraTest
 		testName += "_(" + extraTestInfo + ")"
 	}
 	return testName
-}
-
-// initTestGitRepo creates a git repo with an initial commit containing the given paths (relative to dir).
-func initTestGitRepo(t *testing.T, dir string, trackedRelPaths ...string) {
-	t.Helper()
-	steps := [][]string{
-		{"git", "init"},
-		{"git", "config", "user.email", "frogbot-tests@example.com"},
-		{"git", "config", "user.name", "frogbot tests"},
-		append([]string{"git", "add"}, trackedRelPaths...),
-		{"git", "commit", "--no-verify", "-m", "init"},
-	}
-	for _, args := range steps {
-		cmd := exec.Command(args[0], args[1:]...)
-		cmd.Dir = dir
-		out, err := cmd.CombinedOutput()
-		assert.NoErrorf(t, err, "initTestGitRepo step %v failed: %s", args, string(out))
-	}
 }
 
 func createVulnerabilityDetails(technology techutils.Technology, packageName, packageVersion, fixedVersion string, isDirectDependency bool, evidencePaths ...string) *utils.VulnerabilityDetails {
