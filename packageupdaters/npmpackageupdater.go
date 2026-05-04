@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
@@ -29,8 +28,6 @@ const (
 	npmNoFundFlag          = "--no-fund"
 
 	npmLockFileName = "package-lock.json"
-
-	npmInstallTimeout = 15 * time.Minute
 
 	npmEreresolveErrorPrefix = "ERESOLVE"
 )
@@ -113,25 +110,18 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	return nil
 }
 
-func (npm *NpmPackageUpdater) regenerateLockfile(vulnDetails *utils.VulnerabilityDetails, descriptorPath, originalWd string, backupContent []byte) (err error) {
-	descriptorDir := filepath.Dir(descriptorPath)
-	if err = os.Chdir(descriptorDir); err != nil {
-		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
-	}
-	defer func() {
-		if chErr := os.Chdir(originalWd); chErr != nil {
-			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
+func (npm *NpmPackageUpdater) regenerateLockfile(vulnDetails *utils.VulnerabilityDetails, descriptorPath, originalWd string, backupContent []byte) error {
+	return npm.withDescriptorWorkingDir(descriptorPath, originalWd, func() error {
+		if err := npm.regenerateLockFileWithRetry(); err != nil {
+			log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
+			//#nosec G306 -- 0644 is correct for a checked-out source file.
+			if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
+				return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
+			}
+			return err
 		}
-	}()
-
-	if err = npm.regenerateLockFileWithRetry(); err != nil {
-		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
-		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
-			return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
-		}
-		return err
-	}
-	return nil
+		return nil
+	})
 }
 
 func (npm *NpmPackageUpdater) getFixedDescriptor(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
@@ -171,7 +161,7 @@ func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	fullCommand := "npm " + strings.Join(args, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 
-	ctx, cancel := context.WithTimeout(context.Background(), npmInstallTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), nodePackageManagerInstallTimeout)
 	defer cancel()
 
 	//#nosec G204 -- False positive - the subprocess only runs after the user's approval
@@ -180,8 +170,8 @@ func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	cmd.Env = npm.buildEnvWithOverrides(npmInstallEnvVars)
 	output, err := cmd.CombinedOutput()
 
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return fmt.Errorf("npm install timed out after %v", npmInstallTimeout)
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("npm install timed out after %v", nodePackageManagerInstallTimeout)
 	}
 
 	if err != nil {

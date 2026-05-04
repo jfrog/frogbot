@@ -1,28 +1,11 @@
 package packageupdaters
 
 import (
-	"os"
-	"os/exec"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
 )
-
-func skipUnlessPnpmRunnable(t *testing.T) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("requires runnable pnpm (often needs network for Corepack)")
-	}
-	if _, err := exec.LookPath("pnpm"); err != nil {
-		t.Skip("pnpm not on PATH:", err)
-	}
-	cmd := exec.Command("pnpm", "--version")
-	cmd.Env = envWithCorepackIntegrityWorkaround(os.Environ())
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Skipf("pnpm not runnable (install/Corepack/network): %v\n%s", err, string(out))
-	}
-}
 
 func TestEvidencePathLooksLikeNpmPackageCoordinate(t *testing.T) {
 	t.Parallel()

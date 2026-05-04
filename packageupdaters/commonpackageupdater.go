@@ -1,6 +1,7 @@
 package packageupdaters
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -21,12 +23,13 @@ import (
 
 // Node
 const (
-	nodePackageJSONFileName         = "package.json"
-	nodeModulesDirName              = "node_modules"
-	nodeDependenciesSection         = "dependencies"
-	nodeDevDependenciesSection      = "devDependencies"
-	nodeOptionalDependenciesSection = "optionalDependencies"
-	nodeOverridesSection            = "overrides"
+	nodePackageJSONFileName          = "package.json"
+	nodeModulesDirName               = "node_modules"
+	nodeDependenciesSection          = "dependencies"
+	nodeDevDependenciesSection       = "devDependencies"
+	nodeOptionalDependenciesSection  = "optionalDependencies"
+	nodeOverridesSection             = "overrides"
+	nodePackageManagerInstallTimeout = 15 * time.Minute
 )
 
 var nodePackageManifestSections = []string{
@@ -74,9 +77,7 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 // TODO can be deleted if not needed after refactoring all package updaters
 type CommonPackageUpdater struct{}
 
-// evidencePathLooksLikeNpmPackageCoordinate reports paths such as "lodash@4.17.19/package.json" that scanners
-// sometimes attach as evidence; they mirror "name@version" coordinates and are not real filesystem paths.
-// Used by the pnpm updater only; npm collection behavior is unchanged.
+// evidencePathLooksLikeNpmPackageCoordinate detects scanner evidence paths like "lodash@4.17.19/package.json" (not real paths). Pnpm filters these; npm does not.
 func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
 	dir := filepath.Dir(evidenceFile)
 	if dir == "." || dir == "" {
@@ -86,7 +87,6 @@ func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
 		if part == "" || part == "." {
 			continue
 		}
-		// Scoped npm folders use a leading "@", e.g. "@types/node"; "pkg@1.2.3" is a coordinate, not a scope.
 		if strings.Contains(part, "@") && !strings.HasPrefix(part, "@") {
 			return true
 		}
@@ -94,8 +94,6 @@ func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
 	return false
 }
 
-// CollectVulnerabilityDescriptorPaths returns descriptor paths from vulnerability evidence (npm / pnpm package.json flow).
-// Pnpm applies an additional filter for coordinate-style pseudo paths; see PnpmPackageUpdater.updateDirectDependency.
 func (cph *CommonPackageUpdater) CollectVulnerabilityDescriptorPaths(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
@@ -170,6 +168,19 @@ func (cph *CommonPackageUpdater) UpdatePackageJSONDescriptor(descriptorPath, pac
 	return backupContent, nil
 }
 
+func (cph *CommonPackageUpdater) withDescriptorWorkingDir(descriptorPath, originalWd string, fn func() error) (err error) {
+	descriptorDir := filepath.Dir(descriptorPath)
+	if err = os.Chdir(descriptorDir); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
+	}
+	defer func() {
+		if chErr := os.Chdir(originalWd); chErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
+		}
+	}()
+	return fn()
+}
+
 func (cph *CommonPackageUpdater) buildEnvWithOverrides(overrides map[string]string) []string {
 	env := make([]string, 0, len(os.Environ())+len(overrides))
 	for _, e := range os.Environ() {
@@ -211,8 +222,7 @@ func runPackageMangerCommand(commandName string, techName string, commandArgs []
 	return nil
 }
 
-// envWithCorepackIntegrityWorkaround avoids Corepack "Cannot find matching keyid" failures on Node versions
-// whose bundled Corepack lags npm registry signing keys (see nodejs/corepack#612).
+// envWithCorepackIntegrityWorkaround sets COREPACK_INTEGRITY_KEYS=0 for older Node/Corepack (e.g. corepack#612).
 func envWithCorepackIntegrityWorkaround(base []string) []string {
 	const key = "COREPACK_INTEGRITY_KEYS"
 	prefix := key + "="
