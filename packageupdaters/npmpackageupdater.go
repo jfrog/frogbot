@@ -92,7 +92,6 @@ func (npm *NpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *uti
 	}
 
 	descriptorDir := filepath.Dir(descriptorPath)
-	// We assume lock file and manifest reside under the same directory
 	lockFilePath := filepath.Join(descriptorDir, npmLockFileName)
 
 	lockFileTracked, checkErr := utils.IsFileTrackedByGit(lockFilePath, originalWd)
@@ -178,7 +177,7 @@ func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	//#nosec G204 -- False positive - the subprocess only runs after the user's approval
 	cmd := exec.CommandContext(ctx, "npm", args...)
 
-	cmd.Env = npm.buildIsolatedEnv()
+	cmd.Env = npm.buildEnvWithOverrides(npmInstallEnvVars)
 	output, err := cmd.CombinedOutput()
 
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -190,20 +189,6 @@ func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 	}
 
 	return nil
-}
-
-func (npm *NpmPackageUpdater) buildIsolatedEnv() []string {
-	var env []string
-	for _, e := range os.Environ() {
-		key := strings.SplitN(e, "=", 2)[0]
-		if _, shouldOverride := npmInstallEnvVars[key]; !shouldOverride {
-			env = append(env, e)
-		}
-	}
-	for key, value := range npmInstallEnvVars {
-		env = append(env, fmt.Sprintf("%s=%s", key, value))
-	}
-	return env
 }
 
 func escapeJsonPathKey(key string) string {

@@ -6,23 +6,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
 	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const (
-	pnpmDependencyRegexpPattern = "\\s*\"%s\"\\s*:\\s*\"[~|^]?%s\""
-	pnpmDescriptorFileSuffix    = "package.json"
-	nodeModulesPathPattern      = ".*node_modules.*"
-
 	pnpmLockFileName         = "pnpm-lock.yaml"
 	pnpmLockfileOnlyFlag     = "--lockfile-only"
 	pnpmIgnoreScriptsFlag    = "--ignore-scripts"
@@ -55,7 +48,6 @@ func pnpmFilterCoordinateStyleDescriptorPaths(paths []string) []string {
 	return out
 }
 
-// PnpmPackageUpdater updates pnpm projects (package.json + pnpm-lock.yaml) and supports legacy test helpers.
 type PnpmPackageUpdater struct {
 	CommonPackageUpdater
 }
@@ -140,6 +132,7 @@ func (pnpm *PnpmPackageUpdater) regenerateLockfile(vulnDetails *utils.Vulnerabil
 
 	if err = pnpm.runPnpmInstallLockOnly(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
+		//#nosec G306 -- 0644 is correct for a checked-out source file.
 		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
 		}
@@ -163,7 +156,7 @@ func (pnpm *PnpmPackageUpdater) runPnpmInstallLockOnly() error {
 
 	//#nosec G204 -- False positive - the subprocess only runs after the user's approval
 	cmd := exec.CommandContext(ctx, "pnpm", args...)
-	cmd.Env = pnpm.buildPnpmInstallEnv()
+	cmd.Env = pnpm.buildEnvWithOverrides(pnpmInstallEnvVars)
 
 	output, err := cmd.CombinedOutput()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
@@ -173,55 +166,4 @@ func (pnpm *PnpmPackageUpdater) runPnpmInstallLockOnly() error {
 		return fmt.Errorf("pnpm install failed: %w\nOutput: %s", err, string(output))
 	}
 	return nil
-}
-
-func (pnpm *PnpmPackageUpdater) buildPnpmInstallEnv() []string {
-	var env []string
-	for _, e := range os.Environ() {
-		key := strings.SplitN(e, "=", 2)[0]
-		if _, shouldOverride := pnpmInstallEnvVars[key]; !shouldOverride {
-			env = append(env, e)
-		}
-	}
-	for key, value := range pnpmInstallEnvVars {
-		env = append(env, fmt.Sprintf("%s=%s", key, value))
-	}
-	return env
-}
-
-func (pnpm *PnpmPackageUpdater) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
-	var descriptorFileData []byte
-	descriptorFileData, err = os.ReadFile(descriptorFilePath)
-	if err != nil {
-		err = fmt.Errorf("failed to read file '%s': %s", descriptorFilePath, err.Error())
-		return isFileChanged, err
-	}
-
-	if match := vulnRegexpCompiler.FindString(strings.ToLower(string(descriptorFileData))); match != "" {
-		modulePath := path.Dir(descriptorFilePath)
-		if err = os.Chdir(modulePath); err != nil {
-			err = fmt.Errorf("failed to change directory to '%s': %s", modulePath, err.Error())
-			return isFileChanged, err
-		}
-		defer func() {
-			err = errors.Join(err, os.Chdir(originalWd))
-		}()
-
-		var nodeModulesDirExist bool
-		if nodeModulesDirExist, err = fileutils.IsDirExists(filepath.Join(modulePath, "node_modules"), false); err != nil {
-			return isFileChanged, err
-		}
-
-		if !nodeModulesDirExist {
-			defer func() {
-				err = errors.Join(err, fileutils.RemoveTempDir(filepath.Join(modulePath, "node_modules")))
-			}()
-		}
-
-		if err = pnpm.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
-			return isFileChanged, fmt.Errorf("failed to update dependency '%s' from version '%s' to '%s': %s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, err.Error())
-		}
-		isFileChanged = true
-	}
-	return isFileChanged, err
 }
