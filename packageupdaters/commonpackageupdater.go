@@ -163,11 +163,25 @@ func (cph *CommonPackageUpdater) UpdatePackageJSONDescriptor(descriptorPath, pac
 		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
 	}
 
-	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
+	//#nosec G306 -- 0644 is correct for a checked-out source file; stricter permissions would break the git workflow.
 	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
 		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
 	}
 	return backupContent, nil
+}
+
+func (cph *CommonPackageUpdater) buildEnvWithOverrides(overrides map[string]string) []string {
+	env := make([]string, 0, len(os.Environ())+len(overrides))
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if _, shouldOverride := overrides[key]; !shouldOverride {
+			env = append(env, e)
+		}
+	}
+	for key, value := range overrides {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
 }
 
 // UpdateDependency updates the impacted package to the fixed version
