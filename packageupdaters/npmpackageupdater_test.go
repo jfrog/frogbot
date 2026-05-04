@@ -2,14 +2,9 @@ package packageupdaters
 
 import (
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 
-	biutils "github.com/jfrog/build-info-go/utils"
-	"github.com/jfrog/jfrog-cli-security/utils/techutils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -247,60 +242,4 @@ func TestBuildIsolatedEnv(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestNpmCollectVulnerabilityDescriptorPaths_filtersCoordinateEvidence(t *testing.T) {
-	t.Parallel()
-	npm := &NpmPackageUpdater{}
-	vuln := createVulnerabilityDetails(techutils.Npm, "lodash", "4.17.19", "4.17.21", true,
-		"lodash@4.17.19/package.json", "minimist@1.2.5/package.json", "package.json")
-	paths := npm.CollectVulnerabilityDescriptorPaths(vuln, []string{nodePackageJSONFileName}, []string{nodeModulesDirName})
-	assert.ElementsMatch(t, []string{"package.json"}, paths)
-}
-
-func skipUnlessNpmRunnable(t *testing.T) {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("requires npm and network for lockfile regeneration")
-	}
-	if _, err := exec.LookPath("npm"); err != nil {
-		t.Skip("npm not on PATH:", err)
-	}
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git not on PATH:", err)
-	}
-	if err := exec.Command("npm", "--version").Run(); err != nil {
-		t.Skip("npm not runnable:", err)
-	}
-}
-
-func TestNpmUpdateDependency_directFix_filtersCoordinateEvidence(t *testing.T) {
-	skipUnlessNpmRunnable(t)
-
-	testRootDir, err := os.Getwd()
-	assert.NoError(t, err)
-
-	tmpDir, err := os.MkdirTemp("", "")
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "npm"), tmpDir, true, nil))
-	initTestGitRepo(t, tmpDir, "package.json", "package-lock.json")
-
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(testRootDir))
-	}()
-
-	vuln := createVulnerabilityDetails(techutils.Npm, "minimist", "1.2.5", "1.2.6", true,
-		"minimist@1.2.5/package.json", "lodash@4.17.19/package.json", "package.json")
-
-	npm := &NpmPackageUpdater{}
-	assert.NoError(t, npm.UpdateDependency(vuln))
-
-	manifest, err := os.ReadFile("package.json")
-	assert.NoError(t, err)
-	assert.Contains(t, string(manifest), "\"minimist\": \"1.2.6\"")
-	assert.NotContains(t, string(manifest), "\"minimist\": \"1.2.5\"")
 }

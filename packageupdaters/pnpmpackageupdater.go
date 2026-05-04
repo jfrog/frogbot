@@ -40,6 +40,21 @@ var pnpmInstallEnvVars = map[string]string{
 	"COREPACK_INTEGRITY_KEYS": "0",
 }
 
+// pnpmFilterCoordinateStyleDescriptorPaths removes evidence paths that look like "pkg@version/package.json".
+// Npm does not apply this filter at fix time; see evidencePathLooksLikeNpmPackageCoordinate in commonpackageupdater.go.
+func pnpmFilterCoordinateStyleDescriptorPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return paths
+	}
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if !evidencePathLooksLikeNpmPackageCoordinate(p) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
 // PnpmPackageUpdater updates pnpm projects (package.json + pnpm-lock.yaml) and supports legacy test helpers.
 type PnpmPackageUpdater struct {
 	CommonPackageUpdater
@@ -58,6 +73,7 @@ func (pnpm *PnpmPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 
 func (pnpm *PnpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
 	descriptorPaths := pnpm.CollectVulnerabilityDescriptorPaths(vulnDetails, []string{nodePackageJSONFileName}, []string{nodeModulesDirName})
+	descriptorPaths = pnpmFilterCoordinateStyleDescriptorPaths(descriptorPaths)
 	if len(descriptorPaths) == 0 {
 		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
 	}

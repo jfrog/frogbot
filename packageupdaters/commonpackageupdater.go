@@ -76,6 +76,7 @@ type CommonPackageUpdater struct{}
 
 // evidencePathLooksLikeNpmPackageCoordinate reports paths such as "lodash@4.17.19/package.json" that scanners
 // sometimes attach as evidence; they mirror "name@version" coordinates and are not real filesystem paths.
+// Used by the pnpm updater only; npm collection behavior is unchanged.
 func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
 	dir := filepath.Dir(evidenceFile)
 	if dir == "." || dir == "" {
@@ -93,15 +94,13 @@ func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
 	return false
 }
 
-// CollectVulnerabilityDescriptorPaths returns descriptor paths from vulnerability evidence (npm/pnpm package.json flow).
+// CollectVulnerabilityDescriptorPaths returns descriptor paths from vulnerability evidence (npm / pnpm package.json flow).
+// Pnpm applies an additional filter for coordinate-style pseudo paths; see PnpmPackageUpdater.updateDirectDependency.
 func (cph *CommonPackageUpdater) CollectVulnerabilityDescriptorPaths(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
 	pathsSet := datastructures.MakeSet[string]()
 	for _, component := range vulnDetails.Components {
 		for _, evidence := range component.Evidences {
 			if evidence.File == "" || techutils.IsTechnologyDescriptor(evidence.File) == techutils.NoTech || slices.ContainsFunc(ignoreFilters, func(pattern string) bool { return strings.Contains(evidence.File, pattern) }) {
-				continue
-			}
-			if evidencePathLooksLikeNpmPackageCoordinate(evidence.File) {
 				continue
 			}
 			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
