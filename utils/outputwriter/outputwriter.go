@@ -101,7 +101,7 @@ func (mo *MarkdownOutput) SetSizeLimit(client vcsclient.VcsClient) {
 }
 
 func GetCompatibleOutputWriter(provider vcsutils.VcsProvider, hasInternetConnection bool) OutputWriter {
-	if provider == vcsutils.BitbucketServer {
+	if provider == vcsutils.BitbucketServer || provider == vcsutils.BitbucketCloud {
 		return &SimplifiedOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: hasInternetConnection}}
 	}
 	return &StandardOutput{MarkdownOutput{vcsProvider: provider, hasInternetConnection: hasInternetConnection}}
