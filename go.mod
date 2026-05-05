@@ -128,7 +128,7 @@ require (
 )
 
 // attiasas:sast_diff_mode_config_option
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260504080453-f3990412ae1c
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260505082931-64f84a5a4a7e
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
