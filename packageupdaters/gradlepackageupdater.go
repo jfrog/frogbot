@@ -2,10 +2,13 @@ package packageupdaters
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const (
@@ -21,6 +24,12 @@ const (
 var directMapWithVersionRegexp = getMapRegexpEntry("group") + "," + getMapRegexpEntry("name") + "," + getMapRegexpEntry("version")
 
 var gradleDescriptorsSuffixes = []string{groovyDescriptorFileSuffix, kotlinDescriptorFileSuffix}
+
+// skipDirNamesWhenCollectingGradleDescriptors are directory base names to skip when walking for build.gradle / build.gradle.kts (outputs, tooling, VCS).
+var skipDirNamesWhenCollectingGradleDescriptors = map[string]struct{}{
+	".git": {}, ".gradle": {}, "build": {}, "node_modules": {}, "out": {},
+	".idea": {}, "dist": {}, "bin": {}, ".vscode": {},
+}
 
 func getMapRegexpEntry(mapEntry string) string {
 	return fmt.Sprintf(directMapRegexpEntry, mapEntry) + apostrophes + "%s" + apostrophes
@@ -54,7 +63,7 @@ func (gph *GradlePackageUpdater) updateDirectDependency(vulnDetails *utils.Vulne
 	// A gradle project may contain several descriptor files in several sub-modules. Each vulnerability may be found in each of the descriptor files.
 	// Therefore we iterate over every descriptor file for each vulnerability and try to find and fix it.
 	var descriptorFilesFullPaths []string
-	descriptorFilesFullPaths, err = gph.GetAllDescriptorFilesFullPaths(gradleDescriptorsSuffixes)
+	descriptorFilesFullPaths, err = getAllGradleDescriptorFilesFullPaths()
 	if err != nil {
 		return
 	}
@@ -72,6 +81,55 @@ func (gph *GradlePackageUpdater) updateDirectDependency(vulnDetails *utils.Vulne
 
 	if !isAnyDescriptorFileChanged {
 		err = fmt.Errorf("impacted package '%s' was not found or could not be fixed in all descriptor files", vulnDetails.ImpactedDependencyName)
+	}
+	return
+}
+
+// getAllGradleDescriptorFilesFullPaths walks the tree from the current directory and collects all build.gradle / build.gradle.kts files (multi-module projects).
+func getAllGradleDescriptorFilesFullPaths(patternsToExclude ...string) (descriptorFilesFullPaths []string, err error) {
+	var regexpPatternsCompilers []*regexp.Regexp
+	for _, patternToExclude := range patternsToExclude {
+		regexpPatternsCompilers = append(regexpPatternsCompilers, regexp.MustCompile(patternToExclude))
+	}
+
+	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
+		if innerErr != nil {
+			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
+		}
+
+		if path == "." {
+			return nil
+		}
+
+		for _, regexpCompiler := range regexpPatternsCompilers {
+			if regexpCompiler.FindString(path) != "" {
+				if d.IsDir() {
+					return filepath.SkipDir
+				}
+				return nil
+			}
+		}
+
+		if d.IsDir() {
+			if _, skip := skipDirNamesWhenCollectingGradleDescriptors[filepath.Base(path)]; skip {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		for _, suffix := range gradleDescriptorsSuffixes {
+			if strings.HasSuffix(path, suffix) {
+				absFilePath, absErr := filepath.Abs(path)
+				if absErr != nil {
+					return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %w", path, absErr)
+				}
+				descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		err = fmt.Errorf("failed to get Gradle descriptor files absolute paths: %w", err)
 	}
 	return
 }
