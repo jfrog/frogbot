@@ -155,7 +155,12 @@ func (npm *NpmPackageUpdater) RegenerateLockfile(vulnDetails *utils.Vulnerabilit
 
 	if err = npm.regenerateLockFileWithRetry(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
-		if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
+		safePath, pathErr := getAbsolutePathUnderWd(descriptorPath)
+		if pathErr != nil {
+			return fmt.Errorf("failed to rollback descriptor: %w (original error: %v)", pathErr, err)
+		}
+		// #nosec G703 -- path validated under working directory by getAbsolutePathUnderWd
+		if rollbackErr := os.WriteFile(safePath, backupContent, 0644); rollbackErr != nil {
 			return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
 		}
 		return err

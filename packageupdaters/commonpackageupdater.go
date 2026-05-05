@@ -3,6 +3,7 @@ package packageupdaters
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -133,6 +134,26 @@ func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineF
 	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
+}
+
+func getAbsolutePathUnderWd(path string) (string, error) {
+	absPath, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve path %q: %w", path, err)
+	}
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get working directory: %w", err)
+	}
+	wdAbs, err := filepath.Abs(wd)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve working directory: %w", err)
+	}
+	rel, err := filepath.Rel(wdAbs, absPath)
+	if err != nil || strings.HasPrefix(rel, "..") || rel == ".." {
+		return "", fmt.Errorf("path %q is outside project directory", path)
+	}
+	return absPath, nil
 }
 
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {

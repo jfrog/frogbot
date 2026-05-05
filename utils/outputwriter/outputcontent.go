@@ -287,8 +287,9 @@ func getSecurityViolationsContent(issues issues.ScansIssuesCollection, writer Ou
 	if len(issues.ScaViolations) == 0 {
 		return []string{}
 	}
-	content = append(content, getSecurityViolationsSummaryTable(issues.ScaViolations, writer))
-	content = append(content, getScaSecurityIssueDetailsContent(issues.ScaViolations, true, writer)...)
+	aggregated := aggregateVulnerabilitiesOrViolationsByCve(issues.ScaViolations)
+	content = append(content, getSecurityViolationsSummaryTable(aggregated, writer))
+	content = append(content, getScaSecurityIssueDetailsContent(aggregated, true, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithSecurityViolationTitle(writer))
 }
 
@@ -422,12 +423,78 @@ func getScaLicenseViolationDetails(violation formats.LicenseViolationRow, writer
 
 // Sca Vulnerabilities
 
+func vulnerabilitySummaryKey(v formats.VulnerabilityOrViolationRow) string {
+	ids := make([]string, 0, len(v.Cves))
+	for _, cve := range v.Cves {
+		ids = append(ids, cve.Id)
+	}
+	sort.Strings(ids)
+	if len(ids) == 0 {
+		return v.IssueId
+	}
+	return strings.Join(ids, ",")
+}
+
+func uniqueStrings(s []string) []string {
+	seen := make(map[string]struct{}, len(s))
+	out := make([]string, 0, len(s))
+	for _, v := range s {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
+}
+
+func aggregateVulnerabilitiesOrViolationsByCve(vulnerabilities []formats.VulnerabilityOrViolationRow) []formats.VulnerabilityOrViolationRow {
+	if len(vulnerabilities) == 0 {
+		return vulnerabilities
+	}
+	byKey := make(map[string]*formats.VulnerabilityOrViolationRow)
+	for i := range vulnerabilities {
+		v := &vulnerabilities[i]
+		key := vulnerabilitySummaryKey(*v)
+		if existing, ok := byKey[key]; ok {
+			existing.ImpactPaths = append(existing.ImpactPaths, v.ImpactPaths...)
+			if len(v.FixedVersions) > 0 {
+				existing.FixedVersions = uniqueStrings(append(existing.FixedVersions, v.FixedVersions...))
+			}
+		} else {
+			agg := *v
+			agg.ImpactPaths = append([][]formats.ComponentRow(nil), v.ImpactPaths...)
+			agg.FixedVersions = append([]string(nil), v.FixedVersions...)
+			heapCopy := new(formats.VulnerabilityOrViolationRow)
+			*heapCopy = agg
+			byKey[key] = heapCopy
+		}
+	}
+	result := make([]formats.VulnerabilityOrViolationRow, 0, len(byKey))
+	for _, v := range byKey {
+		result = append(result, *v)
+	}
+	// Preserve relative order by first occurrence
+	order := make(map[string]int)
+	for i, v := range vulnerabilities {
+		key := vulnerabilitySummaryKey(v)
+		if _, ok := order[key]; !ok {
+			order[key] = i
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return order[vulnerabilitySummaryKey(result[i])] < order[vulnerabilitySummaryKey(result[j])]
+	})
+	return result
+}
+
 func GetVulnerabilitiesContent(vulnerabilities []formats.VulnerabilityOrViolationRow, writer OutputWriter) (content []string) {
 	if len(vulnerabilities) == 0 {
 		return []string{}
 	}
-	content = append(content, getVulnerabilitiesSummaryTable(vulnerabilities, writer))
-	content = append(content, getScaSecurityIssueDetailsContent(vulnerabilities, false, writer)...)
+	aggregated := aggregateVulnerabilitiesOrViolationsByCve(vulnerabilities)
+	content = append(content, getVulnerabilitiesSummaryTable(aggregated, writer))
+	content = append(content, getScaSecurityIssueDetailsContent(aggregated, false, writer)...)
 	return ConvertContentToComments(content, writer, getDecoratorWithScaVulnerabilitiesTitle(writer))
 }
 

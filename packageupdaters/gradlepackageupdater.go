@@ -2,10 +2,11 @@ package packageupdaters
 
 import (
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const (
