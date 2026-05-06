@@ -410,7 +410,9 @@ func extractGitParamsFromEnvs() (*Git, error) {
 		return nil, err
 	}
 
-	// Mandatory only for Bitbucket Server, this authentication detail is required for performing git operations.
+	// Mandatory for Bitbucket Server. For Bitbucket Cloud, username is required only when using
+	// Basic Auth (Atlassian API token or app password). Bearer token users (Repository/Workspace
+	// Access Tokens) leave this unset and authenticate via JF_GIT_TOKEN alone.
 	if err = readParamFromEnv(GitBitBucketUsernameEnv, &gitEnvParams.Username); err != nil && gitEnvParams.GitProvider == vcsutils.BitbucketServer {
 		return nil, err
 	}
@@ -463,13 +465,15 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 		return vcsutils.GitHub, nil
 	case string(GitLab):
 		return vcsutils.GitLab, nil
-	// For backward compatibility, we are accepting also "bitbucket server"
+	// For backward compatibility, we are accepting also "bitbucket server" and "bitbucket cloud"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
+	case string(BitbucketCloud), "bitbucket cloud":
+		return vcsutils.BitbucketCloud, nil
 	case string(AzureRepos):
 		return vcsutils.AzureRepos, nil
 	}
-	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, AzureRepos)
+	return 0, fmt.Errorf("%s should be one of: '%s', '%s', '%s', '%s' or '%s'", GitProvider, GitHub, GitLab, BitbucketServer, BitbucketCloud, AzureRepos)
 }
 
 func SanitizeEnv() error {

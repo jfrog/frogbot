@@ -137,4 +137,4 @@ replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-securi
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
 
-// replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
+replace github.com/jfrog/froggit-go => github.com/eranturgeman/froggit-go v0.0.0-20260504152102-5799cfd08697

@@ -295,7 +295,8 @@ func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repos
 		return
 	}
 	if existsInRemote {
-		log.Info(fmt.Sprintf("A pull request updating the dependency '%s' to version '%s' already exists. Skipping...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
+		log.Info(fmt.Sprintf("A pull request updating the dependency '%s' to version '%s' already exists. Skipping...\n"+
+			"If the fix pull request doesn't exist, please ensure the old fix branch is closed as well", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 		return
 	}
 
