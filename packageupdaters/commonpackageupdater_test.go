@@ -648,51 +648,6 @@ func TestGetAllDescriptorFilesFullPaths(t *testing.T) {
 	}
 }
 
-func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
-	testRootDir, err := os.Getwd()
-	assert.NoError(t, err)
-
-	tmpDir, err := os.MkdirTemp("", "")
-	defer func() {
-		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
-	}()
-	assert.NoError(t, err)
-	assert.NoError(t, biutils.CopyDir(filepath.Join("..", "testdata", "projects", "npm"), tmpDir, true, nil))
-	assert.NoError(t, os.Chdir(tmpDir))
-	defer func() {
-		assert.NoError(t, os.Chdir(testRootDir))
-	}()
-
-	vulnerabilityDetails := &utils.VulnerabilityDetails{
-		SuggestedFixedVersion:       "1.2.6",
-		IsDirectDependency:          true,
-		VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{Technology: techutils.Pnpm, ImpactedDependencyDetails: formats.ImpactedDependencyDetails{ImpactedDependencyName: "minimist", ImpactedDependencyVersion: "1.2.5"}},
-	}
-	pnpm := &PnpmPackageUpdater{}
-
-	descriptorFiles, err := pnpm.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix})
-	assert.NoError(t, err)
-	descriptorFileToTest := descriptorFiles[0]
-
-	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnerabilityDetails.ImpactedDependencyName, vulnerabilityDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
-	var isFileChanged bool
-	isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnerabilityDetails, descriptorFileToTest, tmpDir, vulnRegexpCompiler)
-	assert.NoError(t, err)
-	assert.True(t, isFileChanged)
-
-	var fixedFileContent []byte
-	fixedFileContent, err = os.ReadFile(descriptorFileToTest)
-	fixedFileContentString := string(fixedFileContent)
-
-	assert.NoError(t, err)
-	assert.NotContains(t, fixedFileContentString, "\"minimist\": \"1.2.5\"")
-	assert.Contains(t, fixedFileContentString, "\"minimist\": \"1.2.6\"")
-
-	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
-	assert.NoError(t, err)
-	assert.False(t, nodeModulesExist)
-}
-
 func TestGetVulnerabilityLocations(t *testing.T) {
 	testcases := []struct {
 		name          string
@@ -967,6 +922,27 @@ func TestGetVulnerabilityLocations(t *testing.T) {
 			assert.ElementsMatch(t, tc.expectedPaths, result)
 		})
 	}
+}
+
+func TestEnvWithCorepackIntegrityWorkaround(t *testing.T) {
+	t.Parallel()
+	base := []string{"FOO=1", "COREPACK_INTEGRITY_KEYS=old-value", "BAR=2"}
+	out := envWithCorepackIntegrityWorkaround(base)
+	var foo, bar, corepack int
+	for _, e := range out {
+		switch {
+		case e == "FOO=1":
+			foo++
+		case e == "BAR=2":
+			bar++
+		case strings.HasPrefix(e, "COREPACK_INTEGRITY_KEYS="):
+			corepack++
+			assert.Equal(t, "COREPACK_INTEGRITY_KEYS=0", e)
+		}
+	}
+	assert.Equal(t, 1, foo, "FOO should appear once")
+	assert.Equal(t, 1, bar, "BAR should appear once")
+	assert.Equal(t, 1, corepack, "COREPACK_INTEGRITY_KEYS should appear exactly once with value 0")
 }
 
 func TestGetVulnerabilityRegexCompiler(t *testing.T) {

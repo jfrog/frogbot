@@ -88,6 +88,7 @@ func (m *MavenPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityD
 }
 
 func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedVersion string) error {
+	//#nosec G304 -- pomPath from descriptor discovery in the scanned repository.
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", pomPath, err)
@@ -122,7 +123,7 @@ func (m *MavenPackageUpdater) updatePomFile(pomPath, groupId, artifactId, fixedV
 		return fmt.Errorf("dependency %s not found in %s", toDependencyName(groupId, artifactId), pomPath)
 	}
 
-	//#nosec G703 -- False positive - the path is determined by internal file scanning, not user input, and was already validated by the preceding Stat call.
+	//#nosec G703 G306 -- path from scan workflow; 0644 for VCS-tracked sources.
 	if err = os.WriteFile(pomPath, currentContent, 0644); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pomPath, err)
 	}

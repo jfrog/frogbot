@@ -49,6 +49,7 @@ func GetExpectedTestOutput(t *testing.T, testCase OutputTestCase) string {
 }
 
 func GetOutputFromFile(t *testing.T, filePath string) string {
+	//#nosec G304 -- test helper; filePath is fixture paths supplied by tests.
 	content, err := os.ReadFile(filePath)
 	assert.NoError(t, err)
 	return strings.ReplaceAll(string(content), "\r\n", "\n")

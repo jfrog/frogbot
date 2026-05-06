@@ -1,22 +1,46 @@
 package packageupdaters
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"os"
-	"path"
+	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
+
+	"github.com/jfrog/jfrog-client-go/utils/log"
+
+	"github.com/jfrog/frogbot/v2/utils"
 )
 
 const (
-	pnpmDependencyRegexpPattern = "\\s*\"%s\"\\s*:\\s*\"[~|^]?%s\""
-	pnpmDescriptorFileSuffix    = "package.json"
-	nodeModulesPathPattern      = ".*node_modules.*"
+	pnpmLockFileName         = "pnpm-lock.yaml"
+	pnpmLockfileOnlyFlag     = "--lockfile-only"
+	pnpmIgnoreScriptsFlag    = "--ignore-scripts"
+	pnpmNoFrozenLockfileFlag = "--no-frozen-lockfile"
+	pnpmFrozenLockfileEnv    = "PNPM_FROZEN_LOCKFILE"
 )
+
+var pnpmInstallEnvVars = map[string]string{
+	pnpmFrozenLockfileEnv:     "false",
+	configLevelEnv:            "error",
+	ciEnv:                     "true",
+	"COREPACK_INTEGRITY_KEYS": "0",
+}
+
+func pnpmFilterCoordinateStyleDescriptorPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return paths
+	}
+	out := make([]string, 0, len(paths))
+	for _, p := range paths {
+		if !evidencePathLooksLikeNpmPackageCoordinate(p) {
+			out = append(out, p)
+		}
+	}
+	return out
+}
 
 type PnpmPackageUpdater struct {
 	CommonPackageUpdater
@@ -26,7 +50,6 @@ func (pnpm *PnpmPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	if vulnDetails.IsDirectDependency {
 		return pnpm.updateDirectDependency(vulnDetails)
 	}
-
 	return &utils.ErrUnsupportedFix{
 		PackageName:  vulnDetails.ImpactedDependencyName,
 		FixedVersion: vulnDetails.SuggestedFixedVersion,
@@ -34,70 +57,99 @@ func (pnpm *PnpmPackageUpdater) UpdateDependency(vulnDetails *utils.Vulnerabilit
 	}
 }
 
-func (pnpm *PnpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) (err error) {
-	descriptorFilesFullPaths, err := pnpm.CommonPackageUpdater.GetAllDescriptorFilesFullPaths([]string{pnpmDescriptorFileSuffix}, nodeModulesPathPattern)
-	if err != nil {
-		return err
+func (pnpm *PnpmPackageUpdater) updateDirectDependency(vulnDetails *utils.VulnerabilityDetails) error {
+	descriptorPaths := pnpm.CollectVulnerabilityDescriptorPaths(vulnDetails, []string{nodePackageJSONFileName}, []string{nodeModulesDirName})
+	descriptorPaths = pnpmFilterCoordinateStyleDescriptorPaths(descriptorPaths)
+	if len(descriptorPaths) == 0 {
+		return fmt.Errorf("no descriptor evidence was found for package %s", vulnDetails.ImpactedDependencyName)
 	}
 
-	wd, err := os.Getwd()
+	originalWd, err := os.Getwd()
 	if err != nil {
-		err = fmt.Errorf("failed to get current working directory: %s", err.Error())
-		return err
+		return fmt.Errorf("failed to get current working directory: %w", err)
 	}
 
-	vulnRegexpCompiler := BuildPackageWithVersionRegex(vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, pnpmDependencyRegexpPattern)
-
-	var anyDescriptorChanged bool
-	for _, descriptorFile := range descriptorFilesFullPaths {
-		var isFileChanged bool
-		isFileChanged, err = pnpm.fixVulnerabilityIfExists(vulnDetails, descriptorFile, wd, vulnRegexpCompiler)
-		if err != nil {
-			return err
+	var failingDescriptors []string
+	for _, descriptorPath := range descriptorPaths {
+		if fixErr := pnpm.fixVulnerabilityAndRegenerateLock(vulnDetails, descriptorPath, originalWd); fixErr != nil {
+			failedFixErrorMsg := fmt.Errorf("failed to fix '%s' in descriptor '%s': %w", vulnDetails.ImpactedDependencyName, descriptorPath, fixErr)
+			log.Warn(failedFixErrorMsg.Error())
+			err = errors.Join(err, failedFixErrorMsg)
+			failingDescriptors = append(failingDescriptors, descriptorPath)
 		}
-		anyDescriptorChanged = anyDescriptorChanged || isFileChanged
 	}
-	if !anyDescriptorChanged {
-		err = fmt.Errorf("impacted package %q was not found in any descriptor files", vulnDetails.ImpactedDependencyName)
+	if err != nil {
+		return fmt.Errorf("encountered errors while fixing '%s' vulnerability in descriptors [%s]: %w", vulnDetails.ImpactedDependencyName, strings.Join(failingDescriptors, ", "), err)
 	}
-	return err
+
+	return nil
 }
 
-func (pnpm *PnpmPackageUpdater) fixVulnerabilityIfExists(vulnDetails *utils.VulnerabilityDetails, descriptorFilePath, originalWd string, vulnRegexpCompiler *regexp.Regexp) (isFileChanged bool, err error) {
-	var descriptorFileData []byte
-	descriptorFileData, err = os.ReadFile(descriptorFilePath)
+func (pnpm *PnpmPackageUpdater) fixVulnerabilityAndRegenerateLock(vulnDetails *utils.VulnerabilityDetails, descriptorPath string, originalWd string) error {
+	backupContent, err := pnpm.UpdatePackageJSONDescriptor(descriptorPath, vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion)
 	if err != nil {
-		err = fmt.Errorf("failed to read file '%s': %s", descriptorFilePath, err.Error())
-		return isFileChanged, err
+		return err
 	}
 
-	// Only if the vulnerable dependency is detected in the current descriptor, we initiate a fix
-	if match := vulnRegexpCompiler.FindString(strings.ToLower(string(descriptorFileData))); match != "" {
-		modulePath := path.Dir(descriptorFilePath)
-		if err = os.Chdir(modulePath); err != nil {
-			err = fmt.Errorf("failed to change directory to '%s': %s", modulePath, err.Error())
-			return isFileChanged, err
-		}
-		defer func() {
-			err = errors.Join(err, os.Chdir(originalWd))
-		}()
+	descriptorDir := filepath.Dir(descriptorPath)
+	lockFilePath := filepath.Join(descriptorDir, pnpmLockFileName)
 
-		var nodeModulesDirExist bool
-		if nodeModulesDirExist, err = fileutils.IsDirExists(filepath.Join(modulePath, "node_modules"), false); err != nil {
-			return isFileChanged, err
-		}
-
-		if !nodeModulesDirExist {
-			defer func() {
-				// If node_modules directory doesn't exist prior to the dependency update we aim remove it after the update.
-				err = errors.Join(err, fileutils.RemoveTempDir(filepath.Join(modulePath, "node_modules")))
-			}()
-		}
-
-		if err = pnpm.CommonPackageUpdater.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand()); err != nil {
-			return isFileChanged, fmt.Errorf("failed to update dependency '%s' from version '%s' to '%s': %s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, err.Error())
-		}
-		isFileChanged = true
+	lockFileTracked, checkErr := utils.IsFileTrackedByGit(lockFilePath, originalWd)
+	if checkErr != nil {
+		log.Debug(fmt.Sprintf("Failed to check if lock file is tracked in git: %s. Proceeding with lock file regeneration.", checkErr.Error()))
+		lockFileTracked = true
 	}
-	return isFileChanged, err
+
+	if !lockFileTracked {
+		log.Debug(fmt.Sprintf("Lock file '%s' is not tracked in git, skipping lock file regeneration", lockFilePath))
+		return nil
+	}
+
+	if err = pnpm.regenerateLockfile(vulnDetails, descriptorPath, originalWd, backupContent); err != nil {
+		return err
+	}
+
+	log.Debug(fmt.Sprintf("Successfully updated '%s' from version '%s' to '%s' in descriptor '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion, vulnDetails.SuggestedFixedVersion, descriptorPath))
+	return nil
+}
+
+func (pnpm *PnpmPackageUpdater) regenerateLockfile(vulnDetails *utils.VulnerabilityDetails, descriptorPath, originalWd string, backupContent []byte) error {
+	return pnpm.withDescriptorWorkingDir(descriptorPath, originalWd, func() error {
+		if err := pnpm.runPnpmInstallLockOnly(); err != nil {
+			log.Warn(fmt.Sprintf("Failed to regenerate lock file after updating '%s' to version '%s': %s. Rolling back...", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion, err.Error()))
+			//#nosec G306 -- 0644 is correct for a checked-out source file.
+			if rollbackErr := os.WriteFile(descriptorPath, backupContent, 0644); rollbackErr != nil {
+				return fmt.Errorf("failed to rollback descriptor after lock file regeneration failure: %w (original error: %v)", rollbackErr, err)
+			}
+			return err
+		}
+		return nil
+	})
+}
+
+func (pnpm *PnpmPackageUpdater) runPnpmInstallLockOnly() error {
+	args := []string{
+		"install",
+		pnpmLockfileOnlyFlag,
+		pnpmIgnoreScriptsFlag,
+		pnpmNoFrozenLockfileFlag,
+	}
+	fullCommand := "pnpm " + strings.Join(args, " ")
+	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
+
+	ctx, cancel := context.WithTimeout(context.Background(), nodePackageManagerInstallTimeout)
+	defer cancel()
+
+	//#nosec G204 -- False positive - the subprocess only runs after the user's approval
+	cmd := exec.CommandContext(ctx, "pnpm", args...)
+	cmd.Env = pnpm.buildEnvWithOverrides(pnpmInstallEnvVars)
+
+	output, err := cmd.CombinedOutput()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
+		return fmt.Errorf("pnpm install timed out after %v", nodePackageManagerInstallTimeout)
+	}
+	if err != nil {
+		return fmt.Errorf("pnpm install failed: %w\nOutput: %s", err, string(output))
+	}
+	return nil
 }

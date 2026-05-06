@@ -1,20 +1,43 @@
 package packageupdaters
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v2/utils"
 )
+
+// Node
+const (
+	nodePackageJSONFileName          = "package.json"
+	nodeModulesDirName               = "node_modules"
+	nodeDependenciesSection          = "dependencies"
+	nodeDevDependenciesSection       = "devDependencies"
+	nodeOptionalDependenciesSection  = "optionalDependencies"
+	nodeOverridesSection             = "overrides"
+	nodePackageManagerInstallTimeout = 15 * time.Minute
+)
+
+var nodePackageManifestSections = []string{
+	nodeDependenciesSection,
+	nodeDevDependenciesSection,
+	nodeOptionalDependenciesSection,
+	nodeOverridesSection,
+}
 
 // PackageUpdater interface to hold operations on packages
 type PackageUpdater interface {
@@ -54,6 +77,125 @@ func GetCompatiblePackageUpdater(vulnDetails *utils.VulnerabilityDetails, detail
 // TODO can be deleted if not needed after refactoring all package updaters
 type CommonPackageUpdater struct{}
 
+// evidencePathLooksLikeNpmPackageCoordinate detects scanner evidence paths like "lodash@4.17.19/package.json" (not real paths). Pnpm filters these; npm does not.
+func evidencePathLooksLikeNpmPackageCoordinate(evidenceFile string) bool {
+	dir := filepath.Dir(evidenceFile)
+	if dir == "." || dir == "" {
+		return false
+	}
+	for _, part := range strings.Split(filepath.ToSlash(dir), "/") {
+		if part == "" || part == "." {
+			continue
+		}
+		if strings.Contains(part, "@") && !strings.HasPrefix(part, "@") {
+			return true
+		}
+	}
+	return false
+}
+
+func (cph *CommonPackageUpdater) CollectVulnerabilityDescriptorPaths(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
+	pathsSet := datastructures.MakeSet[string]()
+	for _, component := range vulnDetails.Components {
+		for _, evidence := range component.Evidences {
+			if evidence.File == "" || techutils.IsTechnologyDescriptor(evidence.File) == techutils.NoTech || slices.ContainsFunc(ignoreFilters, func(pattern string) bool { return strings.Contains(evidence.File, pattern) }) {
+				continue
+			}
+			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
+				pathsSet.Add(evidence.File)
+			}
+		}
+	}
+	return pathsSet.ToSlice()
+}
+
+// BuildPackageDependencyLineRegex builds a regexp for matching a dependency line in a manifest.
+func (cph *CommonPackageUpdater) BuildPackageDependencyLineRegex(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
+	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
+	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
+	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
+	return regexp.MustCompile(regexpCompleteFormat)
+}
+
+// EscapeJSONPathKey escapes gjson/sjson path keys for package names in package.json.
+func (cph *CommonPackageUpdater) EscapeJSONPathKey(key string) string {
+	r := strings.NewReplacer(".", "\\.", "*", "\\*", "?", "\\?")
+	return r.Replace(key)
+}
+
+// GetFixedPackageJSONManifest returns manifest bytes with packageName set to newVersion in allowed sections.
+func (cph *CommonPackageUpdater) GetFixedPackageJSONManifest(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
+	updated := false
+	escapedName := cph.EscapeJSONPathKey(packageName)
+
+	for _, section := range nodePackageManifestSections {
+		path := section + "." + escapedName
+		if gjson.GetBytes(content, path).Exists() {
+			var err error
+			content, err = sjson.SetBytes(content, path, newVersion)
+			if err != nil {
+				return nil, fmt.Errorf("failed to set version for '%s' in section '%s': %w", packageName, section, err)
+			}
+			updated = true
+		}
+	}
+
+	if !updated {
+		return nil, fmt.Errorf("package '%s' not found in allowed sections [%s] in '%s'", packageName, strings.Join(nodePackageManifestSections, ", "), descriptorPath)
+	}
+	return content, nil
+}
+
+// UpdatePackageJSONDescriptor writes the fixed version for packageName to descriptorPath and returns original file bytes for rollback.
+func (cph *CommonPackageUpdater) UpdatePackageJSONDescriptor(descriptorPath, packageName, newVersion string) ([]byte, error) {
+	//#nosec G304 -- descriptorPath comes from vulnerability evidence in the scanned repository.
+	descriptorContent, err := os.ReadFile(descriptorPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file '%s': %w", descriptorPath, err)
+	}
+
+	backupContent := make([]byte, len(descriptorContent))
+	copy(backupContent, descriptorContent)
+
+	updatedContent, err := cph.GetFixedPackageJSONManifest(descriptorContent, packageName, newVersion, descriptorPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update version in descriptor: %w", err)
+	}
+
+	//#nosec G306 G703 -- 0644 for checked-out source; path same trusted source as ReadFile above.
+	if err = os.WriteFile(descriptorPath, updatedContent, 0644); err != nil {
+		return nil, fmt.Errorf("failed to write updated descriptor '%s': %w", descriptorPath, err)
+	}
+	return backupContent, nil
+}
+
+func (cph *CommonPackageUpdater) withDescriptorWorkingDir(descriptorPath, originalWd string, fn func() error) (err error) {
+	descriptorDir := filepath.Dir(descriptorPath)
+	if err = os.Chdir(descriptorDir); err != nil {
+		return fmt.Errorf("failed to change directory to '%s': %w", descriptorDir, err)
+	}
+	defer func() {
+		if chErr := os.Chdir(originalWd); chErr != nil {
+			err = errors.Join(err, fmt.Errorf("failed to return to original directory: %w", chErr))
+		}
+	}()
+	return fn()
+}
+
+func (cph *CommonPackageUpdater) buildEnvWithOverrides(overrides map[string]string) []string {
+	env := make([]string, 0, len(os.Environ())+len(overrides))
+	for _, e := range os.Environ() {
+		key := strings.SplitN(e, "=", 2)[0]
+		if _, shouldOverride := overrides[key]; !shouldOverride {
+			env = append(env, e)
+		}
+	}
+	for key, value := range overrides {
+		env = append(env, fmt.Sprintf("%s=%s", key, value))
+	}
+	return env
+}
+
 // UpdateDependency updates the impacted package to the fixed version
 func (cph *CommonPackageUpdater) UpdateDependency(vulnDetails *utils.VulnerabilityDetails, installationCommand string, extraArgs ...string) (err error) {
 	// Lower the package name to avoid duplicates
@@ -70,11 +212,28 @@ func runPackageMangerCommand(commandName string, techName string, commandArgs []
 	fullCommand := commandName + " " + strings.Join(commandArgs, " ")
 	log.Debug(fmt.Sprintf("Running '%s'", fullCommand))
 	//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
-	output, err := exec.Command(commandName, commandArgs...).CombinedOutput()
+	cmd := exec.Command(commandName, commandArgs...)
+	if commandName == "pnpm" {
+		cmd.Env = envWithCorepackIntegrityWorkaround(os.Environ())
+	}
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to update %s dependency: '%s' command failed: %s\n%s", techName, fullCommand, err.Error(), output)
 	}
 	return nil
+}
+
+// envWithCorepackIntegrityWorkaround sets COREPACK_INTEGRITY_KEYS=0 for older Node/Corepack (e.g. corepack#612).
+func envWithCorepackIntegrityWorkaround(base []string) []string {
+	const key = "COREPACK_INTEGRITY_KEYS"
+	prefix := key + "="
+	out := make([]string, 0, len(base)+1)
+	for _, e := range base {
+		if !strings.HasPrefix(e, prefix) {
+			out = append(out, e)
+		}
+	}
+	return append(out, prefix+"0")
 }
 
 // Returns the updated package and version as it should be run in the update command:
@@ -129,23 +288,11 @@ func (cph *CommonPackageUpdater) GetAllDescriptorFilesFullPaths(descriptorFilesS
 }
 
 func BuildPackageWithVersionRegex(impactedName, impactedVersion, dependencyLineFormat string) *regexp.Regexp {
-	regexpFitImpactedName := strings.ToLower(regexp.QuoteMeta(impactedName))
-	regexpFitImpactedVersion := strings.ToLower(regexp.QuoteMeta(impactedVersion))
-	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
-	return regexp.MustCompile(regexpCompleteFormat)
+	var c CommonPackageUpdater
+	return c.BuildPackageDependencyLineRegex(impactedName, impactedVersion, dependencyLineFormat)
 }
 
 func GetVulnerabilityLocations(vulnDetails *utils.VulnerabilityDetails, namesFilters []string, ignoreFilters []string) []string {
-	pathsSet := datastructures.MakeSet[string]()
-	for _, component := range vulnDetails.Components {
-		for _, evidence := range component.Evidences {
-			if evidence.File == "" || techutils.IsTechnologyDescriptor(evidence.File) == techutils.NoTech || slices.ContainsFunc(ignoreFilters, func(pattern string) bool { return strings.Contains(evidence.File, pattern) }) {
-				continue
-			}
-			if len(namesFilters) == 0 || slices.Contains(namesFilters, filepath.Base(evidence.File)) {
-				pathsSet.Add(evidence.File)
-			}
-		}
-	}
-	return pathsSet.ToSlice()
+	var c CommonPackageUpdater
+	return c.CollectVulnerabilityDescriptorPaths(vulnDetails, namesFilters, ignoreFilters)
 }
