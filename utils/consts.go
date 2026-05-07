@@ -15,6 +15,7 @@ const (
 	GitHub          vcsProvider = "github"
 	GitLab          vcsProvider = "gitlab"
 	BitbucketServer vcsProvider = "bitbucketServer"
+	BitbucketCloud  vcsProvider = "bitbucketCloud"
 	AzureRepos      vcsProvider = "azureRepos"
 
 	// CI providers params

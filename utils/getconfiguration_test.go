@@ -122,10 +122,31 @@ func TestExtractVcsProviderFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.BitbucketServer, vcsProvider)
 
+	SetEnvAndAssert(t, map[string]string{GitProvider: string(BitbucketCloud)})
+	vcsProvider, err = extractVcsProviderFromEnv()
+	assert.NoError(t, err)
+	assert.Equal(t, vcsutils.BitbucketCloud, vcsProvider)
+
 	SetEnvAndAssert(t, map[string]string{GitProvider: string(AzureRepos)})
 	vcsProvider, err = extractVcsProviderFromEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, vcsutils.AzureRepos, vcsProvider)
+}
+
+func TestExtractGitParamsFromEnvs_BitbucketCloudNoUsernameRequired(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+	SetEnvAndAssert(t, map[string]string{
+		GitRepoEnv:      "frogbot",
+		GitProvider:     string(BitbucketCloud),
+		GitRepoOwnerEnv: "jfrog",
+		GitTokenEnv:     "token123",
+	})
+	// Bitbucket Cloud supports Bearer token auth (Repository/Workspace Access Tokens) without a username.
+	params, err := extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+	assert.Empty(t, params.Username)
 }
 
 func TestExtractGitParamsFromEnvs(t *testing.T) {
@@ -138,7 +159,7 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 
 	SetEnvAndAssert(t, map[string]string{GitRepoEnv: "frogbot"})
 	_, err = extractGitParamsFromEnvs()
-	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer' or 'azureRepos'")
+	assert.EqualError(t, err, "JF_GIT_PROVIDER should be one of: 'github', 'gitlab', 'bitbucketServer', 'bitbucketCloud' or 'azureRepos'")
 
 	SetEnvAndAssert(t, map[string]string{GitProvider: "github"})
 	_, err = extractGitParamsFromEnvs()

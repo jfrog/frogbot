@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 
 	"github.com/jfrog/froggit-go/vcsclient"
+	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -51,7 +53,12 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 
 	// Add summary scan comment
 	if issues.IssuesExists(repo.FrogbotConfig.ShowSecretsAsPrComment) || !repo.FrogbotConfig.HideSuccessBannerForNoIssues {
-		for _, comment := range generatePullRequestSummaryComment(*issues, resultContext, repo.FrogbotConfig.ShowSecretsAsPrComment, repo.OutputWriter) {
+		comments := generatePullRequestSummaryComment(*issues, resultContext, repo.FrogbotConfig.ShowSecretsAsPrComment, repo.OutputWriter)
+		if repo.OutputWriter.VcsProvider() == vcsutils.BitbucketCloud {
+			// Bitbucket Cloud Activity feed displays comments newest-first, so post in reverse to keep summary on top.
+			slices.Reverse(comments)
+		}
+		for _, comment := range comments {
 			if err = client.AddPullRequestComment(context.Background(), repo.RepoOwner, repo.RepoName, comment, pullRequestID); err != nil {
 				err = errors.New("couldn't add pull request comment: " + err.Error())
 				return

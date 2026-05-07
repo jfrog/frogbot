@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"net/http"
 	"regexp"
 	"strings"
@@ -22,7 +23,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -377,7 +377,6 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 		// On dry run do not push to any remote
 		return nil
 	}
-	// Pushing to remote
 	if err := gm.localGitRepository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
 		Auth:       gm.auth,
@@ -525,9 +524,10 @@ func (gm *GitManager) GetRemoteName() string {
 }
 
 func toBasicAuth(username, token string) *githttp.BasicAuth {
-	// The username can be anything except for an empty string
+	// Bitbucket Cloud Repository/Workspace Access Tokens require "x-token-auth" as the git username.
+	// This is also safe for all other providers where the username is irrelevant for token auth.
 	if username == "" {
-		username = "username"
+		username = "x-token-auth"
 	}
 	// Bitbucket server username starts with ~ prefix as the project key. We need to trim it for the authentication
 	username = strings.TrimPrefix(username, "~")
