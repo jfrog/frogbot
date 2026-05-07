@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"net/http"
 	"regexp"
 	"strings"
@@ -22,7 +23,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
@@ -343,13 +343,10 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	if gm.dryRun {
 		return false, nil
 	}
-	// Use gm.remoteGitUrl (always HTTPS) instead of the URL stored in .git/config, which may
-	// be an SSH URL when the repo was cloned via SSH. Passing HTTP auth to an SSH transport
-	// causes ErrInvalidAuthMethod.
-	remote := git.NewRemote(gm.localGitRepository.Storer, &config.RemoteConfig{
-		Name: gm.remoteName,
-		URLs: []string{gm.remoteGitUrl},
-	})
+	remote, err := gm.localGitRepository.Remote(gm.remoteName)
+	if err != nil {
+		return false, errorutils.CheckError(err)
+	}
 	refList, err := remote.List(&git.ListOptions{Auth: gm.auth})
 	if err != nil {
 		return false, errorutils.CheckError(err)
@@ -364,11 +361,10 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) RemoveRemoteBranch(branchName string) error {
-	// Use gm.remoteGitUrl (always HTTPS) — see BranchExistsInRemote for rationale.
-	remote := git.NewRemote(gm.localGitRepository.Storer, &config.RemoteConfig{
-		Name: gm.remoteName,
-		URLs: []string{gm.remoteGitUrl},
-	})
+	remote, err := gm.localGitRepository.Remote(gm.remoteName)
+	if err != nil {
+		return err
+	}
 	return remote.Push(&git.PushOptions{
 		Auth:     gm.auth,
 		RefSpecs: []config.RefSpec{config.RefSpec(":refs/heads/" + branchName)},
@@ -381,11 +377,8 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 		// On dry run do not push to any remote
 		return nil
 	}
-	// Pushing to remote. RemoteURL overrides the URL in .git/config (which may be SSH)
-	// so that we always push over HTTPS using the token-based auth in gm.auth.
 	if err := gm.localGitRepository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
-		RemoteURL:  gm.remoteGitUrl,
 		Auth:       gm.auth,
 		Force:      force,
 		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, branchName))},
