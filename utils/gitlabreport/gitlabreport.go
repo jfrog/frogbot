@@ -37,10 +37,10 @@ type DependencyScanningReport struct {
 type ScanReport struct {
 	Analyzer  AnalyzerScanner `json:"analyzer"`
 	Scanner   AnalyzerScanner `json:"scanner"`
-	StartTime string          `json:"start_time"` // ISO8601 UTC yyyy-mm-ddThh:mm:ss
+	StartTime string          `json:"start_time"`
 	EndTime   string          `json:"end_time"`
-	Status    string          `json:"status"` // "success" or "failure"
-	Type      string          `json:"type"`   // "dependency_scanning"
+	Status    string          `json:"status"`
+	Type      string          `json:"type"`
 }
 
 type AnalyzerScanner struct {
@@ -56,20 +56,17 @@ type Vendor struct {
 }
 
 type VulnerabilityReport struct {
-	ID          string       `json:"id"`
-	Name        string       `json:"name,omitempty"`
-	Description string       `json:"description,omitempty"`
-	Severity    string       `json:"severity,omitempty"` // Info, Unknown, Low, Medium, High, Critical
-	Solution    string       `json:"solution,omitempty"`
-	Identifiers []Identifier `json:"identifiers"`
-	Location    Location     `json:"location"`
-	Links       []Link       `json:"links,omitempty"`
-	// Details is optional per GitLab schema (named-list item map). Reachable is set on CycloneDX
-	// components (gitlab:dependency_scanning_component:reachability), not here.
-	Details map[string]DetailNamedListItem `json:"details,omitempty"`
+	ID          string                         `json:"id"`
+	Name        string                         `json:"name,omitempty"`
+	Description string                         `json:"description,omitempty"`
+	Severity    string                         `json:"severity,omitempty"`
+	Solution    string                         `json:"solution,omitempty"`
+	Identifiers []Identifier                   `json:"identifiers"`
+	Location    Location                       `json:"location"`
+	Links       []Link                         `json:"links,omitempty"`
+	Details     map[string]DetailNamedListItem `json:"details,omitempty"`
 }
 
-// DetailNamedListItem merges named_field (name) with a detail payload (e.g. type "text" + value).
 type DetailNamedListItem struct {
 	Name  string `json:"name"`
 	Type  string `json:"type"` // "text"
@@ -120,9 +117,6 @@ func ConvertToGitLabDependencyScanningReport(scanResults *results.SecurityComman
 		}, nil
 	}
 
-	// Always include SCA vulnerabilities in this export. scanResults.IncludesVulnerabilities()
-	// reflects the interactive scan context (e.g. violation-only views); when false, jfrog-cli-security
-	// skips ParseCVEs and the GitLab JSON would be empty even with many SBOM CVEs — wrong for CI reports.
 	convertor := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{
 		IncludeVulnerabilities: true,
 		HasViolationContext:    scanResults.HasViolationContext(),
@@ -204,7 +198,6 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 		},
 	}
 	severity := normalizeSeverity(getSeverity(v))
-	// Keep contextual analysis in title so it shows in GitLab's vulnerability list.
 	name := buildVulnerabilityNameWithContextualAnalysis(v)
 	desc := strings.TrimSpace(getSummary(v))
 	solution := ""
@@ -288,8 +281,6 @@ func buildIdentifiers(v *formats.VulnerabilityOrViolationRow) []Identifier {
 	return appendUniqueCWEIdentifiers(ids, v)
 }
 
-// appendUniqueCWEIdentifiers adds GitLab dependency-scanning identifiers with type "cwe" from each
-// CVE row's Cwe list (Xray simple JSON). GitLab aggregates these for dashboards such as "Top 10 CWEs".
 func appendUniqueCWEIdentifiers(ids []Identifier, v *formats.VulnerabilityOrViolationRow) []Identifier {
 	seen := make(map[string]struct{})
 	for _, id := range ids {
@@ -342,7 +333,6 @@ func normalizeCweID(raw string) string {
 	return ""
 }
 
-// cweNumericID returns digits-only CWE id, or empty if invalid.
 func cweNumericID(s string) string {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -384,8 +374,6 @@ func getSummary(v *formats.VulnerabilityOrViolationRow) string {
 	return ""
 }
 
-// buildVulnerabilityNameWithContextualAnalysis sets the GitLab finding title to "CVE-ID (status)" using
-// aggregated contextual analysis for the row (same aggregation as Frogbot PR comments).
 func buildVulnerabilityNameWithContextualAnalysis(v *formats.VulnerabilityOrViolationRow) string {
 	base := v.IssueId
 	if len(v.Cves) > 0 && v.Cves[0].Id != "" {
@@ -397,7 +385,6 @@ func buildVulnerabilityNameWithContextualAnalysis(v *formats.VulnerabilityOrViol
 	return fmt.Sprintf("%s (%s)", base, aggregatedContextualAnalysisDisplay(v))
 }
 
-// aggregatedContextualAnalysisDisplay returns a human-readable status; NotScanned maps to "Not Covered".
 func aggregatedContextualAnalysisDisplay(v *formats.VulnerabilityOrViolationRow) string {
 	st := rowFinalApplicabilityStatus(v)
 	if st == jasutils.NotScanned || st.String() == "" {
@@ -440,7 +427,6 @@ func severitySortRank(normalized string) int {
 	}
 }
 
-// rowFinalApplicabilityStatus aggregates per-CVE applicability like Frogbot PR comments.
 func rowFinalApplicabilityStatus(v *formats.VulnerabilityOrViolationRow) jasutils.ApplicabilityStatus {
 	var statuses []jasutils.ApplicabilityStatus
 	for _, cve := range v.Cves {
@@ -451,7 +437,6 @@ func rowFinalApplicabilityStatus(v *formats.VulnerabilityOrViolationRow) jasutil
 	return results.GetFinalApplicabilityStatus(len(statuses) > 0, statuses)
 }
 
-// applicabilitySortRank orders rows within the same severity: Applicable first, Not Applicable last.
 func applicabilitySortRank(status jasutils.ApplicabilityStatus) int {
 	switch status {
 	case jasutils.Applicable:
@@ -492,6 +477,8 @@ func manifestFileForTechnology(tech techutils.Technology) string {
 	switch tech {
 	case techutils.Npm, techutils.Yarn:
 		return "package-lock.json"
+	case techutils.Pnpm:
+		return "pnpm-lock.yaml"
 	case techutils.Go:
 		return "go.sum"
 	case techutils.Pip, techutils.Pipenv:
@@ -505,7 +492,6 @@ func manifestFileForTechnology(tech techutils.Technology) string {
 	}
 }
 
-// WriteDependencyScanningReport writes the GitLab dependency-scanning report to outputDir/gl-dependency-scanning-report.json.
 func WriteDependencyScanningReport(outputDir string, report *DependencyScanningReport) error {
 	if outputDir == "" {
 		return fmt.Errorf("output directory is required")

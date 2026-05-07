@@ -34,11 +34,8 @@ const (
 )
 
 // EnrichCycloneDXBOMForGitLabReachability adds GitLab CycloneDX properties so the Security UI
-// "Reachable" field reflects JFrog contextual analysis (applicability): Applicable → in_use (Yes),
-// other assessed outcomes → not_found (Not Found), no applicability data → omit (Not Available).
-//
-// GitLab only merges SBOM reachability into findings when the BOM is uploaded as a CycloneDX
-// report (artifacts:reports:cyclonedx), not as a generic artifact path alone.
+// "Reachable" field reflects JFrog contextual analysis: Applicable → in_use, other assessed → not_found,
+// no applicability data → omitted (shows as "Not Available").
 func EnrichCycloneDXBOMForGitLabReachability(bom *cyclonedx.BOM, scanResults *results.SecurityCommandResults) {
 	if bom == nil || scanResults == nil {
 		return
@@ -84,7 +81,6 @@ func EnrichCycloneDXBOMForGitLabReachability(bom *cyclonedx.BOM, scanResults *re
 	walkComponentSlice(bom.Components, depInfo)
 }
 
-// depReachInfo holds merged reachability and a manifest path for GitLab SBOM correlation.
 type depReachInfo struct {
 	rank      reachRank
 	inputFile string
@@ -142,7 +138,6 @@ func mergeRowReachability(depInfo map[string]*depReachInfo, v *formats.Vulnerabi
 	}
 }
 
-// rowPreferredInputFile picks a repo-relative lock/manifest path for gitlab:dependency_scanning:input_file:path.
 func rowPreferredInputFile(v *formats.VulnerabilityOrViolationRow) string {
 	for _, comp := range v.Components {
 		if comp.PreferredLocation != nil {
@@ -172,7 +167,6 @@ func dependencyReachabilityKey(name, version string) string {
 	return name + "\x00" + version
 }
 
-// gitlabReachabilityRankForRow maps aggregated contextual analysis to GitLab reachability ranks.
 func gitlabReachabilityRankForRow(v *formats.VulnerabilityOrViolationRow) (reachRank, bool) {
 	switch rowFinalApplicabilityStatus(v) {
 	case jasutils.NotScanned:
