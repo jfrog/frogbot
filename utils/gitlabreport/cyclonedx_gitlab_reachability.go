@@ -68,10 +68,10 @@ func EnrichCycloneDXBOMForGitLabReachability(bom *cyclonedx.BOM, scanResults *re
 
 	// When the whole scan uses one lockfile (typical), set it on metadata too so GitLab can
 	// correlate SBOM reachability with dependency-scanning findings (per taxonomy).
-	if unique := uniqueNonEmptyInputFilesFromDepInfo(depInfo); len(unique) == 1 {
+	if f := uniqueInputFileFromDepInfo(depInfo); f != "" {
 		bom.Metadata.Properties = cdxutils.AppendProperties(bom.Metadata.Properties, cyclonedx.Property{
 			Name:  gitlabDependencyScanningInputFilePath,
-			Value: unique[0],
+			Value: f,
 		})
 	}
 
@@ -86,30 +86,24 @@ type depReachInfo struct {
 	inputFile string
 }
 
-func uniqueNonEmptyInputFilesFromDepInfo(depInfo map[string]*depReachInfo) []string {
+// uniqueInputFileFromDepInfo returns the single lock/manifest file shared by all assessed dependencies,
+// or empty if there are zero or more than one (multiple lockfiles: do not guess metadata-level path).
+func uniqueInputFileFromDepInfo(depInfo map[string]*depReachInfo) string {
 	seen := make(map[string]struct{})
 	for _, info := range depInfo {
 		if info == nil || info.rank <= reachNone {
 			continue
 		}
-		f := strings.TrimSpace(info.inputFile)
-		if f == "" {
-			continue
+		if f := strings.TrimSpace(info.inputFile); f != "" {
+			seen[f] = struct{}{}
 		}
-		seen[f] = struct{}{}
 	}
-	if len(seen) == 0 {
-		return nil
+	if len(seen) == 1 {
+		for f := range seen {
+			return f
+		}
 	}
-	out := make([]string, 0, len(seen))
-	for f := range seen {
-		out = append(out, f)
-	}
-	if len(out) == 1 {
-		return out
-	}
-	// Multiple lockfiles in one BOM: do not guess metadata-level path.
-	return nil
+	return ""
 }
 
 func mergeRowReachability(depInfo map[string]*depReachInfo, v *formats.VulnerabilityOrViolationRow) {
@@ -117,24 +111,24 @@ func mergeRowReachability(depInfo map[string]*depReachInfo, v *formats.Vulnerabi
 	if !ok {
 		return
 	}
+	name := strings.TrimSpace(v.ImpactedDependencyName)
+	if name == "" {
+		return
+	}
+	key := dependencyReachabilityKey(name, strings.TrimSpace(v.ImpactedDependencyVersion))
 	inFile := rowPreferredInputFile(v)
-	for _, key := range rowDependencyKeys(v) {
-		if key == "" {
-			continue
-		}
-		cur := depInfo[key]
-		if cur == nil {
-			cur = &depReachInfo{}
-			depInfo[key] = cur
-		}
-		if r > cur.rank {
-			cur.rank = r
-			if inFile != "" {
-				cur.inputFile = inFile
-			}
-		} else if r == cur.rank && cur.inputFile == "" && inFile != "" {
+	cur := depInfo[key]
+	if cur == nil {
+		cur = &depReachInfo{}
+		depInfo[key] = cur
+	}
+	if r > cur.rank {
+		cur.rank = r
+		if inFile != "" {
 			cur.inputFile = inFile
 		}
+	} else if r == cur.rank && cur.inputFile == "" && inFile != "" {
+		cur.inputFile = inFile
 	}
 }
 
@@ -152,15 +146,6 @@ func rowPreferredInputFile(v *formats.VulnerabilityOrViolationRow) string {
 		}
 	}
 	return strings.TrimSpace(manifestFileForTechnology(v.Technology))
-}
-
-func rowDependencyKeys(v *formats.VulnerabilityOrViolationRow) []string {
-	name := strings.TrimSpace(v.ImpactedDependencyName)
-	ver := strings.TrimSpace(v.ImpactedDependencyVersion)
-	if name == "" {
-		return nil
-	}
-	return []string{dependencyReachabilityKey(name, ver)}
 }
 
 func dependencyReachabilityKey(name, version string) string {

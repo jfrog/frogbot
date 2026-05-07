@@ -69,7 +69,7 @@ type VulnerabilityReport struct {
 
 type DetailNamedListItem struct {
 	Name  string `json:"name"`
-	Type  string `json:"type"` // "text"
+	Type  string `json:"type"`
 	Value string `json:"value"`
 }
 
@@ -382,15 +382,12 @@ func buildVulnerabilityNameWithContextualAnalysis(v *formats.VulnerabilityOrViol
 	if base == "" {
 		return ""
 	}
-	return fmt.Sprintf("%s (%s)", base, aggregatedContextualAnalysisDisplay(v))
-}
-
-func aggregatedContextualAnalysisDisplay(v *formats.VulnerabilityOrViolationRow) string {
 	st := rowFinalApplicabilityStatus(v)
-	if st == jasutils.NotScanned || st.String() == "" {
-		return jasutils.NotCovered.String()
+	display := st.String()
+	if st == jasutils.NotScanned || display == "" {
+		display = jasutils.NotCovered.String()
 	}
-	return st.String()
+	return fmt.Sprintf("%s (%s)", base, display)
 }
 
 func sortVulnerabilityRowsForGitLab(vulns []formats.VulnerabilityOrViolationRow) {
