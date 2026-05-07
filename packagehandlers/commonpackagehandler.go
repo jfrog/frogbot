@@ -3,6 +3,7 @@ package packagehandlers
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -107,6 +108,11 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 		regexpPatternsCompilers = append(regexpPatternsCompilers, regexp.MustCompile(patternToExclude))
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+
 	err = filepath.WalkDir(".", func(path string, d fs.DirEntry, innerErr error) error {
 		if innerErr != nil {
 			return fmt.Errorf("an error has occurred when attempting to access or traverse the file system: %w", innerErr)
@@ -129,7 +135,12 @@ func (cph *CommonPackageHandler) GetAllDescriptorFilesFullPaths(descriptorFilesS
 				if innerErr != nil {
 					return fmt.Errorf("couldn't retrieve file's absolute path for './%s': %w", path, innerErr)
 				}
-				descriptorFilesFullPaths = append(descriptorFilesFullPaths, absFilePath)
+				resolvedPath, validateErr := utils.ValidateFileWithinDir(absFilePath, wd)
+				if validateErr != nil {
+					log.Warn(fmt.Sprintf("skipping descriptor file '%s' as it resolves outside the project directory: %s", path, validateErr.Error()))
+					return nil
+				}
+				descriptorFilesFullPaths = append(descriptorFilesFullPaths, resolvedPath)
 			}
 		}
 		return nil
@@ -153,3 +164,4 @@ func GetVulnerabilityRegexCompiler(impactedName, impactedVersion, dependencyLine
 	regexpCompleteFormat := fmt.Sprintf(strings.ToLower(dependencyLineFormat), regexpFitImpactedName, regexpFitImpactedVersion)
 	return regexp.MustCompile(regexpCompleteFormat)
 }
+
