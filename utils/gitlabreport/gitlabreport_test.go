@@ -98,10 +98,10 @@ func TestMakeAnalyzerScanner(t *testing.T) {
 
 func TestVulnerabilityToReport(t *testing.T) {
 	tests := []struct {
-		name string
-		row  formats.VulnerabilityOrViolationRow
-		// spot checks
+		name            string
+		row             formats.VulnerabilityOrViolationRow
 		wantName        string
+		wantDescription string
 		wantSeverity    string
 		wantManifest    string
 		wantSolution    string
@@ -122,13 +122,14 @@ func TestVulnerabilityToReport(t *testing.T) {
 				FixedVersions: []string{"4.17.21"},
 			},
 			wantName:        "CVE-2021-1234 (Not Covered)",
+			wantDescription: "Test summary",
 			wantSeverity:    "High",
 			wantManifest:    "package-lock.json",
 			wantSolution:    "Upgrade lodash to version 4.17.21 or later.",
 			identifierTypes: []string{"cve", "xray", "cwe"},
 		},
 		{
-			name: "contextual analysis in reachable detail",
+			name: "contextual analysis in name",
 			row: formats.VulnerabilityOrViolationRow{
 				IssueId: "XRAY-99",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
@@ -144,6 +145,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 				Technology: techutils.Npm,
 			},
 			wantName:        "CVE-2023-1 (Applicable)",
+			wantDescription: "Details here",
 			wantSeverity:    "Low",
 			wantManifest:    "package-lock.json",
 			identifierTypes: []string{"cve", "cve", "xray", "cwe", "cwe"},
@@ -161,6 +163,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 				Technology: techutils.Go,
 			},
 			wantName:        "XRAY-100 (Not Covered)",
+			wantDescription: "",
 			wantSeverity:    "Low",
 			wantManifest:    "go.sum",
 			identifierTypes: []string{"xray", "cwe"},
@@ -176,12 +179,13 @@ func TestVulnerabilityToReport(t *testing.T) {
 				Technology: techutils.Maven,
 			},
 			wantName:        "",
+			wantDescription: "",
 			wantSeverity:    "Unknown",
 			wantManifest:    "pom.xml",
 			identifierTypes: []string{"other", "cwe"},
 		},
 		{
-			name: "CVE from issueId when cves slice empty",
+			name: "CVE from issueId when cves slice has no id",
 			row: formats.VulnerabilityOrViolationRow{
 				IssueId: "CVE-2020-9999",
 				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
@@ -194,6 +198,7 @@ func TestVulnerabilityToReport(t *testing.T) {
 				Technology: techutils.Maven,
 			},
 			wantName:        "CVE-2020-9999 (Not Covered)",
+			wantDescription: "from issue id only",
 			wantSeverity:    "High",
 			wantManifest:    "pom.xml",
 			identifierTypes: []string{"cve", "cwe"},
@@ -203,30 +208,11 @@ func TestVulnerabilityToReport(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := vulnerabilityToReport(&tt.row)
 			assert.Equal(t, tt.wantName, got.Name)
+			assert.Equal(t, tt.wantDescription, got.Description)
 			assert.Equal(t, tt.wantSeverity, got.Severity)
 			assert.Equal(t, tt.wantManifest, got.Location.File)
-			if tt.name == "CVE name and link" {
-				assert.Equal(t, "Test summary", got.Description)
-				assert.Nil(t, got.Details)
-			}
-			if tt.name == "contextual analysis in reachable detail" {
-				assert.Equal(t, "Details here", got.Description)
-				assert.Nil(t, got.Details)
-			}
-			if tt.name == "non-CVE issue id adds xray identifier" {
-				assert.Empty(t, got.Description)
-				assert.Nil(t, got.Details)
-			}
-			if tt.name == "CVE from issueId when cves slice empty" {
-				assert.Equal(t, "from issue id only", got.Description)
-				assert.Nil(t, got.Details)
-			}
-			if tt.name == "fallback identifier when no CVE or issue id" {
-				assert.Nil(t, got.Details)
-			}
-			if tt.wantSolution != "" {
-				assert.Equal(t, tt.wantSolution, got.Solution)
-			}
+			assert.Equal(t, tt.wantSolution, got.Solution)
+			assert.Nil(t, got.Details)
 			require.Len(t, got.Identifiers, len(tt.identifierTypes))
 			for i, wantType := range tt.identifierTypes {
 				assert.Equal(t, wantType, got.Identifiers[i].Type)
