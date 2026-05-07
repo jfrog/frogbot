@@ -197,6 +197,9 @@ func walkComponentTree(c *cyclonedx.Component, depInfo map[string]*depReachInfo)
 	if c == nil {
 		return
 	}
+	if idx := strings.Index(c.PackageURL, "?"); idx != -1 {
+		c.PackageURL = c.PackageURL[:idx]
+	}
 	if info := bestReachInfoForComponent(c, depInfo); info != nil && info.rank > reachNone {
 		if info.inputFile != "" {
 			c.Properties = cdxutils.AppendProperties(c.Properties, cyclonedx.Property{
