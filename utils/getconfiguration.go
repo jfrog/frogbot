@@ -468,7 +468,7 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 	// For backward compatibility, we are accepting also "bitbucket server" and "bitbucket cloud"
 	case string(BitbucketServer), "bitbucket server":
 		return vcsutils.BitbucketServer, nil
-	case string(BitbucketCloud), "bitbucket cloud":
+	case string(BitbucketCloud):
 		return vcsutils.BitbucketCloud, nil
 	case string(AzureRepos):
 		return vcsutils.AzureRepos, nil
