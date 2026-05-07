@@ -58,3 +58,54 @@ func TestEnrichCycloneDXBOMForGitLabReachability_nilSafe(t *testing.T) {
 	EnrichCycloneDXBOMForGitLabReachability(bom, nil)
 	assert.Nil(t, bom.Metadata)
 }
+
+func TestWalkComponentTree_setsGitLabPropertiesAndTrimsPurlQuery(t *testing.T) {
+	depInfo := map[string]*depReachInfo{
+		dependencyReachabilityKey("minimist", "1.2.5"): {
+			rank:      reachInUse,
+			inputFile: "node_modules/minimist/package.json",
+		},
+	}
+	c := &cyclonedx.Component{
+		Type:       cyclonedx.ComponentTypeLibrary,
+		Name:       "minimist",
+		Version:    "1.2.5",
+		PackageURL: "pkg:npm/minimist@1.2.5?foo=bar",
+	}
+
+	walkComponentTree(c, depInfo)
+
+	assert.Equal(t, "pkg:npm/minimist@1.2.5", c.PackageURL, "query params should be stripped for stable matching")
+	require.NotNil(t, c.Properties)
+	props := map[string]string{}
+	for _, p := range *c.Properties {
+		props[p.Name] = p.Value
+	}
+	assert.Equal(t, "node_modules/minimist/package.json", props[gitlabDependencyScanningInputFilePath])
+	assert.Equal(t, gitlabReachabilityInUse, props[gitlabDependencyScanningReachability])
+}
+
+func TestWalkComponentTree_usesGroupPrefixedNameMatch(t *testing.T) {
+	depInfo := map[string]*depReachInfo{
+		dependencyReachabilityKey("com.thoughtworks.xstream:xstream", "1.4.5"): {
+			rank:      reachNotFound,
+			inputFile: "pom.xml",
+		},
+	}
+	c := &cyclonedx.Component{
+		Type:    cyclonedx.ComponentTypeLibrary,
+		Group:   "com.thoughtworks.xstream",
+		Name:    "xstream",
+		Version: "1.4.5",
+	}
+
+	walkComponentTree(c, depInfo)
+
+	require.NotNil(t, c.Properties)
+	props := map[string]string{}
+	for _, p := range *c.Properties {
+		props[p.Name] = p.Value
+	}
+	assert.Equal(t, "pom.xml", props[gitlabDependencyScanningInputFilePath])
+	assert.Equal(t, gitlabReachabilityNotFound, props[gitlabDependencyScanningReachability])
+}

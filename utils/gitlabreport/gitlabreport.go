@@ -196,9 +196,6 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 	id := deterministicVulnID(v.ImpactedDependencyName, v.ImpactedDependencyVersion, v.IssueId, v.Cves)
 	identifiers := buildIdentifiers(v)
 	manifestPath := rowPreferredInputFile(v)
-	if manifestPath == "" {
-		manifestPath = manifestFileForTechnology(v.Technology)
-	}
 	location := Location{
 		File: manifestPath,
 		Dependency: Dependency{
@@ -207,9 +204,7 @@ func vulnerabilityToReport(v *formats.VulnerabilityOrViolationRow) Vulnerability
 		},
 	}
 	severity := normalizeSeverity(getSeverity(v))
-	// GitLab's vulnerability list "Description" column is built from the finding title (name) and
-	// manifest path — it does not show the JSON description body in that column. Include
-	// contextual analysis in name so it appears in the list; description holds summary only.
+	// Keep contextual analysis in title so it shows in GitLab's vulnerability list.
 	name := buildVulnerabilityNameWithContextualAnalysis(v)
 	desc := strings.TrimSpace(getSummary(v))
 	solution := ""
