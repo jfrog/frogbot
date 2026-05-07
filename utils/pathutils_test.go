@@ -11,7 +11,8 @@ import (
 )
 
 // evalTempDir creates a temporary directory and resolves any symlinks in its path.
-// This is needed because on macOS, os.TempDir() returns /var which is a symlink to /private/var.
+// Some platforms use symlinked temp directories (e.g., /var -> /private/var on macOS),
+// which would cause path comparisons to fail without resolving first.
 func evalTempDir(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
