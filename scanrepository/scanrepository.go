@@ -154,13 +154,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 	}()
 	totalFindings = getTotalFindingsFromScanResults(scanResults)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
-
-	if repository.Params.Git.GitProvider == vcsutils.GitLab && repository.Params.Git.GitlabScanResultsOutputDir != "" {
-		log.Debug(fmt.Sprintf("Trying to save scan results to directory: %s", repository.Params.Git.GitlabScanResultsOutputDir))
-		if writeErr := utils.WriteScanResultsToDir(repository.Params.Git.GitlabScanResultsOutputDir, scanResults, sr.scanDetails.StartTime); writeErr != nil {
-			log.Warn(fmt.Sprintf("Failed to write scan results to directory: %s", writeErr.Error()))
-		}
-	}
+	sr.uploadGitLabScanResultsIfNeeded(repository, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's configuration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
@@ -191,6 +185,16 @@ func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults
 		findingCount = summary.GetTotalVulnerabilities()
 	}
 	return findingCount
+}
+
+func (sr *ScanRepositoryCmd) uploadGitLabScanResultsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
+	if repository.Params.Git.GitProvider != vcsutils.GitLab || repository.Params.Git.GitlabScanResultsOutputDir == "" {
+		return
+	}
+	log.Debug(fmt.Sprintf("Trying to save scan results to directory: %s", repository.Params.Git.GitlabScanResultsOutputDir))
+	if writeErr := utils.WriteScanResultsToGitlabDir(repository.Params.Git.GitlabScanResultsOutputDir, scanResults, sr.scanDetails.StartTime); writeErr != nil {
+		log.Warn(fmt.Sprintf("Failed to write scan results to directory: %s", writeErr.Error()))
+	}
 }
 
 func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {

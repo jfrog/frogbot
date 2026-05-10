@@ -564,7 +564,7 @@ func createTestSecurityCommandResults() *results.SecurityCommandResults {
 	return scanResults
 }
 
-func TestWriteScanResultsToDir(t *testing.T) {
+func TestWriteScanResultsToGitlabDir(t *testing.T) {
 	start := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
 
 	tests := []struct {
@@ -622,7 +622,7 @@ func TestWriteScanResultsToDir(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := tt.outputDir(t)
-			err := WriteScanResultsToDir(dir, tt.scanResults, start)
+			err := WriteScanResultsToGitlabDir(dir, tt.scanResults, start)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errContains)

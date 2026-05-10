@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
@@ -473,7 +472,7 @@ func CreateErrorIfFailUponScannerErrorEnabled(fail bool, messageForLog string, e
 	return err
 }
 
-func WriteScanResultsToDir(outputDir string, scanResults *results.SecurityCommandResults, startTime time.Time) error {
+func WriteScanResultsToGitlabDir(outputDir string, scanResults *results.SecurityCommandResults, startTime time.Time) error {
 	if outputDir == "" {
 		return fmt.Errorf("output directory is required")
 	}
@@ -511,13 +510,7 @@ func writeCycloneDxToDir(outputDir string, scanResults *results.SecurityCommandR
 	bom := fullBom.BOM
 	gitlabreport.EnrichCycloneDXBOMForGitLabReachability(&bom, scanResults)
 	path := filepath.Join(outputDir, cyclonedxOutputFilename)
-	f, err := os.Create(path)
-	if err != nil {
-		return fmt.Errorf("create file: %w", err)
-	}
-	defer func() { _ = f.Close() }()
-	encoder := cyclonedx.NewBOMEncoder(f, cyclonedx.BOMFileFormatJSON)
-	if err = encoder.Encode(&bom); err != nil {
+	if err = utils.SaveCdxContentToFile(path, &bom); err != nil {
 		return fmt.Errorf("encode CycloneDX: %w", err)
 	}
 	log.Info(fmt.Sprintf("CycloneDX SBOM written to %s", path))
