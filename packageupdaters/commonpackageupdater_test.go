@@ -3,12 +3,14 @@ package packageupdaters
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -42,11 +44,11 @@ type pipPackageRegexTest struct {
 }
 
 func TestUpdateDependency(t *testing.T) {
-	serverDetails, restoreEnv := utils.VerifyEnv(t)
-	defer restoreEnv()
-
+	if strings.TrimSuffix(os.Getenv(utils.JFrogUrlEnv), "/") == "" {
+		t.Skipf("skipping: %s is not set (package updater integration tests run in CI with platform credentials)", utils.JFrogUrlEnv)
+	}
 	scanDetails := &utils.ScanDetails{
-		ServerDetails: &serverDetails,
+		ServerDetails: &config.ServerDetails{},
 	}
 
 	testCases := [][]dependencyFixTest{
@@ -79,40 +81,40 @@ func TestUpdateDependency(t *testing.T) {
 		{
 			{
 				vulnDetails:  createVulnerabilityDetails(techutils.Pip, "urllib3", "", "1.25.9", false, ""),
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
 				vulnDetails:  createVulnerabilityDetails(techutils.Poetry, "urllib3", "", "1.25.9", false, ""),
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
 				vulnDetails:  createVulnerabilityDetails(techutils.Pipenv, "urllib3", "", "1.25.9", false, ""),
-				scanDetails:  &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:  scanDetails,
 				fixSupported: false,
 			},
 			{
 				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "pyjwt", "", "2.4.0", true, ""),
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
 				vulnDetails:        createVulnerabilityDetails(techutils.Pip, "Pyjwt", "", "2.4.0", true, ""),
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"requirements.txt"},
 			},
 			{
 				vulnDetails:        createVulnerabilityDetails(techutils.Poetry, "pyjwt", "", "2.4.0", true, ""),
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"pyproject.toml"},
 			},
 			{
 				vulnDetails:        createVulnerabilityDetails(techutils.Pipenv, "pyjwt", "", "2.4.0", true, ""),
-				scanDetails:        &utils.ScanDetails{ServerDetails: &serverDetails},
+				scanDetails:        scanDetails,
 				fixSupported:       true,
 				descriptorsToCheck: []string{"Pipfile"},
 			},
@@ -405,6 +407,9 @@ func verifyDependencyUpdate(t *testing.T, test dependencyFixTest) {
 }
 
 func TestNugetFixVulnerabilityIfExists(t *testing.T) {
+	if _, err := exec.LookPath("dotnet"); err != nil {
+		t.Skipf("skipping: dotnet not in PATH: %v", err)
+	}
 	var testcases = []struct {
 		vulnerabilityDetails *utils.VulnerabilityDetails
 	}{
