@@ -251,7 +251,7 @@ func TestUpdateDependency(t *testing.T) {
 				testDirName:  "npm",
 			},
 			{
-				vulnDetails:        createVulnerabilityDetails(techutils.Pnpm, "minimist", "1.2.5", "1.2.6", true, ""),
+				vulnDetails:        createVulnerabilityDetails(techutils.Pnpm, "minimist", "1.2.5", "1.2.6", true, "package.json", "package-lock.json"),
 				scanDetails:        scanDetails,
 				fixSupported:       true,
 				testDirName:        "npm",
