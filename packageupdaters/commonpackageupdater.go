@@ -117,8 +117,7 @@ func (cph *CommonPackageUpdater) BuildPackageDependencyLineRegex(impactedName, i
 	return regexp.MustCompile(regexpCompleteFormat)
 }
 
-// EscapeJSONPathKey escapes gjson/sjson path keys for package names in package.json.
-func (cph *CommonPackageUpdater) EscapeJSONPathKey(key string) string {
+func escapeJsonPathKey(key string) string {
 	r := strings.NewReplacer(".", "\\.", "*", "\\*", "?", "\\?")
 	return r.Replace(key)
 }
@@ -126,7 +125,7 @@ func (cph *CommonPackageUpdater) EscapeJSONPathKey(key string) string {
 // GetFixedPackageJSONManifest returns manifest bytes with packageName set to newVersion in allowed sections.
 func (cph *CommonPackageUpdater) GetFixedPackageJSONManifest(content []byte, packageName, newVersion, descriptorPath string) ([]byte, error) {
 	updated := false
-	escapedName := cph.EscapeJSONPathKey(packageName)
+	escapedName := escapeJsonPathKey(packageName)
 
 	for _, section := range nodePackageManifestSections {
 		path := section + "." + escapedName
@@ -224,6 +223,7 @@ func runPackageMangerCommand(commandName string, techName string, commandArgs []
 }
 
 // envWithCorepackIntegrityWorkaround sets COREPACK_INTEGRITY_KEYS=0 for older Node/Corepack (e.g. corepack#612).
+// Also applied after buildEnvWithOverrides for pnpm lockfile regeneration so Corepack-invoked pnpm matches runPackageMangerCommand behavior.
 func envWithCorepackIntegrityWorkaround(base []string) []string {
 	const key = "COREPACK_INTEGRITY_KEYS"
 	prefix := key + "="

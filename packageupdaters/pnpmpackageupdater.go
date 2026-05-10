@@ -22,11 +22,17 @@ const (
 	pnpmFrozenLockfileEnv    = "PNPM_FROZEN_LOCKFILE"
 )
 
-var pnpmInstallEnvVars = map[string]string{
-	pnpmFrozenLockfileEnv:     "false",
-	configLevelEnv:            "error",
-	ciEnv:                     "true",
-	"COREPACK_INTEGRITY_KEYS": "0",
+// pnpmLockfileInstallEnvOverrides are merged into the process environment for `pnpm install` when refreshing pnpm-lock.yaml.
+// PNPM_FROZEN_LOCKFILE=false — CI often implies a frozen lockfile; after editing package.json the lock must be allowed to change.
+// NPM_CONFIG_LOGLEVEL=error — same spirit as npm lock regen: avoid noisy info-level logs.
+// CI=true — stable, non-interactive behavior consistent with other Node package manager subprocesses here.
+// COREPACK_INTEGRITY_KEYS is not set here; envWithCorepackIntegrityWorkaround appends it (see TestEnvWithCorepackIntegrityWorkaround, TestPnpmLockRegenerationEnv).
+func pnpmLockfileInstallEnvOverrides() map[string]string {
+	return map[string]string{
+		pnpmFrozenLockfileEnv: "false",
+		configLevelEnv:        "error",
+		ciEnv:                 "true",
+	}
 }
 
 func pnpmFilterCoordinateStyleDescriptorPaths(paths []string) []string {
@@ -142,7 +148,7 @@ func (pnpm *PnpmPackageUpdater) runPnpmInstallLockOnly() error {
 
 	//#nosec G204 -- False positive - the subprocess only runs after the user's approval
 	cmd := exec.CommandContext(ctx, "pnpm", args...)
-	cmd.Env = pnpm.buildEnvWithOverrides(pnpmInstallEnvVars)
+	cmd.Env = envWithCorepackIntegrityWorkaround(pnpm.buildEnvWithOverrides(pnpmLockfileInstallEnvOverrides()))
 
 	output, err := cmd.CombinedOutput()
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {

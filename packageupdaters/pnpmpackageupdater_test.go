@@ -1,6 +1,7 @@
 package packageupdaters
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -51,4 +52,21 @@ func TestPnpmCollectLeavesNpmParityThenPnpmFilterDropsCoordinates(t *testing.T) 
 	raw := pnpm.CollectVulnerabilityDescriptorPaths(vuln, []string{nodePackageJSONFileName}, []string{nodeModulesDirName})
 	assert.ElementsMatch(t, []string{"lodash@4.17.19/package.json", "axios@0.21.1/package.json", "package.json"}, raw)
 	assert.ElementsMatch(t, []string{"package.json"}, pnpmFilterCoordinateStyleDescriptorPaths(raw))
+}
+
+func TestPnpmLockRegenerationEnv(t *testing.T) {
+	t.Parallel()
+	pnpm := &PnpmPackageUpdater{}
+	env := envWithCorepackIntegrityWorkaround(pnpm.buildEnvWithOverrides(pnpmLockfileInstallEnvOverrides()))
+	envMap := make(map[string]string)
+	for _, e := range env {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	assert.Equal(t, "false", envMap[pnpmFrozenLockfileEnv])
+	assert.Equal(t, "error", envMap[configLevelEnv])
+	assert.Equal(t, "true", envMap[ciEnv])
+	assert.Equal(t, "0", envMap["COREPACK_INTEGRITY_KEYS"])
 }

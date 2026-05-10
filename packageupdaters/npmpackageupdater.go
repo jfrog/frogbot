@@ -180,8 +180,3 @@ func (npm *NpmPackageUpdater) runNpmInstall(useLegacyPeerDeps bool) error {
 
 	return nil
 }
-
-func escapeJsonPathKey(key string) string {
-	var c CommonPackageUpdater
-	return c.EscapeJSONPathKey(key)
-}
