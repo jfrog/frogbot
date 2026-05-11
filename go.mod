@@ -11,8 +11,8 @@ require (
 	github.com/jfrog/froggit-go v1.22.0
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260504054219-ba16d20c7b0f
-	github.com/jfrog/jfrog-cli-security v1.28.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260505115216-b6c67f807bc3
+	github.com/jfrog/jfrog-cli-security v1.29.0
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260508101905-a17af78a38d7
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
@@ -63,7 +63,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.7.8 // indirect
 	github.com/jfrog/archiver/v3 v3.6.3 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260501071051-3c8035fc662b // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260508123058-25d218a0eca9 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -127,7 +127,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.28.1-0.20260505135007-a2c39d56de78
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.28.1-0.20260505135007-a2c39d56de78
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
