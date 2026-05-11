@@ -219,7 +219,7 @@ func TestBuildIsolatedEnv(t *testing.T) {
 			}
 
 			npm := &NpmPackageUpdater{}
-			env := npm.buildIsolatedEnv()
+			env := npm.buildEnvWithOverrides(npmInstallEnvVars)
 
 			envMap := make(map[string]string)
 			envCount := make(map[string]int)

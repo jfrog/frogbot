@@ -111,6 +111,7 @@ func (gpu *GoPackageUpdater) buildGoCommandEnv() []string {
 }
 
 func (gpu *GoPackageUpdater) backupModuleFiles(goModPath string) (*goModuleBackup, error) {
+	//#nosec G304 -- go.mod path from scan workflow.
 	goModContent, err := os.ReadFile(goModPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read '%s': %w", goModPath, err)
@@ -119,6 +120,7 @@ func (gpu *GoPackageUpdater) backupModuleFiles(goModPath string) (*goModuleBacku
 	// We assume go.sum resides under the same directory as go.mod
 	descriptorDir := filepath.Dir(goModPath)
 	goSumPath := filepath.Join(descriptorDir, goSumFileName)
+	//#nosec G304 -- go.sum adjacent to go.mod from same scan workflow.
 	goSumContent, err := os.ReadFile(goSumPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read '%s': %w", goSumPath, err)
@@ -137,9 +139,11 @@ func (gpu *GoPackageUpdater) backupModuleFiles(goModPath string) (*goModuleBacku
 }
 
 func (gpu *GoPackageUpdater) restoreModuleFiles(backup *goModuleBackup) error {
+	//#nosec G306 -- 0644 for checked-out module files in workspace.
 	if err := os.WriteFile(backup.goModPath, backup.goModContent, 0644); err != nil {
 		return fmt.Errorf("failed to restore '%s': %w", backup.goModPath, err)
 	}
+	//#nosec G306 -- 0644 for checked-out module files in workspace.
 	if err := os.WriteFile(backup.goSumPath, backup.goSumContent, 0644); err != nil {
 		return fmt.Errorf("failed to restore '%s': %w", backup.goSumPath, err)
 	}
@@ -156,11 +160,11 @@ func (gpu *GoPackageUpdater) updateDependency(vulnDetails *utils.VulnerabilityDe
 	}
 	fixedPackage := strings.TrimSpace(impactedPackage) + "@" + fixedVersion
 
+	//#nosec G204 -- runs only after user approval; arguments from vulnerability metadata.
 	cmd := exec.Command("go", "get", fixedPackage)
 	cmd.Env = env
 	log.Debug(fmt.Sprintf("Running 'go get %s'", fixedPackage))
 
-	//#nosec G204 -- False positive - the subprocess only runs after the user's approval.
 	output, err := cmd.CombinedOutput()
 	if len(output) > 0 {
 		log.Debug(fmt.Sprintf("go get output:\n%s", string(output)))

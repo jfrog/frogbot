@@ -71,6 +71,7 @@ func (nph *NugetPackageUpdater) fixVulnerabilityIfExists(vulnDetails *utils.Vuln
 	modulePath := path.Dir(descriptorFilePath)
 
 	var fileData []byte
+	//#nosec G304 -- descriptor path from scan workflow.
 	fileData, err = os.ReadFile(descriptorFilePath)
 	if err != nil {
 		err = fmt.Errorf("failed to read file '%s': %s", descriptorFilePath, err.Error())
