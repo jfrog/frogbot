@@ -91,7 +91,7 @@ func (sc *ScanDetails) SetRepoName(repoName string) *ScanDetails {
 	return sc
 }
 
-func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.SecurityCommandResults) {
+func (sc *ScanDetails) Audit(baseDir string) (auditResults *results.SecurityCommandResults) {
 	auditBasicParams := (&audit.AuditBasicParams{}).
 		SetXrayVersion(sc.XrayVersion).
 		SetXscVersion(sc.XscVersion).
@@ -107,7 +107,8 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetUploadCdxResults(!sc.diffScan || sc.ResultsToCompare != nil).
 		SetGitContext(sc.XscGitInfoContext).
 		SetRtResultRepository(frogbotUploadRtRepoPath).
-		SetWorkingDirs(workDirs).
+		SetWorkingDirs([]string{baseDir}).
+		SetRootDir(baseDir).
 		SetGraphBasicParams(auditBasicParams).
 		SetResultsContext(sc.ResultContext).
 		SetDiffMode(sc.diffScan).
