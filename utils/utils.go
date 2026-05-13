@@ -31,8 +31,8 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
-	"github.com/jfrog/frogbot/v2/utils/gitlabreport"
-	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 )
 
 const (

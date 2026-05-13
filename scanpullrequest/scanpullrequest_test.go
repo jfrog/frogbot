@@ -24,7 +24,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
-	"github.com/jfrog/frogbot/v2/testdata"
+	"github.com/jfrog/frogbot/v3/testdata"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -33,9 +33,9 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient

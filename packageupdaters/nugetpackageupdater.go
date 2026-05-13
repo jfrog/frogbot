@@ -3,7 +3,7 @@ package packageupdaters
 import (
 	"errors"
 	"fmt"
-	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v3/utils"
 	"os"
 	"path"
 	"regexp"
