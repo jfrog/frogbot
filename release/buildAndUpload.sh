@@ -31,6 +31,20 @@ buildAndUpload () {
   destPath="$pkgPath/$version/$pkg/$exeName"
   echo "Uploading $exeName to $destPath ..."
   jf rt u "./$exeName" "$destPath"
+  sha256sum "$exeName" >"${exeName}.sha256"
+  jf rt u "./${exeName}.sha256" "$pkgPath/$version/$pkg/${exeName}.sha256"
+  rm -f "./${exeName}.sha256"
+  if [[ -n "${FROGBOT_GPG_KEY_ID:-}" ]] && command -v gpg >/dev/null 2>&1; then
+    gpg --batch --yes --local-user "$FROGBOT_GPG_KEY_ID" --detach-sign --armor -o "${exeName}.asc" "./$exeName"
+    jf rt u "./${exeName}.asc" "$pkgPath/$version/$pkg/${exeName}.asc"
+    rm -f "./${exeName}.asc"
+  fi
+}
+
+upload_signing_public_key() {
+  if [[ -n "${FROGBOT_GPG_PUBLIC_KEY_FILE:-}" ]] && [[ -f "${FROGBOT_GPG_PUBLIC_KEY_FILE}" ]]; then
+    jf rt u "${FROGBOT_GPG_PUBLIC_KEY_FILE}" "$pkgPath/$version/frogbot-signing-key.asc"
+  fi
 }
 
 # Verify version provided in pipelines UI matches version in frogbot source code.
@@ -70,4 +84,5 @@ buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
 buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' ''
 buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
+upload_signing_public_key
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat
