@@ -37,8 +37,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 const rootTestDir = "scanrepository"

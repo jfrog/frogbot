@@ -25,7 +25,7 @@ setFrogbotRemoteRepositoryIfNeeded() {
 
 setWindowsProperties() {
   FROGBOT_OS="windows"
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-windows-amd64/frogbot.exe"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-windows-amd64/frogbot.exe"
   FILE_NAME="frogbot.exe"
 }
 
@@ -40,7 +40,7 @@ setMacProperties() {
           ARCH="386"
           ;;
   esac
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
   FILE_NAME="frogbot"
 }
 
@@ -74,7 +74,7 @@ setLinuxProperties() {
           exit 1
           ;;
   esac
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v2/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
   FILE_NAME="frogbot"
 }
 

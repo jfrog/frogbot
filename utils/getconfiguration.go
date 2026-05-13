@@ -15,7 +15,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"

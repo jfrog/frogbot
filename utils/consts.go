@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 type vcsProvider string

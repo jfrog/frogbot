@@ -13,7 +13,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"golang.org/x/exp/maps"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 )
 
 const (

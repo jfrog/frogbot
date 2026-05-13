@@ -16,8 +16,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 type ReviewCommentType string

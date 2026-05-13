@@ -19,8 +19,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jfrog/frogbot/v2/utils/gitlabreport"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 const (

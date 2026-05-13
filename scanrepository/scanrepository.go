@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/packageupdaters"
+	"github.com/jfrog/frogbot/v3/packageupdaters"
 
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
@@ -29,8 +29,8 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 const (
