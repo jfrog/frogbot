@@ -14,10 +14,10 @@ import (
 )
 
 var IntegrationTestPackages = []string{
-	"github.com/jfrog/frogbot/v2",
-	"github.com/jfrog/frogbot/v2/scanrepository",
-	"github.com/jfrog/frogbot/v2/scanpullrequest",
-	"github.com/jfrog/frogbot/v2/packageupdaters",
+	"github.com/jfrog/frogbot/v3",
+	"github.com/jfrog/frogbot/v3/scanrepository",
+	"github.com/jfrog/frogbot/v3/scanpullrequest",
+	"github.com/jfrog/frogbot/v3/packageupdaters",
 }
 
 func TestUnitTests(t *testing.T) {
