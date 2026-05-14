@@ -96,20 +96,101 @@ echoGreetings() {
   echo "Frogbot downloaded successfully!"
 }
 
-getDownloadCommand() {
+download_to() {
+  dl_url="$1"
+  dl_out="$2"
   if [ -n "${REMOTE_PATH}" ]; then
       if [ -n "${JF_ACCESS_TOKEN}" ]; then
-        curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${URL}" -o "${FILE_NAME}"
+        curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
       else
-        curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${URL}" -o "${FILE_NAME}"
+        curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${dl_url}" -o "${dl_out}"
       fi
     else
-      curl -fLg -X GET "${URL}" -o "${FILE_NAME}"
+      curl -fLg -X GET "${dl_url}" -o "${dl_out}"
     fi
 }
 
+download_optional() {
+  dl_url="$1"
+  dl_out="$2"
+  if [ -n "${REMOTE_PATH}" ]; then
+      if [ -n "${JF_ACCESS_TOKEN}" ]; then
+        curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}" && return 0
+      else
+        curl -sfLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${dl_url}" -o "${dl_out}" && return 0
+      fi
+    else
+      curl -sfLg -X GET "${dl_url}" -o "${dl_out}" && return 0
+    fi
+  return 1
+}
+
+verify_checksum() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -c "${FILE_NAME}.sha256"
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 -c "${FILE_NAME}.sha256"
+  else
+    echo "Neither sha256sum nor shasum was found; cannot verify the binary checksum." >&2
+    return 1
+  fi
+}
+
+verify_checksum_or_exit() {
+  if [ "${FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION:-}" = "1" ]; then
+    echo "WARNING: skipping checksum verification (FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION=1)." >&2
+    return 0
+  fi
+  checksum_url="${URL}.sha256"
+  if ! download_to "${checksum_url}" "${FILE_NAME}.sha256"; then
+    echo "Failed to download the checksum file for this Frogbot build." >&2
+    echo "Releases that predate checksum publishing require FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION=1 (not recommended)." >&2
+    rm -f "${FILE_NAME}"
+    exit 1
+  fi
+  if ! verify_checksum; then
+    echo "Checksum verification failed." >&2
+    rm -f "${FILE_NAME}" "${FILE_NAME}.sha256"
+    exit 1
+  fi
+  rm -f "${FILE_NAME}.sha256"
+}
+
+verify_gpg_if_signature_present() {
+  sig_url="${URL}.asc"
+  if ! download_optional "${sig_url}" "${FILE_NAME}.asc"; then
+    rm -f "${FILE_NAME}.asc"
+    return 0
+  fi
+  key_url="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-signing-key.asc"
+  if ! download_optional "${key_url}" "frogbot-signing-key.asc"; then
+    echo "A detached signature was published but frogbot-signing-key.asc could not be downloaded for this release." >&2
+    rm -f "${FILE_NAME}" "${FILE_NAME}.asc"
+    exit 1
+  fi
+  if ! command -v gpg >/dev/null 2>&1; then
+    echo "gpg is required to verify the Frogbot release signature." >&2
+    rm -f "${FILE_NAME}" "${FILE_NAME}.asc" "frogbot-signing-key.asc"
+    exit 1
+  fi
+  GNUPGHOME=$(mktemp -d "${TMPDIR:-/tmp}/frogbot-gpg.XXXXXX")
+  export GNUPGHOME
+  gpg --batch --import "frogbot-signing-key.asc" >/dev/null 2>&1
+  if ! gpg --batch --verify "${FILE_NAME}.asc" "${FILE_NAME}"; then
+    echo "GPG signature verification failed." >&2
+    rm -rf "${GNUPGHOME}"
+    rm -f "${FILE_NAME}" "${FILE_NAME}.asc" "frogbot-signing-key.asc"
+    exit 1
+  fi
+  rm -rf "${GNUPGHOME}"
+  rm -f "${FILE_NAME}.asc" "frogbot-signing-key.asc"
+}
+
 download() {
-  getDownloadCommand && setPermissions && echoGreetings
+  download_to "${URL}" "${FILE_NAME}" || { rm -f "${FILE_NAME}"; exit 1; }
+  verify_checksum_or_exit
+  verify_gpg_if_signature_present
+  setPermissions && echoGreetings
 }
 
 setFrogbotVersion "$@"
