@@ -176,6 +176,10 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 }
 
 func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
+	if scanResults == nil {
+		return 0
+	}
+
 	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
 	if err != nil {
 		log.Error("Failed to extract findings summary from scan results:", err)
