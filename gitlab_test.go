@@ -13,8 +13,7 @@ import (
 const (
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	gitlabIntegrationTokenEnv = "FROGBOT_TESTS_GITLAB_TOKEN"
-	gitlabGitCloneUrl         = "https://gitlab.com/frogbot-e2e-test1/frogbot-test.git"
-	gitlabRepoOwner           = "frogbot-e2e-test1"
+	gitlabGitCloneUrl         = "https://gitlab.com/frogbot-test2/integration.git"
 )
 
 func buildGitLabClient(t *testing.T, gitlabToken string) vcsclient.VcsClient {
@@ -25,7 +24,7 @@ func buildGitLabClient(t *testing.T, gitlabToken string) vcsclient.VcsClient {
 
 func buildGitLabIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, gitlabIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, gitlabRepoOwner)
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2")
 }
 
 func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
