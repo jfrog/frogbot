@@ -217,11 +217,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+          FROGBOT_V3_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
     name: Azure Integration Tests
@@ -262,11 +262,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_AZURE_TOKEN }}
 
   gitlab-integration:
     name: GitLab Integration Tests
@@ -307,11 +307,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+          FROGBOT_V3_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITLAB_TOKEN }}
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
@@ -359,6 +359,6 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
-        run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+        run: go test -tags integration -v bitbucket_server_test.go commands.go integrationutils.go
