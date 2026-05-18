@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -25,11 +24,14 @@ import (
 )
 
 const (
-	repoName               = "frogbot-test"
-	issuesBranch           = "issues-branch"
-	mainBranch             = "main"
-	gitUsername            = "frogbot-e2e-test"
-	expectedNumberOfIssues = 10
+	repoName                      = "frogbot-test"
+	issuesBranch                  = "issues-branch"
+	mainBranch                    = "main"
+	gitUsername                   = "frogbot-e2e-test"
+	expectedNumberOfIssues        = 10
+	scanRepoTestBranchNamePrefix  = "frogbot-"
+	scanPrTestAddedVulnDependency = "axios:0.21.1"
+	cveCommentPrefix              = "CVE-"
 )
 
 type IntegrationTestDetails struct {
@@ -209,7 +211,6 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	gitManager := buildGitManager(t, testDetails)
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
-	// Branch names are deterministic: frogbot-<package>-<md5("frogbot", baseBranch, package, fixVersion)>
 	expectedBranches := []string{
 		"frogbot-snyk-5aaa88cc32aaaf2d8d893decd0a1b284",
 		"frogbot-lodash-36ab76ead8f9cace70988ea19d280c93",
@@ -229,7 +230,7 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 func cleanupLeftoverFrogbotPRs(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, gitManager *utils.GitManager) {
 	remainingPRs := getOpenPullRequests(t, client, testDetails)
 	for _, pr := range remainingPRs {
-		if strings.HasPrefix(pr.Source.Name, "frogbot-") {
+		if strings.HasPrefix(pr.Source.Name, scanRepoTestBranchNamePrefix) {
 			t.Logf("Cleaning up leftover frogbot PR: %s (ID: %d)", pr.Source.Name, pr.ID)
 			closePullRequest(t, client, testDetails, int(pr.ID))
 			if err := gitManager.RemoveRemoteBranch(pr.Source.Name); err != nil {
@@ -258,9 +259,9 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 func validateGitHubComments(t *testing.T, comments []vcsclient.CommentInfo) {
 	assert.True(t, containsCommentMentioning(comments, string(outputwriter.VulnerabilitiesPrBannerSource)),
 		"expected a PR comment containing the Frogbot banner")
-	assert.True(t, containsCommentMentioning(comments, "axios:0.21.1"),
-		"expected a PR comment mentioning the vulnerable dependency axios:0.21.1")
-	assert.True(t, containsCommentMentioning(comments, "CVE-"),
+	assert.True(t, containsCommentMentioning(comments, scanPrTestAddedVulnDependency),
+		"expected a PR comment mentioning the vulnerable dependency "+scanPrTestAddedVulnDependency)
+	assert.True(t, containsCommentMentioning(comments, cveCommentPrefix),
 		"expected a PR comment with CVE findings")
 }
 
