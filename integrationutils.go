@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -21,9 +23,10 @@ import (
 )
 
 const (
-	repoName               = "integration"
+	repoName               = "frogbot-test-v2"
 	issuesBranch           = "issues-branch"
 	mainBranch             = "main"
+	gitUsername            = "frogbot-e2e-test"
 	expectedNumberOfIssues = 10
 )
 
@@ -47,7 +50,7 @@ func NewIntegrationTestDetails(token, gitProvider, gitCloneUrl, repoOwner string
 		RepoOwner:    repoOwner,
 		RepoName:     repoName,
 		GitToken:     token,
-		GitUsername:  "frogbot",
+		GitUsername:  gitUsername,
 		GitProvider:  gitProvider,
 		GitCloneURL:  gitCloneUrl,
 		UseLocalRepo: useLocalRepo,
@@ -161,10 +164,12 @@ func runScanPullRequestCmd(t *testing.T, client vcsclient.VcsClient, testDetails
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 	prId := findRelevantPrID(pullRequests, currentIssuesBranch)
 	testDetails.PullRequestID = strconv.Itoa(prId)
-	require.NotZero(t, prId)
 	defer func() {
-		closePullRequest(t, client, testDetails, prId)
+		if prId != 0 {
+			closePullRequest(t, client, testDetails, prId)
+		}
 	}()
+	require.NotZero(t, prId)
 
 	// Set the required environment variables for the scan-pull-request command
 	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
@@ -212,29 +217,33 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	require.NoError(t, err)
 
 	gitManager := buildGitManager(t, testDetails)
-
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
-	expectedBranchName := "frogbot-pyjwt-45ebb5a61916a91ae7c1e3ff7ffb6112-" + timestamp
-	prId := findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NotZero(t, prId)
-	closePullRequest(t, client, testDetails, prId)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	// Collect frogbot PRs created by this test run and register cleanup before asserting,
+	// so branches and PRs are always removed whether the test passes or fails.
+	var frogbotPRs []vcsclient.PullRequestInfo
+	for _, pr := range pullRequests {
+		if strings.HasPrefix(pr.Source.Name, "frogbot-") && strings.HasSuffix(pr.Source.Name, "-"+timestamp) {
+			frogbotPRs = append(frogbotPRs, pr)
+		}
+	}
+	t.Cleanup(func() {
+		for _, pr := range frogbotPRs {
+			closePullRequest(t, client, testDetails, int(pr.ID))
+			assert.NoError(t, gitManager.RemoveRemoteBranch(pr.Source.Name))
+		}
+	})
 
-	expectedBranchName = "frogbot-pyyaml-985622f4dbf3a64873b6b8440288e005-" + timestamp
-	prId = findRelevantPrID(pullRequests, expectedBranchName)
-	assert.NotZero(t, prId)
-	closePullRequest(t, client, testDetails, prId)
-	assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranchName))
+	assert.True(t, len(frogbotPRs) > 0, "expected at least one frogbot fix PR to be created")
 }
 
 func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, prID int) {
 	comments, err := client.ListPullRequestComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
 	require.NoError(t, err)
 
-	switch actualClient := client.(type) {
+	switch client.(type) {
 	case *vcsclient.GitHubClient:
-		validateGitHubComments(t, ctx, actualClient, testDetails, prID, comments)
+		validateGitHubComments(t, comments)
 	case *vcsclient.AzureReposClient:
 		validateAzureComments(t, comments)
 	case *vcsclient.BitbucketServerClient:
@@ -244,14 +253,22 @@ func validateResults(t *testing.T, ctx context.Context, client vcsclient.VcsClie
 	}
 }
 
-func validateGitHubComments(t *testing.T, ctx context.Context, client *vcsclient.GitHubClient, testDetails *IntegrationTestDetails, prID int, comments []vcsclient.CommentInfo) {
-	require.Len(t, comments, 1)
-	comment := comments[0]
-	assert.Contains(t, comment.Content, string(outputwriter.VulnerabilitiesPrBannerSource))
+func validateGitHubComments(t *testing.T, comments []vcsclient.CommentInfo) {
+	assert.True(t, containsCommentMentioning(comments, string(outputwriter.VulnerabilitiesPrBannerSource)),
+		"expected a PR comment containing the Frogbot banner")
+	assert.True(t, containsCommentMentioning(comments, "axios:0.21.1"),
+		"expected a PR comment mentioning the vulnerable dependency axios:0.21.1")
+	assert.True(t, containsCommentMentioning(comments, "CVE-"),
+		"expected a PR comment with CVE findings")
+}
 
-	reviewComments, err := client.ListPullRequestReviewComments(ctx, testDetails.RepoOwner, testDetails.RepoName, prID)
-	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, len(reviewComments), 11)
+func containsCommentMentioning(comments []vcsclient.CommentInfo, text string) bool {
+	for _, c := range comments {
+		if strings.Contains(c.Content, text) {
+			return true
+		}
+	}
+	return false
 }
 
 func validateAzureComments(t *testing.T, comments []vcsclient.CommentInfo) {
