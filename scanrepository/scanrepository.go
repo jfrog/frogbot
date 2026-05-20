@@ -235,6 +235,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 }
 
 func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
+	if scanResults == nil {
+		return 0
+	}
+
 	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
 	if err != nil {
 		return 0
