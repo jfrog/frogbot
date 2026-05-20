@@ -519,6 +519,10 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 		return
 	}
 
+	if err = validateConfigProfile(configProfile); err != nil {
+		return nil, "", fmt.Errorf("the fetched config profile is invalid: %s", err.Error())
+	}
+
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
 	profileString, e := json.Marshal(configProfile)
 	if e != nil {
@@ -526,4 +530,19 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
 	return
+}
+
+func validateConfigProfile(configProfile *services.ConfigProfile) error {
+	if configProfile == nil {
+		return errors.New("received a nil config profile")
+	}
+
+	if len(configProfile.Modules) != 1 {
+		return fmt.Errorf("%s config profile returned with %d modules. A profile must have exactly 1 module", configProfile.ProfileName, len(configProfile.Modules))
+	}
+
+	if configProfile.Modules[0].PathFromRoot != "." {
+		return fmt.Errorf("the module in the config profile should be associated with the root of the repository. Expected pathFromRoot to be '.' but received '%s'", configProfile.Modules[0].PathFromRoot)
+	}
+	return nil
 }
