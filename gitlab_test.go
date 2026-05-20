@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -20,28 +22,25 @@ func buildGitLabClient(t *testing.T, gitlabToken string) vcsclient.VcsClient {
 	return azureClient
 }
 
-func buildGitLabIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
+func buildGitLabIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, gitlabIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2", useLocalRepo)
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2")
 }
 
-func gitlabTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
-	testDetails := buildGitLabIntegrationTestDetails(t, useLocalRepo)
+func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
+	testDetails := buildGitLabIntegrationTestDetails(t)
 	gitlabClient := buildGitLabClient(t, testDetails.GitToken)
 	return gitlabClient, testDetails
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t, false)
+	t.Fatal("TestGitLab_ScanPullRequestIntegration integration test is not fixed yet")
+	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t, false)
-	runScanRepositoryCmd(t, gitlabClient, testDetails)
-}
-
-func TestGitLab_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
-	gitlabClient, testDetails := gitlabTestsInit(t, true)
+	t.Fatal("TestGitLab_ScanRepositoryIntegration integration test is not fixed yet")
+	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }
