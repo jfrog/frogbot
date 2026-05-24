@@ -37,16 +37,19 @@ func azureReposTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, 
 }
 
 func TestAzureRepos_ScanPullRequestIntegration(t *testing.T) {
+	t.Fatal("TestAzureRepos_ScanPullRequestIntegration integration test is not fixed yet")
 	azureClient, testDetails := azureReposTestsInit(t, false)
 	runScanPullRequestCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
+	t.Fatal("TestAzureRepos_ScanRepositoryIntegration integration test is not fixed yet")
 	azureClient, testDetails := azureReposTestsInit(t, false)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }
 
 func TestAzureRepos_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	t.Fatal("TestAzureRepos_ScanRepositoryWithLocalDirIntegration integration test is not fixed yet")
 	azureClient, testDetails := azureReposTestsInit(t, true)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }
