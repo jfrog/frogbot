@@ -12,19 +12,20 @@ import (
 
 const (
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	gitlabIntegrationTokenEnv = "FROGBOT_TESTS_GITLAB_TOKEN"
-	gitlabGitCloneUrl         = "https://gitlab.com/frogbot-test2/integration.git"
+	gitlabIntegrationTokenEnv = "FROGBOT_V3_TESTS_GITLAB_TOKEN"
+	gitlabGitCloneUrl         = "https://gitlab.com/frogbot-e2e-test1/frogbot-test.git"
+	gitlabRepoOwner           = "frogbot-e2e-test1"
 )
 
 func buildGitLabClient(t *testing.T, gitlabToken string) vcsclient.VcsClient {
-	azureClient, err := vcsclient.NewClientBuilder(vcsutils.GitLab).Token(gitlabToken).Build()
+	gitlabClient, err := vcsclient.NewClientBuilder(vcsutils.GitLab).Token(gitlabToken).Build()
 	assert.NoError(t, err)
-	return azureClient
+	return gitlabClient
 }
 
 func buildGitLabIntegrationTestDetails(t *testing.T) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, gitlabIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, "frogbot-test2")
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitLab), gitlabGitCloneUrl, gitlabRepoOwner)
 }
 
 func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails) {
@@ -34,13 +35,11 @@ func gitlabTestsInit(t *testing.T) (vcsclient.VcsClient, *IntegrationTestDetails
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
-	t.Fatal("TestGitLab_ScanPullRequestIntegration integration test is not fixed yet")
 	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryIntegration(t *testing.T) {
-	t.Fatal("TestGitLab_ScanRepositoryIntegration integration test is not fixed yet")
 	gitlabClient, testDetails := gitlabTestsInit(t)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }
