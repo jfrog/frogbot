@@ -60,16 +60,21 @@ func VerifyLocalFileMatchesRemote(downloadURL, localPath, serverID string) error
 }
 
 func getRemoteFileDetails(downloadURL, serverID string) (*fileutils.FileDetails, error) {
-	if strings.TrimSpace(serverID) != "" {
-		return getRemoteFileDetailsAuthenticated(downloadURL, serverID)
+	remoteDetails, err := getRemoteFileDetailsAuthenticated(downloadURL, serverID)
+	if err == nil {
+		return remoteDetails, nil
 	}
+	// Fallback for public Artifactory endpoints that do not require authentication.
 	return getRemoteFileDetailsAnonymous(downloadURL)
 }
 
 func getRemoteFileDetailsAuthenticated(downloadURL, serverID string) (*fileutils.FileDetails, error) {
-	rtDetails, err := config.GetSpecificConfig(serverID, false, true)
+	rtDetails, err := config.GetSpecificConfig(serverID, true, true)
 	if err != nil {
 		return nil, err
+	}
+	if strings.TrimSpace(rtDetails.ArtifactoryUrl) == "" {
+		return nil, fmt.Errorf("no Artifactory URL configured for server %q", serverID)
 	}
 	client, httpClientDetails, err := dependencies.CreateHttpClient(rtDetails)
 	if err != nil {
@@ -92,7 +97,7 @@ func getRemoteFileDetailsAnonymous(downloadURL string) (*fileutils.FileDetails, 
 func main() {
 	downloadURL := flag.String("url", "", "Artifactory download URL of the uploaded artifact")
 	localPath := flag.String("file", "", "Local file path to verify")
-	serverID := flag.String("server-id", "internal", "JFrog CLI server ID used for authenticated HEAD requests (empty for anonymous)")
+	serverID := flag.String("server-id", "", "JFrog CLI server ID for authenticated HEAD requests (empty uses the default configured server)")
 	flag.Parse()
 
 	if *downloadURL == "" || *localPath == "" {
