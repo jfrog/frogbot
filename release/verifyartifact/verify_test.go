@@ -25,7 +25,6 @@ func TestVerifyLocalFileMatchesRemote(t *testing.T) {
 		w.Header().Set("X-Checksum-Md5", localDetails.Checksum.Md5)
 		w.Header().Set("X-Checksum-Sha1", localDetails.Checksum.Sha1)
 		w.Header().Set("X-Checksum-Sha256", localDetails.Checksum.Sha256)
-		w.Header().Set("Content-Length", "21")
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -47,9 +46,4 @@ func TestVerifyLocalFileMatchesRemoteMismatch(t *testing.T) {
 	err := VerifyLocalFileMatchesRemote(server.URL, localPath, "")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "checksum mismatch")
-}
-
-func TestBuildArtifactoryDownloadURL(t *testing.T) {
-	assert.Equal(t, "https://releases.jfrog.io/artifactory/ecosys-frogbot/v2/1.0.0/pkg/frogbot",
-		BuildArtifactoryDownloadURL("https://releases.jfrog.io/artifactory/", "ecosys-frogbot/v2/1.0.0/pkg/frogbot"))
 }

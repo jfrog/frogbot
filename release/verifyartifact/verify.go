@@ -13,12 +13,6 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/httputils"
 )
 
-func BuildArtifactoryDownloadURL(artifactoryURL, repoPath string) string {
-	base := strings.TrimSuffix(strings.TrimSpace(artifactoryURL), "/")
-	path := strings.TrimPrefix(strings.TrimSpace(repoPath), "/")
-	return base + "/" + path
-}
-
 func VerifyLocalFileMatchesRemote(downloadURL, localPath, serverID string) error {
 	remoteDetails, err := getRemoteFileDetails(downloadURL, serverID)
 	if err != nil {
@@ -31,50 +25,34 @@ func VerifyLocalFileMatchesRemote(downloadURL, localPath, serverID string) error
 		return fmt.Errorf("remote checksums are missing for %q (md5=%q sha1=%q)", downloadURL, remoteDetails.Checksum.Md5, remoteDetails.Checksum.Sha1)
 	}
 
-	equal, err := fileutils.IsEqualToLocalFile(localPath, remoteDetails.Checksum.Md5, remoteDetails.Checksum.Sha1)
+	localDetails, err := fileutils.GetFileDetails(localPath, true)
 	if err != nil {
-		return fmt.Errorf("failed to compare local file %q with remote checksums: %w", localPath, err)
+		return fmt.Errorf("failed to read local file details for %q: %w", localPath, err)
 	}
-	if !equal {
-		localDetails, localErr := fileutils.GetFileDetails(localPath, true)
-		if localErr != nil {
-			return fmt.Errorf("checksum mismatch for %q (failed to read local checksums: %w)", localPath, localErr)
-		}
+
+	if localDetails.Checksum.Md5 != remoteDetails.Checksum.Md5 ||
+		localDetails.Checksum.Sha1 != remoteDetails.Checksum.Sha1 ||
+		(remoteDetails.Checksum.Sha256 != "" && localDetails.Checksum.Sha256 != remoteDetails.Checksum.Sha256) {
 		return fmt.Errorf("checksum mismatch for %q: remote md5=%s sha1=%s sha256=%s, local md5=%s sha1=%s sha256=%s",
 			localPath,
 			remoteDetails.Checksum.Md5, remoteDetails.Checksum.Sha1, remoteDetails.Checksum.Sha256,
 			localDetails.Checksum.Md5, localDetails.Checksum.Sha1, localDetails.Checksum.Sha256)
 	}
 
-	if remoteDetails.Checksum.Sha256 != "" {
-		localDetails, err := fileutils.GetFileDetails(localPath, true)
-		if err != nil {
-			return fmt.Errorf("failed to read local sha256 for %q: %w", localPath, err)
-		}
-		if localDetails.Checksum.Sha256 != remoteDetails.Checksum.Sha256 {
-			return fmt.Errorf("sha256 mismatch for %q: remote=%s local=%s", localPath, remoteDetails.Checksum.Sha256, localDetails.Checksum.Sha256)
-		}
-	}
-
 	return nil
 }
 
 func getRemoteFileDetails(downloadURL, serverID string) (*fileutils.FileDetails, error) {
-	remoteDetails, err := getRemoteFileDetailsAuthenticated(downloadURL, serverID)
-	if err == nil {
-		return remoteDetails, nil
+	if strings.TrimSpace(serverID) != "" {
+		return getRemoteFileDetailsAuthenticated(downloadURL, serverID)
 	}
-	// Fallback for public Artifactory endpoints that do not require authentication.
 	return getRemoteFileDetailsAnonymous(downloadURL)
 }
 
 func getRemoteFileDetailsAuthenticated(downloadURL, serverID string) (*fileutils.FileDetails, error) {
-	rtDetails, err := config.GetSpecificConfig(serverID, true, true)
+	rtDetails, err := config.GetSpecificConfig(serverID, false, true)
 	if err != nil {
 		return nil, err
-	}
-	if strings.TrimSpace(rtDetails.ArtifactoryUrl) == "" {
-		return nil, fmt.Errorf("no Artifactory URL configured for server %q", serverID)
 	}
 	client, httpClientDetails, err := dependencies.CreateHttpClient(rtDetails)
 	if err != nil {
@@ -97,7 +75,7 @@ func getRemoteFileDetailsAnonymous(downloadURL string) (*fileutils.FileDetails, 
 func main() {
 	downloadURL := flag.String("url", "", "Artifactory download URL of the uploaded artifact")
 	localPath := flag.String("file", "", "Local file path to verify")
-	serverID := flag.String("server-id", "", "JFrog CLI server ID for authenticated HEAD requests (empty uses the default configured server)")
+	serverID := flag.String("server-id", "internal", "JFrog CLI server ID used for authenticated HEAD requests (empty for anonymous)")
 	flag.Parse()
 
 	if *downloadURL == "" || *localPath == "" {
