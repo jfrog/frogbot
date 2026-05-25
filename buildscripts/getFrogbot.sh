@@ -160,6 +160,7 @@ local_sha256() {
 verify_download_or_exit() {
   if [ "${FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION:-}" = "1" ]; then
     echo "WARNING: skipping checksum verification (FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION=1)." >&2
+    echo "Downloaded ${FILE_NAME} (checksum verification skipped)."
     return 0
   fi
 
@@ -199,6 +200,7 @@ verify_download_or_exit() {
       exit 1
     fi
   fi
+  echo "Checksum verification passed for ${FILE_NAME}."
 }
 
 download() {
