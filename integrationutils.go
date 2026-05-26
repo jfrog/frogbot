@@ -282,8 +282,12 @@ func validateBitbucketServerComments(t *testing.T, comments []vcsclient.CommentI
 }
 
 func validateGitLabComments(t *testing.T, comments []vcsclient.CommentInfo) {
-	assert.GreaterOrEqual(t, len(comments), expectedNumberOfIssues)
-	assertBannerExists(t, comments, string(outputwriter.VulnerabilitiesMrBannerSource))
+	assert.True(t, containsCommentMentioning(comments, string(outputwriter.VulnerabilitiesMrBannerSource)),
+		"expected a MR comment containing the Frogbot banner")
+	assert.True(t, containsCommentMentioning(comments, "axios:0.21.1"),
+		"expected a MR comment mentioning the vulnerable dependency axios:0.21.1")
+	assert.True(t, containsCommentMentioning(comments, "CVE-"),
+		"expected a MR comment with CVE findings")
 }
 
 func getJfrogEnvRestoreFunc(t *testing.T) func() {
