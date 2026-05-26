@@ -115,7 +115,7 @@ func (sc *ScanDetails) Audit(workDirs ...string) (auditResults *results.Security
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
 		SetStartTime(sc.StartTime).
-		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).SetScansResultsOutputDir("/Users/erant/Desktop/navan_bug/logs")
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
 
 	return audit.RunAudit(auditParams)
 }
