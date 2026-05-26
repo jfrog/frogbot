@@ -195,7 +195,7 @@ func (sc *ScanDetails) RunInstallAndAudit(baseDir string, workDirs ...string) (a
 		SetResultsToCompare(sc.ResultsToCompare).
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
-		SetStartTime(sc.StartTime)
+		SetStartTime(sc.StartTime).SetScansResultsOutputDir("/Users/erant/Desktop/navan_bug/navan-test")
 
 	return audit.RunAudit(auditParams)
 }
