@@ -38,7 +38,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
 
       - name: Go Cache
@@ -93,7 +93,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
 
       - name: Go Cache Dependencies
@@ -203,7 +203,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
@@ -218,11 +218,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITHUB_TOKEN }}
+          FROGBOT_V2_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
     name: Azure Integration Tests
@@ -248,7 +248,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
@@ -263,11 +263,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_TESTS_AZURE_TOKEN }}
+          FROGBOT_V2_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_AZURE_TOKEN }}
 
   gitlab-integration:
     name: GitLab Integration Tests
@@ -293,7 +293,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
@@ -308,11 +308,11 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_TESTS_GITLAB_TOKEN }}
+          FROGBOT_V2_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITLAB_TOKEN }}
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
@@ -332,7 +332,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.23.x
+          go-version: 1.26.x
           cache: false
 
       - name: Unzip Preconfigured Bitbucket Home
@@ -360,6 +360,6 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_TESTS_BB_SERVER_TOKEN }}
+          FROGBOT_V2_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
-        run: go test -v bitbucket_server_test.go commands.go integrationutils.go
+        run: go test -tags integration -v bitbucket_server_test.go commands.go integrationutils.go

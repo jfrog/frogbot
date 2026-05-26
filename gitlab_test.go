@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -32,16 +34,19 @@ func gitlabTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *Int
 }
 
 func TestGitLab_ScanPullRequestIntegration(t *testing.T) {
+	t.Fatal("TestGitLab_ScanPullRequestIntegration integration test is not fixed yet")
 	gitlabClient, testDetails := gitlabTestsInit(t, false)
 	runScanPullRequestCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryIntegration(t *testing.T) {
+	t.Fatal("TestGitLab_ScanRepositoryIntegration integration test is not fixed yet")
 	gitlabClient, testDetails := gitlabTestsInit(t, false)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }
 
 func TestGitLab_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	t.Fatal("TestGitLab_ScanRepositoryWithLocalDirIntegration integration test is not fixed yet")
 	gitlabClient, testDetails := gitlabTestsInit(t, true)
 	runScanRepositoryCmd(t, gitlabClient, testDetails)
 }

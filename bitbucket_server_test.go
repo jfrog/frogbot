@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -62,16 +64,19 @@ func bitbucketServerTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsCli
 }
 
 func TestBitbucketServer_ScanPullRequestIntegration(t *testing.T) {
+	t.Fatal("TestBitbucketServer_ScanPullRequestIntegration integration test is not fixed yet")
 	bbClient, testDetails := bitbucketServerTestsInit(t, false)
 	runScanPullRequestCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryIntegration(t *testing.T) {
+	t.Fatal("TestBitbucketServer_ScanRepositoryIntegration integration test is not fixed yet")
 	bbClient, testDetails := bitbucketServerTestsInit(t, false)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }
 
 func TestBitbucketServer_ScanRepositoryWithLocalDirIntegration(t *testing.T) {
+	t.Fatal("TestBitbucketServer_ScanRepositoryWithLocalDirIntegration integration test is not fixed yet")
 	bbClient, testDetails := bitbucketServerTestsInit(t, true)
 	runScanRepositoryCmd(t, bbClient, testDetails)
 }

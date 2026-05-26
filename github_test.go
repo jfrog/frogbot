@@ -1,3 +1,5 @@
+//go:build integration
+
 package main
 
 import (
@@ -10,8 +12,9 @@ import (
 
 const (
 	//#nosec G101 -- False positive - no hardcoded credentials.
-	githubIntegrationTokenEnv = "FROGBOT_TESTS_GITHUB_TOKEN"
-	githubGitCloneUrl         = "https://github.com/frogbot-test/integration.git"
+	githubIntegrationTokenEnv = "FROGBOT_V2_TESTS_GITHUB_TOKEN"
+	githubGitCloneUrl         = "https://github.com/frogbot-e2e-test/frogbot-test-v2.git"
+	githubRepoOwner           = "frogbot-e2e-test"
 )
 
 func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
@@ -22,7 +25,7 @@ func buildGitHubClient(t *testing.T, githubToken string) vcsclient.VcsClient {
 
 func buildGitHubIntegrationTestDetails(t *testing.T, useLocalRepo bool) *IntegrationTestDetails {
 	integrationRepoToken := getIntegrationToken(t, githubIntegrationTokenEnv)
-	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl, "frogbot-test", useLocalRepo)
+	return NewIntegrationTestDetails(integrationRepoToken, string(utils.GitHub), githubGitCloneUrl, githubRepoOwner, useLocalRepo)
 }
 
 func githubTestsInit(t *testing.T, useLocalRepo bool) (vcsclient.VcsClient, *IntegrationTestDetails) {
