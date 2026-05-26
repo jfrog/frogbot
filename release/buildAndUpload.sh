@@ -1,9 +1,11 @@
 #!/bin/bash
 set -eu
 
-# Optional: set JF_SERVER_ID to a specific JFrog CLI server; otherwise the default configured server is used.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../buildscripts/verifyArtifact.sh
+source "${SCRIPT_DIR}/../buildscripts/verifyArtifact.sh"
+
 JF_SERVER_ID="${JF_SERVER_ID:-}"
-VERIFY_TOOL=""
 
 #function build(pkg, goos, goarch, exeName)
 build () {
@@ -17,100 +19,12 @@ build () {
   chmod +x "$exeName"
 }
 
-get_jfrog_config_json() {
-  if [[ -n "${JF_SERVER_ID}" ]]; then
-    jf c show "${JF_SERVER_ID}" --format=json
-  else
-    jf c show --format=json
-  fi
-}
-
-extract_artifactory_url_from_config() {
-  local configJson="$1"
-  local artifactoryUrl=""
-
-  if command -v jq >/dev/null 2>&1; then
-    artifactoryUrl=$(printf '%s\n' "${configJson}" | jq -r '([.[] | select(.isDefault == true)][0] // .[0]) | .artifactoryUrl // empty' | head -1)
-    if [[ -z "${artifactoryUrl}" ]]; then
-      local baseUrl
-      baseUrl=$(printf '%s\n' "${configJson}" | jq -r '([.[] | select(.isDefault == true)][0] // .[0]) | .url // empty' | head -1)
-      if [[ -n "${baseUrl}" ]]; then
-        artifactoryUrl="${baseUrl%/}/artifactory/"
-      fi
-    fi
-  else
-    artifactoryUrl=$(printf '%s\n' "${configJson}" | grep -E '"artifactoryUrl"[[:space:]]*:' | head -1 | sed -E 's/.*"artifactoryUrl"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
-    if [[ -z "${artifactoryUrl}" ]]; then
-      local baseUrl
-      baseUrl=$(printf '%s\n' "${configJson}" | grep -E '"url"[[:space:]]*:' | head -1 | sed -E 's/.*"url"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')
-      if [[ -n "${baseUrl}" ]]; then
-        artifactoryUrl="${baseUrl%/}/artifactory/"
-      fi
-    fi
-  fi
-
-  artifactoryUrl="${artifactoryUrl%/}"
-  if [[ "${artifactoryUrl}" != http://* && "${artifactoryUrl}" != https://* ]]; then
-    return 1
-  fi
-  printf '%s' "${artifactoryUrl}"
-}
-
-get_artifactory_download_url() {
-  local destPath="$1"
-  local configJson artifactoryUrl
-  if [[ -n "${JF_ARTIFACTORY_URL:-}" ]]; then
-    artifactoryUrl="${JF_ARTIFACTORY_URL%/}"
-  else
-    if ! configJson=$(get_jfrog_config_json 2>&1); then
-      echo "Failed to read JFrog CLI configuration. Run 'jf c add' or set JF_ARTIFACTORY_URL / JF_SERVER_ID." >&2
-      echo "${configJson}" >&2
-      exit 1
-    fi
-    if ! artifactoryUrl=$(extract_artifactory_url_from_config "${configJson}"); then
-      if [[ -n "${JF_SERVER_ID}" ]]; then
-        echo "Failed to resolve Artifactory URL from JFrog CLI server '${JF_SERVER_ID}'." >&2
-      else
-        echo "Failed to resolve Artifactory URL from the default JFrog CLI server." >&2
-      fi
-      exit 1
-    fi
-  fi
-  echo "${artifactoryUrl}/${destPath}"
-}
-
-build_verify_tool() {
-  local hostGoos hostGoarch
-  # jf go env may print info logs to stdout; use the last line which holds the actual value.
-  hostGoos="$(jf go env GOHOSTOS 2>&1 | tail -1)"
-  hostGoarch="$(jf go env GOHOSTARCH 2>&1 | tail -1)"
-  VERIFY_TOOL="$(mktemp -t verifyartifact.XXXXXX)"
-  echo "Building upload verification tool for ${hostGoos}-${hostGoarch} ..."
-  GOOS="${hostGoos}" GOARCH="${hostGoarch}" CGO_ENABLED=0 jf go build -o "${VERIFY_TOOL}" ./release/verifyartifact/
-}
-
 verify_upload() {
   local localFile="$1"
   local destPath="$2"
-  local downloadUrl
-  if [[ -z "${VERIFY_TOOL}" || ! -x "${VERIFY_TOOL}" ]]; then
-    build_verify_tool
-  fi
-  downloadUrl=$(get_artifactory_download_url "${destPath}")
   echo "Verifying uploaded artifact ${localFile} using Artifactory file details ..."
-  if [[ -n "${JF_SERVER_ID}" ]]; then
-    "${VERIFY_TOOL}" --url "${downloadUrl}" --file "${localFile}" --server-id "${JF_SERVER_ID}"
-  else
-    "${VERIFY_TOOL}" --url "${downloadUrl}" --file "${localFile}"
-  fi
+  verifyArtifact_file --file "${localFile}" --repo-path "${destPath}" --jf-cli
 }
-
-cleanup() {
-  if [[ -n "${VERIFY_TOOL}" && -f "${VERIFY_TOOL}" ]]; then
-    rm -f "${VERIFY_TOOL}"
-  fi
-}
-trap cleanup EXIT
 
 #function buildAndUpload(pkg, goos, goarch, fileExtension)
 buildAndUpload () {
@@ -138,10 +52,8 @@ verifyVersionMatching () {
     exit $exitCode
   fi
 
-  # Get the version which is after the last space. (expected output to -v for example: "Frogbot version version v2.0.0")
   echo "Output: $res"
   builtVersion="${res##* }"
-  # Compare versions
   if [[ "$builtVersion" != "$version" ]]; then
     echo "Versions dont match. Provided: $version, Actual: $builtVersion"
     exit 1
@@ -152,10 +64,6 @@ verifyVersionMatching () {
 version="$1"
 pkgPath="ecosys-frogbot/v2"
 
-build_verify_tool
-
-# Build and upload for every architecture.
-# Keep 'linux-386' first to prevent unnecessary uploads in case the built version doesn't match the provided one.
 buildAndUpload 'frogbot-linux-386' 'linux' '386' ''
 buildAndUpload 'frogbot-linux-amd64' 'linux' 'amd64' ''
 buildAndUpload 'frogbot-linux-s390x' 'linux' 's390x' ''
