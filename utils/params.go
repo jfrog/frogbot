@@ -902,7 +902,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 		}
 		// Attempt to get a config profile associated with the repo URL
 		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
-		if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
+		if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey); err != nil || configProfile == nil {
 			return
 		}
 	}
