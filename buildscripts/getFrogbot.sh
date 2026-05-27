@@ -1,9 +1,5 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=verifyArtifact.sh
-source "${SCRIPT_DIR}/verifyArtifact.sh"
-
 FROGBOT_OS="na"
 FILE_NAME="na"
 VERSION="[RELEASE]"
@@ -114,10 +110,103 @@ download_to() {
     fi
 }
 
+head_request() {
+  dl_url="$1"
+  if [ -n "${REMOTE_PATH}" ]; then
+      if [ -n "${JF_ACCESS_TOKEN}" ]; then
+        curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
+      else
+        curl -sfILg -u "${JF_USER}:${JF_PASSWORD}" "${dl_url}"
+      fi
+    else
+      curl -sfILg "${dl_url}"
+    fi
+}
+
+get_header_value() {
+  header_name="$1"
+  echo "$2" | awk -v header="$header_name" '
+    BEGIN { IGNORECASE=1; value="" }
+    $1 ~ header":" { sub(/^[^:]+:[[:space:]]*/, ""); value=$0 }
+    END { gsub(/\r/, "", value); print value }
+  '
+}
+
+local_md5() {
+  if command -v md5sum >/dev/null 2>&1; then
+    md5sum "$1" | awk '{print $1}'
+  else
+    md5 -q "$1"
+  fi
+}
+
+local_sha1() {
+  if command -v sha1sum >/dev/null 2>&1; then
+    sha1sum "$1" | awk '{print $1}'
+  else
+    shasum -a 1 "$1" | awk '{print $1}'
+  fi
+}
+
+local_sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+verify_download_or_exit() {
+  if [ "${FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION:-}" = "1" ]; then
+    echo "WARNING: skipping checksum verification (FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION=1)." >&2
+    echo "Downloaded ${FILE_NAME} (checksum verification skipped)."
+    return 0
+  fi
+
+  headers=$(head_request "${URL}") || {
+    echo "Failed to fetch Artifactory file details for this Frogbot build." >&2
+    rm -f "${FILE_NAME}"
+    exit 1
+  }
+
+  remote_md5=$(get_header_value "X-Checksum-Md5" "${headers}")
+  remote_sha1=$(get_header_value "X-Checksum-Sha1" "${headers}")
+  remote_sha256=$(get_header_value "X-Checksum-Sha256" "${headers}")
+
+  if [ -z "${remote_md5}" ] || [ -z "${remote_sha1}" ]; then
+    echo "Artifactory did not return checksum headers; cannot verify the downloaded binary." >&2
+    rm -f "${FILE_NAME}"
+    exit 1
+  fi
+
+  file_md5=$(local_md5 "${FILE_NAME}")
+  file_sha1=$(local_sha1 "${FILE_NAME}")
+  if [ "${file_md5}" != "${remote_md5}" ] || [ "${file_sha1}" != "${remote_sha1}" ]; then
+    echo "Checksum verification failed." >&2
+    echo "Remote md5=${remote_md5} sha1=${remote_sha1}" >&2
+    echo "Local  md5=${file_md5} sha1=${file_sha1}" >&2
+    rm -f "${FILE_NAME}"
+    exit 1
+  fi
+
+  if [ -n "${remote_sha256}" ]; then
+    file_sha256=$(local_sha256 "${FILE_NAME}")
+    if [ "${file_sha256}" != "${remote_sha256}" ]; then
+      echo "Checksum verification failed." >&2
+      echo "Remote sha256=${remote_sha256}" >&2
+      echo "Local  sha256=${file_sha256}" >&2
+      rm -f "${FILE_NAME}"
+      exit 1
+    fi
+  fi
+
+  echo "Checksum verification passed for ${FILE_NAME}."
+}
+
 download() {
   echo "Downloading from ${URL} ..."
   download_to "${URL}" "${FILE_NAME}" || { rm -f "${FILE_NAME}"; exit 1; }
-  verifyArtifact_file --url "${URL}" --file "${FILE_NAME}" --on-failure "${FILE_NAME}" || exit 1
+  verify_download_or_exit
   setPermissions && echoGreetings
 }
 
