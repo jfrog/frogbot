@@ -72,21 +72,13 @@ verifyArtifact_compare_checksums() {
 
   file_md5=$(verifyArtifact_local_md5 "${local_file}")
   file_sha1=$(verifyArtifact_local_sha1 "${local_file}")
-  if [[ "${file_md5}" != "${remote_md5}" || "${file_sha1}" != "${remote_sha1}" ]]; then
+  file_sha256=$(verifyArtifact_local_sha256 "${local_file}")
+  if [[ "${file_md5}" != "${remote_md5}" || "${file_sha1}" != "${remote_sha1}" ]] \
+    || { [[ -n "${remote_sha256}" ]] && [[ "${file_sha256}" != "${remote_sha256}" ]]; }; then
     echo "Checksum verification failed for ${local_file}." >&2
-    echo "Remote md5=${remote_md5} sha1=${remote_sha1}" >&2
-    echo "Local  md5=${file_md5} sha1=${file_sha1}" >&2
+    echo "Remote md5=${remote_md5} sha1=${remote_sha1} sha256=${remote_sha256}" >&2
+    echo "Local  md5=${file_md5} sha1=${file_sha1} sha256=${file_sha256}" >&2
     return 1
-  fi
-
-  if [[ -n "${remote_sha256}" ]]; then
-    file_sha256=$(verifyArtifact_local_sha256 "${local_file}")
-    if [[ "${file_sha256}" != "${remote_sha256}" ]]; then
-      echo "Checksum verification failed for ${local_file}." >&2
-      echo "Remote sha256=${remote_sha256}" >&2
-      echo "Local  sha256=${file_sha256}" >&2
-      return 1
-    fi
   fi
 
   return 0

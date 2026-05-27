@@ -2,7 +2,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../buildscripts/verifyArtifact.sh
+# shellcheck disable=SC1091
 source "${SCRIPT_DIR}/../buildscripts/verifyArtifact.sh"
 
 JF_SERVER_ID="${JF_SERVER_ID:-}"

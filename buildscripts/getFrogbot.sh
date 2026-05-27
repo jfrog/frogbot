@@ -181,23 +181,14 @@ verify_download_or_exit() {
 
   file_md5=$(local_md5 "${FILE_NAME}")
   file_sha1=$(local_sha1 "${FILE_NAME}")
-  if [ "${file_md5}" != "${remote_md5}" ] || [ "${file_sha1}" != "${remote_sha1}" ]; then
+  file_sha256=$(local_sha256 "${FILE_NAME}")
+  if [ "${file_md5}" != "${remote_md5}" ] || [ "${file_sha1}" != "${remote_sha1}" ] \
+    || { [ -n "${remote_sha256}" ] && [ "${file_sha256}" != "${remote_sha256}" ]; }; then
     echo "Checksum verification failed." >&2
-    echo "Remote md5=${remote_md5} sha1=${remote_sha1}" >&2
-    echo "Local  md5=${file_md5} sha1=${file_sha1}" >&2
+    echo "Remote md5=${remote_md5} sha1=${remote_sha1} sha256=${remote_sha256}" >&2
+    echo "Local  md5=${file_md5} sha1=${file_sha1} sha256=${file_sha256}" >&2
     rm -f "${FILE_NAME}"
     exit 1
-  fi
-
-  if [ -n "${remote_sha256}" ]; then
-    file_sha256=$(local_sha256 "${FILE_NAME}")
-    if [ "${file_sha256}" != "${remote_sha256}" ]; then
-      echo "Checksum verification failed." >&2
-      echo "Remote sha256=${remote_sha256}" >&2
-      echo "Local  sha256=${file_sha256}" >&2
-      rm -f "${FILE_NAME}"
-      exit 1
-    fi
   fi
 
   echo "Checksum verification passed for ${FILE_NAME}."
