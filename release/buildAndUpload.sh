@@ -1,6 +1,13 @@
 #!/bin/bash
 set -eu
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/../buildscripts/verifyArtifact.sh"
+
+JF_SERVER_ID="${JF_SERVER_ID:-}"
+
+#function build(pkg, goos, goarch, exeName)
 build () {
   pkg="$1"
   export GOOS="$2"
@@ -10,12 +17,16 @@ build () {
 
   CGO_ENABLED=0 jf go build -o "$exeName" -ldflags '-w -extldflags "-static" -X github.com/jfrog/frogbot/v3/utils.FrogbotVersion='"$version"
   chmod +x "$exeName"
-
-  if [[ "$pkg" = "frogbot-linux-386" ]]; then
-    verifyVersionMatching
-  fi
 }
 
+verify_upload() {
+  local localFile="$1"
+  local destPath="$2"
+  echo "Verifying uploaded artifact ${localFile} using Artifactory file details ..."
+  verifyArtifact_file --file "${localFile}" --repo-path "${destPath}" --jf-cli
+}
+
+#function buildAndUpload(pkg, goos, goarch, fileExtension)
 buildAndUpload () {
   pkg="$1"
   goos="$2"
@@ -28,22 +39,10 @@ buildAndUpload () {
   destPath="$pkgPath/$version/$pkg/$exeName"
   echo "Uploading $exeName to $destPath ..."
   jf rt u "./$exeName" "$destPath"
-  sha256sum "$exeName" >"${exeName}.sha256"
-  jf rt u "./${exeName}.sha256" "$pkgPath/$version/$pkg/${exeName}.sha256"
-  rm -f "./${exeName}.sha256"
-  if [[ -n "${FROGBOT_GPG_KEY_ID:-}" ]] && command -v gpg >/dev/null 2>&1; then
-    gpg --batch --yes --local-user "$FROGBOT_GPG_KEY_ID" --detach-sign --armor -o "${exeName}.asc" "./$exeName"
-    jf rt u "./${exeName}.asc" "$pkgPath/$version/$pkg/${exeName}.asc"
-    rm -f "./${exeName}.asc"
-  fi
+  verify_upload "./$exeName" "$destPath"
 }
 
-upload_signing_public_key() {
-  if [[ -n "${FROGBOT_GPG_PUBLIC_KEY_FILE:-}" ]] && [[ -f "${FROGBOT_GPG_PUBLIC_KEY_FILE}" ]]; then
-    jf rt u "${FROGBOT_GPG_PUBLIC_KEY_FILE}" "$pkgPath/$version/frogbot-signing-key.asc"
-  fi
-}
-
+# Verify version provided in pipelines UI matches version in frogbot source code.
 verifyVersionMatching () {
   echo "Verifying provided version matches built version..."
   res=$(eval "./frogbot -v")
@@ -76,5 +75,4 @@ buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
 buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' ''
 buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
-upload_signing_public_key
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat
