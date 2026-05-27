@@ -343,7 +343,7 @@ func TestGetConfigurationProfile(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams, "")
 
 			if testcase.failureExpected {
 				assert.Error(t, err)
