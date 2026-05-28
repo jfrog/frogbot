@@ -97,7 +97,6 @@ func (sc *ScanDetails) Audit(baseDir string) (auditResults *results.SecurityComm
 		SetXscVersion(sc.XscVersion).
 		SetServerDetails(sc.ServerDetails).
 		SetAllowPartialResults(!sc.ConfigProfile.GeneralConfig.FailUponAnyScannerError).
-		SetExclusions(sc.ConfigProfile.GeneralConfig.GeneralExcludePatterns).
 		SetUseJas(true).
 		SetConfigProfile(sc.ConfigProfile)
 
