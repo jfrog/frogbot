@@ -2,6 +2,8 @@ module github.com/jfrog/frogbot/v2
 
 go 1.26.3
 
+replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v0.10.0
+
 require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/go-git/go-git/v5 v5.19.1
