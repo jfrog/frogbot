@@ -4,6 +4,9 @@ FROGBOT_OS="na"
 FILE_NAME="na"
 VERSION="[RELEASE]"
 PLATFORM_URL="https://releases.jfrog.io"
+if [ -n "${FROGBOT_BASE_URL:-}" ]; then
+  PLATFORM_URL="${FROGBOT_BASE_URL%%/}"
+fi
 
 setFrogbotVersion() {
   if [ $# -eq 1 ]
@@ -123,6 +126,29 @@ head_request() {
     fi
 }
 
+artifact_url_to_storage_url() {
+  case "${1}" in
+    */artifactory/*)
+      echo "${1}" | sed 's|/artifactory/\([^?]*\)|/artifactory/api/storage/\1|'
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+storage_request() {
+  storage_url="$1"
+  if [ -n "${REMOTE_PATH}" ]; then
+      if [ -n "${JF_ACCESS_TOKEN}" ]; then
+        curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
+      else
+        curl -sfLg -u "${JF_USER}:${JF_PASSWORD}" "${storage_url}"
+      fi
+    else
+      curl -sfLg "${storage_url}"
+    fi
+}
+
 get_header_value() {
   header_name="$1"
   echo "$2" | awk -v header="$header_name" '
@@ -130,6 +156,61 @@ get_header_value() {
     $1 ~ header":" { sub(/^[^:]+:[[:space:]]*/, ""); value=$0 }
     END { gsub(/\r/, "", value); print value }
   '
+}
+
+parse_storage_checksums() {
+  json="$1"
+  if command -v jq >/dev/null 2>&1; then
+    remote_md5=$(echo "${json}" | jq -r '.checksums.md5 // empty')
+    remote_sha1=$(echo "${json}" | jq -r '.checksums.sha1 // empty')
+    remote_sha256=$(echo "${json}" | jq -r '.checksums.sha256 // empty')
+    return 0
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    remote_md5=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or "")')
+    remote_sha1=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha1") or "")')
+    remote_sha256=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha256") or "")')
+    return 0
+  fi
+  return 1
+}
+
+load_remote_checksums_from_headers() {
+  headers="$1"
+  remote_md5=$(get_header_value "X-Checksum-Md5" "${headers}")
+  remote_sha1=$(get_header_value "X-Checksum-Sha1" "${headers}")
+  remote_sha256=$(get_header_value "X-Checksum-Sha256" "${headers}")
+  [ -n "${remote_md5}" ] && [ -n "${remote_sha1}" ]
+}
+
+load_remote_checksums() {
+  remote_md5=""
+  remote_sha1=""
+  remote_sha256=""
+
+  if headers=$(head_request "${URL}" 2>/dev/null) && load_remote_checksums_from_headers "${headers}"; then
+    return 0
+  fi
+
+  if ! storage_url=$(artifact_url_to_storage_url "${URL}"); then
+    echo "Cannot derive Artifactory Storage API URL from ${URL}." >&2
+    return 1
+  fi
+
+  echo "Checksum headers not returned by HEAD; using Artifactory Storage API ..." >&2
+  if ! json=$(storage_request "${storage_url}"); then
+    echo "Failed to fetch Artifactory storage metadata from ${storage_url}." >&2
+    return 1
+  fi
+  if ! parse_storage_checksums "${json}"; then
+    echo "jq or python3 is required to parse Artifactory storage metadata." >&2
+    return 1
+  fi
+  if [ -z "${remote_md5}" ] || [ -z "${remote_sha1}" ]; then
+    echo "Artifactory storage metadata did not include md5/sha1 checksums." >&2
+    return 1
+  fi
+  return 0
 }
 
 local_md5() {
@@ -163,18 +244,8 @@ verify_download_or_exit() {
     return 0
   fi
 
-  headers=$(head_request "${URL}") || {
+  if ! load_remote_checksums; then
     echo "Failed to fetch Artifactory file details for this Frogbot build." >&2
-    rm -f "${FILE_NAME}"
-    exit 1
-  }
-
-  remote_md5=$(get_header_value "X-Checksum-Md5" "${headers}")
-  remote_sha1=$(get_header_value "X-Checksum-Sha1" "${headers}")
-  remote_sha256=$(get_header_value "X-Checksum-Sha256" "${headers}")
-
-  if [ -z "${remote_md5}" ] || [ -z "${remote_sha1}" ]; then
-    echo "Artifactory did not return checksum headers; cannot verify the downloaded binary." >&2
     rm -f "${FILE_NAME}"
     exit 1
   fi
