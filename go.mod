@@ -2,6 +2,8 @@ module github.com/jfrog/frogbot/v3
 
 go 1.26.3
 
+replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v0.10.0
+
 require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
 	github.com/go-git/go-git/v5 v5.19.1
@@ -128,7 +130,7 @@ require (
 )
 
 // attiasas:pass_wd_to_xray_lib
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260528134051-0b1eb43f73f3
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260528141044-d6bebfcc8914
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
