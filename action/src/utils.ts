@@ -240,17 +240,29 @@ export class Utils {
 
         const response: HttpClientResponse = await httpClient.post(exchangeUrl, data, additionalHeaders);
         const responseString: string = await response.readBody();
-        const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
-        process.env.JF_ACCESS_TOKEN = responseJson.access_token;
-        if (responseJson.access_token) {
-            core.setSecret(responseJson.access_token);
+        const statusCode: number | undefined = response.message.statusCode;
+        if (!statusCode || statusCode < 200 || statusCode >= 300) {
+            throw new Error(`Token exchange failed with HTTP ${statusCode}: ${responseString}`);
         }
+        const responseJson: TokenExchangeResponseData = JSON.parse(responseString);
         if (responseJson.errors) {
             throw new Error(`${JSON.stringify(responseJson.errors)}`);
         }
+        if (responseJson.error) {
+            throw new Error(
+                `${responseJson.error}${responseJson.error_description ? ': ' + responseJson.error_description : ''}`,
+            );
+        }
+        if (!responseJson.access_token) {
+            throw new Error(`Token exchange response is missing access_token. Full response: ${responseString}`);
+        }
+        core.setSecret(responseJson.access_token);
+        process.env.JF_ACCESS_TOKEN = responseJson.access_token;
     }
 }
 export interface TokenExchangeResponseData {
     access_token: string;
     errors: string;
+    error: string;
+    error_description: string;
 }

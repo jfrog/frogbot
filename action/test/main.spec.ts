@@ -7,7 +7,7 @@ describe('Frogbot Action Tests', () => {
     afterEach(() => {
         delete process.env.JF_ACCESS_TOKEN;
         delete process.env.JF_USER;
-        delete process.env.PASSWORD;
+        delete process.env.JF_PASSWORD;
         delete process.env.JF_GIT_PROVIDER;
         delete process.env.JF_GIT_OWNER;
         delete process.env.GITHUB_REPOSITORY_OWNER;
@@ -108,25 +108,25 @@ describe('Frogbot Action Tests', () => {
 
     describe('Generate auth string', () => {
         it('Should return an empty string if releasesRepo is falsy', () => {
-            const result = Utils.generateAuthString('');
+            const result: string = Utils.generateAuthString('');
             expect(result).toBe('');
         });
 
         it('Should generate a Bearer token if accessToken is provided', () => {
             process.env.JF_ACCESS_TOKEN = 'yourAccessToken';
-            const result = Utils.generateAuthString('yourReleasesRepo');
+            const result: string = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('Bearer yourAccessToken');
         });
 
         it('Should generate a Basic token if username and password are provided', () => {
             process.env.JF_USER = 'yourUsername';
             process.env.JF_PASSWORD = 'yourPassword';
-            const result = Utils.generateAuthString('yourReleasesRepo');
+            const result: string = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('Basic eW91clVzZXJuYW1lOnlvdXJQYXNzd29yZA==');
         });
 
         it('Should return an empty string if no credentials are provided', () => {
-            const result = Utils.generateAuthString('yourReleasesRepo');
+            const result: string = Utils.generateAuthString('yourReleasesRepo');
             expect(result).toBe('');
         });
     });
