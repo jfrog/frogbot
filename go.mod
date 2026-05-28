@@ -65,7 +65,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.7.10 // indirect
 	github.com/jfrog/archiver/v3 v3.6.3 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260528073225-e2d59f90c8c6 // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260528123948-61478692b94e // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
