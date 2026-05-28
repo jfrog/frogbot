@@ -18,7 +18,7 @@ import (
 	"github.com/tidwall/sjson"
 	"golang.org/x/exp/slices"
 
-	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v3/utils"
 )
 
 // Node

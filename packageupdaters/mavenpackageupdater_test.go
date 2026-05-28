@@ -12,7 +12,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v3/utils"
 )
 
 func TestMavenUpdateDependency(t *testing.T) {

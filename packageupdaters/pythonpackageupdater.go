@@ -10,7 +10,7 @@ import (
 
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 
-	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v3/utils"
 )
 
 const (

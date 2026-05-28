@@ -13,7 +13,7 @@ import (
 	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 )
 
 func TestGetMainCommentContent(t *testing.T) {

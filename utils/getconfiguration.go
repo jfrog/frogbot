@@ -15,7 +15,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -156,7 +156,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 		return
 	}
 
-	configProfile, repoCloneUrl, err := getConfigurationProfile(xrayVersion, jfrogServer, client, gitParams)
+	configProfile, repoCloneUrl, err := getConfigurationProfile(xrayVersion, jfrogServer, client, gitParams, repository.Params.JFrogPlatform.JFrogProjectKey)
 	if err != nil {
 		return
 	}
@@ -506,7 +506,7 @@ func getBoolEnv(envKey string, defaultValue bool) (bool, error) {
 	return defaultValue, nil
 }
 
-func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
+func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerDetails, gitClient vcsclient.VcsClient, gitParams *Git, projectKey string) (configProfile *services.ConfigProfile, repoCloneUrl string, err error) {
 	if err = clientutils.ValidateMinimumVersion(clientutils.Xray, xrayVersion, configProfileV3MinXrayVersion); err != nil {
 		log.Info(fmt.Sprintf("The utilized Frogbot version requires a higher version of Xray than %s in order to use Config Profile. Please upgrade Xray to version %s and above. Frogbot configurations will be derived from environment variables only.", xrayVersion, configProfileV3MinXrayVersion))
 		return
@@ -515,8 +515,12 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 		return
 	}
 	log.Debug(fmt.Sprintf("Searching central configuration associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl); err != nil || configProfile == nil {
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey); err != nil || configProfile == nil {
 		return
+	}
+
+	if err = validateConfigProfile(configProfile); err != nil {
+		return nil, "", fmt.Errorf("the fetched config profile is invalid: %s", err.Error())
 	}
 
 	log.Info(fmt.Sprintf("Using Config profile '%s'", configProfile.ProfileName))
@@ -526,4 +530,19 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 	}
 	log.Debug(fmt.Sprintf("Utilized Config Profile:\n%s", string(profileString)))
 	return
+}
+
+func validateConfigProfile(configProfile *services.ConfigProfile) error {
+	if configProfile == nil {
+		return errors.New("received a nil config profile")
+	}
+
+	if len(configProfile.Modules) != 1 {
+		return fmt.Errorf("%s config profile returned with %d modules. A profile must have exactly 1 module", configProfile.ProfileName, len(configProfile.Modules))
+	}
+
+	if configProfile.Modules[0].PathFromRoot != "." {
+		return fmt.Errorf("the module in the config profile should be associated with the root of the repository. Expected pathFromRoot to be '.' but received '%s'", configProfile.Modules[0].PathFromRoot)
+	}
+	return nil
 }

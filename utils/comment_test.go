@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/jfrog/frogbot/v2/utils/issues"
-	"github.com/jfrog/frogbot/v2/utils/outputwriter"
+	"github.com/jfrog/frogbot/v3/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 func TestGetFrogbotReviewComments(t *testing.T) {

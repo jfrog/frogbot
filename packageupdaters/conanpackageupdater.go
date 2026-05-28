@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v3/utils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 

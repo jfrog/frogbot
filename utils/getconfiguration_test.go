@@ -11,7 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/jfrog/frogbot/v2/testdata"
+	"github.com/jfrog/frogbot/v3/testdata"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
@@ -343,7 +343,7 @@ func TestGetConfigurationProfile(t *testing.T) {
 				}
 			}
 
-			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams)
+			configProfile, repoCloneUrl, err := getConfigurationProfile(testcase.xrayVersion, serverDetails, mockVcsClient, mockGitParams, "")
 
 			if testcase.failureExpected {
 				assert.Error(t, err)
@@ -362,6 +362,66 @@ func TestGetConfigurationProfile(t *testing.T) {
 			err = json.Unmarshal(configProfileContentForComparison, &configProfileFromFile)
 			assert.NoError(t, err)
 			assert.Equal(t, configProfileFromFile, *configProfile)
+		})
+	}
+}
+
+func TestValidateConfigProfile(t *testing.T) {
+	testCases := []struct {
+		name          string
+		configProfile *services.ConfigProfile
+		expectedError string
+	}{
+		{
+			name:          "Nil config profile",
+			configProfile: nil,
+			expectedError: "received a nil config profile",
+		},
+		{
+			name: "No modules",
+			configProfile: &services.ConfigProfile{
+				ProfileName: "my-profile",
+				Modules:     []services.Module{},
+			},
+			expectedError: "my-profile config profile returned with 0 modules. A profile must have exactly 1 module",
+		},
+		{
+			name: "Multiple modules",
+			configProfile: &services.ConfigProfile{
+				ProfileName: "my-profile",
+				Modules: []services.Module{
+					{ModuleName: "module-1", PathFromRoot: "."},
+					{ModuleName: "module-2", PathFromRoot: "subdir"},
+				},
+			},
+			expectedError: "my-profile config profile returned with 2 modules. A profile must have exactly 1 module",
+		},
+		{
+			name: "Module path not at root",
+			configProfile: &services.ConfigProfile{
+				ProfileName: "my-profile",
+				Modules:     []services.Module{{ModuleName: "module-1", PathFromRoot: "subdir"}},
+			},
+			expectedError: "the module in the config profile should be associated with the root of the repository. Expected pathFromRoot to be '.' but received 'subdir'",
+		},
+		{
+			name: "Valid config profile",
+			configProfile: &services.ConfigProfile{
+				ProfileName: "my-profile",
+				Modules:     []services.Module{{ModuleName: "module-1", PathFromRoot: "."}},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			err := validateConfigProfile(testCase.configProfile)
+			if testCase.expectedError != "" {
+				assert.EqualError(t, err, testCase.expectedError)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

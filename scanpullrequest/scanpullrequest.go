@@ -17,8 +17,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
-	"github.com/jfrog/frogbot/v2/utils"
-	"github.com/jfrog/frogbot/v2/utils/issues"
+	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 )
 
 const (

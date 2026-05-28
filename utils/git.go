@@ -343,10 +343,10 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 	if gm.dryRun {
 		return false, nil
 	}
-	remote, err := gm.localGitRepository.Remote(gm.remoteName)
-	if err != nil {
-		return false, errorutils.CheckError(err)
-	}
+	remote := git.NewRemote(gm.localGitRepository.Storer, &config.RemoteConfig{
+		Name: gm.remoteName,
+		URLs: []string{gm.remoteGitUrl},
+	})
 	refList, err := remote.List(&git.ListOptions{Auth: gm.auth})
 	if err != nil {
 		return false, errorutils.CheckError(err)
@@ -361,10 +361,10 @@ func (gm *GitManager) BranchExistsInRemote(branchName string) (bool, error) {
 }
 
 func (gm *GitManager) RemoveRemoteBranch(branchName string) error {
-	remote, err := gm.localGitRepository.Remote(gm.remoteName)
-	if err != nil {
-		return err
-	}
+	remote := git.NewRemote(gm.localGitRepository.Storer, &config.RemoteConfig{
+		Name: gm.remoteName,
+		URLs: []string{gm.remoteGitUrl},
+	})
 	return remote.Push(&git.PushOptions{
 		Auth:     gm.auth,
 		RefSpecs: []config.RefSpec{config.RefSpec(":refs/heads/" + branchName)},
@@ -379,6 +379,7 @@ func (gm *GitManager) Push(force bool, branchName string) error {
 	}
 	if err := gm.localGitRepository.Push(&git.PushOptions{
 		RemoteName: gm.remoteName,
+		RemoteURL:  gm.remoteGitUrl,
 		Auth:       gm.auth,
 		Force:      force,
 		RefSpecs:   []config.RefSpec{config.RefSpec(fmt.Sprintf(refFormat, branchName))},

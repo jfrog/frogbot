@@ -25,7 +25,7 @@ export class Utils {
         let major: string = version.split('.')[0];
         if (version === this.LATEST_CLI_VERSION_ARG) {
             version = Utils.LATEST_RELEASE_VERSION;
-            major = '2';
+            major = '3';
         } else {
             if (this.loadFromCache(version)) {
                 // Download is not needed
@@ -81,6 +81,11 @@ export class Utils {
         if (!process.env.JF_GIT_API_ENDPOINT) {
             const apiUrl: string = process.env.GITHUB_API_URL || githubContext.apiUrl || 'https://api.github.com';
             core.exportVariable('JF_GIT_API_ENDPOINT', apiUrl);
+        }
+
+        if (!process.env.JF_GIT_SERVER_URL) {
+            const serverUrl: string = process.env.GITHUB_SERVER_URL || 'https://github.com';
+            core.exportVariable('JF_GIT_SERVER_URL', serverUrl);
         }
 
         return githubContext.eventName;

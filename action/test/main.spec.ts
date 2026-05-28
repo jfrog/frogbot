@@ -16,6 +16,8 @@ describe('Frogbot Action Tests', () => {
         delete process.env.JF_GIT_TOKEN;
         delete process.env.JF_GIT_API_ENDPOINT;
         delete process.env.GITHUB_API_URL;
+        delete process.env.JF_GIT_SERVER_URL;
+        delete process.env.GITHUB_SERVER_URL;
     });
 
     describe('Frogbot URL Tests', () => {
@@ -221,6 +223,43 @@ describe('Frogbot Action Tests', () => {
             await Utils.setFrogbotEnv();
             
             expect(process.env['JF_GIT_API_ENDPOINT']).toBe('https://custom.api.com');
+        });
+    });
+
+    describe('Auto-detect server URL', () => {
+        afterEach(() => {
+            delete process.env.JF_GIT_SERVER_URL;
+            delete process.env.GITHUB_SERVER_URL;
+            delete process.env.GITHUB_TOKEN;
+            delete process.env.GITHUB_REPOSITORY_OWNER;
+            delete process.env.GITHUB_REPOSITORY;
+        });
+
+        it('Should auto-detect JF_GIT_SERVER_URL from GITHUB_SERVER_URL', async () => {
+            process.env['GITHUB_SERVER_URL'] = 'https://myenterprise.github.com';
+            process.env['GITHUB_TOKEN'] = 'ghp_test_token';
+            process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+            process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+            await Utils.setFrogbotEnv();
+            expect(process.env['JF_GIT_SERVER_URL']).toBe('https://myenterprise.github.com');
+        });
+
+        it('Should default JF_GIT_SERVER_URL to https://github.com if GITHUB_SERVER_URL not set', async () => {
+            process.env['GITHUB_TOKEN'] = 'ghp_test_token';
+            process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+            process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+            await Utils.setFrogbotEnv();
+            expect(process.env['JF_GIT_SERVER_URL']).toBe('https://github.com');
+        });
+
+        it('Should use existing JF_GIT_SERVER_URL if already set', async () => {
+            process.env['JF_GIT_SERVER_URL'] = 'https://custom.server.com';
+            process.env['GITHUB_SERVER_URL'] = 'https://myenterprise.github.com';
+            process.env['GITHUB_TOKEN'] = 'ghp_test_token';
+            process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+            process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+            await Utils.setFrogbotEnv();
+            expect(process.env['JF_GIT_SERVER_URL']).toBe('https://custom.server.com');
         });
     });
 });

@@ -51,7 +51,7 @@ class Utils {
             let major = version.split('.')[0];
             if (version === this.LATEST_CLI_VERSION_ARG) {
                 version = Utils.LATEST_RELEASE_VERSION;
-                major = '2';
+                major = '3';
             }
             else {
                 if (this.loadFromCache(version)) {
@@ -105,6 +105,10 @@ class Utils {
             if (!process.env.JF_GIT_API_ENDPOINT) {
                 const apiUrl = process.env.GITHUB_API_URL || github_1.context.apiUrl || 'https://api.github.com';
                 core.exportVariable('JF_GIT_API_ENDPOINT', apiUrl);
+            }
+            if (!process.env.JF_GIT_SERVER_URL) {
+                const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
+                core.exportVariable('JF_GIT_SERVER_URL', serverUrl);
             }
             return github_1.context.eventName;
         });
