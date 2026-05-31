@@ -102,28 +102,24 @@ echoGreetings() {
 download_to() {
   dl_url="$1"
   dl_out="$2"
-  if [ -n "${REMOTE_PATH}" ]; then
-      if [ -n "${JF_ACCESS_TOKEN}" ]; then
-        curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
-      else
-        curl -fLg -u "${JF_USER}:${JF_PASSWORD}" -X GET "${dl_url}" -o "${dl_out}"
-      fi
-    else
-      curl -fLg -X GET "${dl_url}" -o "${dl_out}"
-    fi
+  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+    curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
+  elif [ -n "${JF_USER:-}" ]; then
+    curl -fLg -u "${JF_USER}:${JF_PASSWORD:-}" -X GET "${dl_url}" -o "${dl_out}"
+  else
+    curl -fLg -X GET "${dl_url}" -o "${dl_out}"
+  fi
 }
 
 head_request() {
   dl_url="$1"
-  if [ -n "${REMOTE_PATH}" ]; then
-      if [ -n "${JF_ACCESS_TOKEN}" ]; then
-        curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
-      else
-        curl -sfILg -u "${JF_USER}:${JF_PASSWORD}" "${dl_url}"
-      fi
-    else
-      curl -sfILg "${dl_url}"
-    fi
+  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+    curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
+  elif [ -n "${JF_USER:-}" ]; then
+    curl -sfILg -u "${JF_USER}:${JF_PASSWORD:-}" "${dl_url}"
+  else
+    curl -sfILg "${dl_url}"
+  fi
 }
 
 artifact_url_to_storage_url() {
@@ -141,16 +137,14 @@ artifact_url_to_storage_url() {
 }
 
 storage_request() {
-  storage_url="$1"
-  if [ -n "${REMOTE_PATH}" ]; then
-      if [ -n "${JF_ACCESS_TOKEN}" ]; then
-        curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
-      else
-        curl -sfLg -u "${JF_USER}:${JF_PASSWORD}" "${storage_url}"
-      fi
-    else
-      curl -sfLg "${storage_url}"
-    fi
+  local storage_url="$1"
+  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+    curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
+  elif [ -n "${JF_USER:-}" ]; then
+    curl -sfLg -u "${JF_USER}:${JF_PASSWORD:-}" "${storage_url}"
+  else
+    curl -sfLg "${storage_url}"
+  fi
 }
 
 get_header_value() {
@@ -164,6 +158,7 @@ get_header_value() {
 
 parse_storage_checksums() {
   json="$1"
+  local _cs
   if command -v jq >/dev/null 2>&1; then
     remote_md5=$(echo "${json}" | jq -r '.checksums.md5 // empty')
     remote_sha1=$(echo "${json}" | jq -r '.checksums.sha1 // empty')
@@ -171,12 +166,17 @@ parse_storage_checksums() {
     return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
-    remote_md5=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or "")')
-    remote_sha1=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha1") or "")')
-    remote_sha256=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha256") or "")')
+    mapfile -t _cs < <(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
+    remote_md5="${_cs[0]:-}"
+    remote_sha1="${_cs[1]:-}"
+    remote_sha256="${_cs[2]:-}"
     return 0
   fi
   return 1
+}
+
+stderr_indicates_auth_failure() {
+  [ -f "$1" ] && grep -qiE '401|403|Unauthorized|Forbidden' "$1"
 }
 
 load_remote_checksums_from_headers() {
@@ -188,13 +188,23 @@ load_remote_checksums_from_headers() {
 }
 
 load_remote_checksums() {
+  local headers json storage_url head_err
+
   remote_md5=""
   remote_sha1=""
   remote_sha256=""
 
-  if headers=$(head_request "${URL}" 2>/dev/null) && load_remote_checksums_from_headers "${headers}"; then
+  head_err=$(mktemp "${TMPDIR:-/tmp}/frogbot-head.XXXXXX")
+  if headers=$(head_request "${URL}" 2>"${head_err}") && load_remote_checksums_from_headers "${headers}"; then
+    rm -f "${head_err}"
     return 0
   fi
+  if stderr_indicates_auth_failure "${head_err}"; then
+    echo "Artifactory HEAD request was rejected (401/403). Check JF_ACCESS_TOKEN or JF_USER/JF_PASSWORD." >&2
+    rm -f "${head_err}"
+    return 1
+  fi
+  rm -f "${head_err}"
 
   if ! storage_url=$(artifact_url_to_storage_url "${URL}"); then
     echo "Cannot derive Artifactory Storage API URL from ${URL}." >&2

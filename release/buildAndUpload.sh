@@ -102,4 +102,8 @@ buildAndUpload 'frogbot-mac-386' 'darwin' 'amd64' ''
 buildAndUpload 'frogbot-mac-arm64' 'darwin' 'arm64' ''
 buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
+if [[ "$VERSION_VERIFIED" -eq 0 ]] && [[ -n "$HOST_GOOS" ]] && [[ -n "$HOST_GOARCH" ]]; then
+  echo "Warning: no build matched host ${HOST_GOOS}/${HOST_GOARCH}; embedded version check was skipped." >&2
+fi
+
 jf rt u "./buildscripts/getFrogbot.sh" "$pkgPath/$version/" --flat

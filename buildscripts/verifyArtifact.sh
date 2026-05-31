@@ -86,8 +86,13 @@ verifyArtifact_storage_request_curl() {
   fi
 }
 
+verifyArtifact_stderr_indicates_auth_failure() {
+  [[ -f "$1" ]] && grep -qiE '401|403|Unauthorized|Forbidden' "$1"
+}
+
 verifyArtifact_parse_storage_checksums() {
   local json="$1"
+  local -a _cs
   if command -v jq >/dev/null 2>&1; then
     REMOTE_MD5=$(echo "${json}" | jq -r '.checksums.md5 // empty')
     REMOTE_SHA1=$(echo "${json}" | jq -r '.checksums.sha1 // empty')
@@ -95,9 +100,10 @@ verifyArtifact_parse_storage_checksums() {
     return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
-    REMOTE_MD5=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or "")')
-    REMOTE_SHA1=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha1") or "")')
-    REMOTE_SHA256=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("sha256") or "")')
+    mapfile -t _cs < <(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
+    REMOTE_MD5="${_cs[0]:-}"
+    REMOTE_SHA1="${_cs[1]:-}"
+    REMOTE_SHA256="${_cs[2]:-}"
     return 0
   fi
   return 1
@@ -113,16 +119,24 @@ verifyArtifact_load_remote_checksums_from_headers() {
 
 verifyArtifact_load_remote_checksums_jf() {
   local repo_path="$1"
-  local headers json
+  local headers json head_err
 
   REMOTE_MD5=""
   REMOTE_SHA1=""
   REMOTE_SHA256=""
 
-  if headers=$(verifyArtifact_head_request_jf "${repo_path}" 2>/dev/null) \
+  head_err=$(mktemp "${TMPDIR:-/tmp}/frogbot-head.XXXXXX")
+  if headers=$(verifyArtifact_head_request_jf "${repo_path}" 2>"${head_err}") \
     && verifyArtifact_load_remote_checksums_from_headers "${headers}"; then
+    rm -f "${head_err}"
     return 0
   fi
+  if verifyArtifact_stderr_indicates_auth_failure "${head_err}"; then
+    echo "Artifactory HEAD request was rejected (401/403). Check jf CLI credentials." >&2
+    rm -f "${head_err}"
+    return 1
+  fi
+  rm -f "${head_err}"
 
   echo "Checksum headers not returned by HEAD; using Artifactory Storage API ..." >&2
   if ! json=$(verifyArtifact_storage_request_jf "${repo_path}"); then
@@ -142,16 +156,24 @@ verifyArtifact_load_remote_checksums_jf() {
 
 verifyArtifact_load_remote_checksums_curl() {
   local artifact_url="$1"
-  local headers json storage_url
+  local headers json storage_url head_err
 
   REMOTE_MD5=""
   REMOTE_SHA1=""
   REMOTE_SHA256=""
 
-  if headers=$(verifyArtifact_head_request_curl "${artifact_url}" 2>/dev/null) \
+  head_err=$(mktemp "${TMPDIR:-/tmp}/frogbot-head.XXXXXX")
+  if headers=$(verifyArtifact_head_request_curl "${artifact_url}" 2>"${head_err}") \
     && verifyArtifact_load_remote_checksums_from_headers "${headers}"; then
+    rm -f "${head_err}"
     return 0
   fi
+  if verifyArtifact_stderr_indicates_auth_failure "${head_err}"; then
+    echo "Artifactory HEAD request was rejected (401/403). Check JF_ACCESS_TOKEN or JF_USER/JF_PASSWORD." >&2
+    rm -f "${head_err}"
+    return 1
+  fi
+  rm -f "${head_err}"
 
   if ! storage_url=$(verifyArtifact_artifact_url_to_storage_url "${artifact_url}"); then
     echo "Cannot derive Artifactory Storage API URL from ${artifact_url}." >&2
@@ -195,17 +217,6 @@ verifyArtifact_compare_local_to_remote() {
   fi
 
   return 0
-}
-
-verifyArtifact_compare_checksums() {
-  local local_file="$1"
-  local headers="$2"
-
-  if ! verifyArtifact_load_remote_checksums_from_headers "${headers}"; then
-    echo "Artifactory did not return checksum headers; cannot verify ${local_file}." >&2
-    return 1
-  fi
-  verifyArtifact_compare_local_to_remote "${local_file}"
 }
 
 # Verifies local file against remote Artifactory artifact.
