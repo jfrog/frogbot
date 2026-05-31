@@ -64,8 +64,12 @@ verifyArtifact_storage_request_jf() {
 
 verifyArtifact_artifact_url_to_storage_url() {
   local artifact_url="$1"
+  local prefix suffix
   if [[ "${artifact_url}" =~ /artifactory/ ]]; then
-    echo "${artifact_url}" | sed 's|/artifactory/\([^?]*\)|/artifactory/api/storage/\1|'
+    prefix="${artifact_url%%/artifactory/*}"
+    suffix="${artifact_url#*/artifactory/}"
+    suffix="${suffix%%\?*}"
+    echo "${prefix}/artifactory/api/storage/${suffix}"
     return 0
   fi
   return 1

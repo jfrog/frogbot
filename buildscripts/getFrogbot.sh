@@ -127,9 +127,13 @@ head_request() {
 }
 
 artifact_url_to_storage_url() {
+  local prefix suffix
   case "${1}" in
     */artifactory/*)
-      echo "${1}" | sed 's|/artifactory/\([^?]*\)|/artifactory/api/storage/\1|'
+      prefix="${1%%/artifactory/*}"
+      suffix="${1#*/artifactory/}"
+      suffix="${suffix%%\?*}"
+      echo "${prefix}/artifactory/api/storage/${suffix}"
       return 0
       ;;
   esac
