@@ -106,9 +106,12 @@ echoGreetings() {
 download_to() {
   dl_url="$1"
   dl_out="$2"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+  # Only use credentials when downloading from the user's own Artifactory
+  # (REMOTE_PATH is set when JF_RELEASES_REPO is configured).
+  # Public releases.jfrog.io downloads must not send user credentials.
+  if [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_ACCESS_TOKEN:-}" ]; then
     curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
-  elif [ -n "${JF_USER:-}" ]; then
+  elif [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_USER:-}" ]; then
     curl -fLg -u "${JF_USER}:${JF_PASSWORD:-}" -X GET "${dl_url}" -o "${dl_out}"
   else
     curl -fLg -X GET "${dl_url}" -o "${dl_out}"
@@ -117,9 +120,10 @@ download_to() {
 
 head_request() {
   dl_url="$1"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+  # Only use credentials when targeting the user's own Artifactory.
+  if [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_ACCESS_TOKEN:-}" ]; then
     curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
-  elif [ -n "${JF_USER:-}" ]; then
+  elif [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_USER:-}" ]; then
     curl -sfILg -u "${JF_USER}:${JF_PASSWORD:-}" "${dl_url}"
   else
     curl -sfILg "${dl_url}"
@@ -142,9 +146,10 @@ artifact_url_to_storage_url() {
 
 storage_request() {
   local storage_url="$1"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+  # Only use credentials when targeting the user's own Artifactory.
+  if [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_ACCESS_TOKEN:-}" ]; then
     curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
-  elif [ -n "${JF_USER:-}" ]; then
+  elif [ -n "${REMOTE_PATH:-}" ] && [ -n "${JF_USER:-}" ]; then
     curl -sfLg -u "${JF_USER}:${JF_PASSWORD:-}" "${storage_url}"
   else
     curl -sfLg "${storage_url}"
