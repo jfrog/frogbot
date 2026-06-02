@@ -100,10 +100,10 @@ verifyArtifact_parse_storage_checksums() {
     return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
-    mapfile -t _cs < <(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
-    REMOTE_MD5="${_cs[0]:-}"
-    REMOTE_SHA1="${_cs[1]:-}"
-    REMOTE_SHA256="${_cs[2]:-}"
+    _cs=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
+    REMOTE_MD5=$(printf '%s\n' "${_cs}" | sed -n '1p')
+    REMOTE_SHA1=$(printf '%s\n' "${_cs}" | sed -n '2p')
+    REMOTE_SHA256=$(printf '%s\n' "${_cs}" | sed -n '3p')
     return 0
   fi
   return 1

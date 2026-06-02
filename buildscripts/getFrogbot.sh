@@ -13,6 +13,10 @@ setFrogbotVersion() {
   then
       VERSION=$1
       echo "Downloading version $VERSION of Frogbot..."
+  elif [ -n "${JF_FROGBOT_VERSION:-}" ]
+  then
+      VERSION="${JF_FROGBOT_VERSION}"
+      echo "Downloading version $VERSION of Frogbot (JF_FROGBOT_VERSION)..."
   else
       echo "Downloading the latest version of Frogbot..."
   fi
@@ -166,10 +170,10 @@ parse_storage_checksums() {
     return 0
   fi
   if command -v python3 >/dev/null 2>&1; then
-    mapfile -t _cs < <(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
-    remote_md5="${_cs[0]:-}"
-    remote_sha1="${_cs[1]:-}"
-    remote_sha256="${_cs[2]:-}"
+    _cs=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
+    remote_md5=$(printf '%s\n' "${_cs}" | sed -n '1p')
+    remote_sha1=$(printf '%s\n' "${_cs}" | sed -n '2p')
+    remote_sha256=$(printf '%s\n' "${_cs}" | sed -n '3p')
     return 0
   fi
   return 1
