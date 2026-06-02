@@ -35,6 +35,7 @@ import (
 const (
 	frogbotConfigDir  = ".frogbot"
 	FrogbotConfigFile = "frogbot-config.yml"
+	maskedValue       = "***"
 )
 
 var (
@@ -525,6 +526,7 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 	if err != nil {
 		return
 	}
+	printAggregatorParams(configAggregator[0].Params)
 
 	// TODO when deprecating multiple repositories support, pass the correct projectKey from the single repo we have to getConfigProfileIfExistsAndValid
 	configProfile, repoCloneUrl, err := getConfigProfileIfExistsAndValid(xrayVersion, jfrogServer, client, gitParamsFromEnv, configAggregator[0].JFrogProjectKey)
@@ -930,4 +932,24 @@ func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err err
 	}
 	log.Info(fmt.Sprintf("Using Config profile '%s'. jfrog-apps-config will be ignored if exists", configProfile.ProfileName))
 	return
+}
+func printAggregatorParams(params Params) {
+	params.Scan.EmailDetails.SmtpServer = replaceIfNotEmpty(params.Scan.EmailDetails.SmtpServer)
+	params.Scan.EmailDetails.SmtpPort = replaceIfNotEmpty(params.Scan.EmailDetails.SmtpPort)
+	params.Scan.EmailDetails.SmtpUser = replaceIfNotEmpty(params.Scan.EmailDetails.SmtpUser)
+	params.Scan.EmailDetails.SmtpPassword = replaceIfNotEmpty(params.Scan.EmailDetails.SmtpPassword)
+	params.Git.VcsInfo.Username = replaceIfNotEmpty(params.Git.VcsInfo.Username)
+	params.Git.VcsInfo.Token = replaceIfNotEmpty(params.Git.VcsInfo.Token)
+
+	configAggregatorParamsString, e := json.Marshal(params)
+	if e == nil {
+		log.Debug(fmt.Sprintf("extracted config aggregator params: %s", configAggregatorParamsString))
+	}
+}
+
+func replaceIfNotEmpty(value string) string {
+	if value != "" {
+		return maskedValue
+	}
+	return value
 }
