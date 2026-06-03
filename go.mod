@@ -129,7 +129,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
+//orto:missconfiguration-service
+replace github.com/jfrog/jfrog-cli-security => github.com/orto17/jfrog-cli-security v0.0.0-20260603084957-decd729f1c04
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -137,6 +138,7 @@ replace github.com/jfrog/jfrog-cli-security => ../jfrog-cli-security
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-replace github.com/jfrog/jfrog-client-go => ../jfrog-client-go
+//orto:missconfiguration-service
+replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20260601083500-656c0e8d801d
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
