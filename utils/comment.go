@@ -33,6 +33,7 @@ const (
 	IacComment        ReviewCommentType = "Iac"
 	SastComment       ReviewCommentType = "Sast"
 	SecretComment     ReviewCommentType = "Secrets"
+	ServicesComment   ReviewCommentType = "Services"
 	SnippetComment    ReviewCommentType = "Snippet"
 
 	snippetVersionMarker   = "snippet"
@@ -222,6 +223,16 @@ func getNewReviewComments(repo *Repository, issues *issues.ScansIssuesCollection
 		}
 	}
 
+	// Services review comments
+	for _, service := range issues.ServicesVulnerabilities {
+		commentsToAdd = append(commentsToAdd, generateReviewComment(ServicesComment, service.Location, generateSourceCodeReviewContent(ServicesComment, false, writer, service)))
+	}
+	if len(issues.ServicesViolations) > 0 {
+		for _, similarServicesIssues := range groupSimilarJasIssues(issues.ServicesViolations) {
+			commentsToAdd = append(commentsToAdd, generateReviewComment(ServicesComment, similarServicesIssues.Location, generateSourceCodeReviewContent(ServicesComment, true, writer, similarServicesIssues.issues...)))
+		}
+	}
+
 	// Secrets review comments
 	if !repo.FrogbotConfig.ShowSecretsAsPrComment {
 		return
@@ -386,6 +397,8 @@ func generateSourceCodeReviewContent(commentType ReviewCommentType, violation bo
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SastReviewContent(violation, writer, similarIssues...), writer)
 	case SecretComment:
 		return outputwriter.GenerateReviewCommentContent(outputwriter.SecretReviewContent(violation, writer, similarIssues...), writer)
+	case ServicesComment:
+		return outputwriter.GenerateReviewCommentContent(outputwriter.ServicesReviewContent(violation, writer, similarIssues...), writer)
 	}
 	return
 }

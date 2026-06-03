@@ -76,6 +76,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
 			IacScanStatusCode:            securityutils.NewIntPtr(0),
 			SecretsScanStatusCode:        securityutils.NewIntPtr(0),
+			ServicesScanStatusCode:       securityutils.NewIntPtr(0),
 			SastScanStatusCode:           securityutils.NewIntPtr(0),
 		},
 		ScanTarget: results.ScanTarget{Target: "dummy"},
@@ -121,6 +122,21 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 						),
 					),
 				},
+				ServicesScanResults: func() []*sarif.Run {
+					serviceRule := sarif.NewRule("service-rule")
+					serviceResult := sarifutils.CreateResultWithProperties(
+						"Exposed service endpoint", "service-rule",
+						severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+						map[string]string{
+							sarifutils.CWEPropertyKey:      "CWE-918",
+							sarifutils.OutcomesPropertyKey: "publicly-exposed",
+						},
+						sarifutils.CreateLocation("service.yaml", 3, 4, 5, 6, "port: 8080"),
+					)
+					serviceRun := sarifutils.CreateRunWithDummyResults(serviceResult)
+					serviceRun.Tool.Driver.Rules = []*sarif.ReportingDescriptor{serviceRule}
+					return []*sarif.Run{serviceRun}
+				}(),
 			},
 		},
 	}}}
@@ -208,6 +224,28 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				},
 			},
 		},
+		ServicesVulnerabilities: []formats.SourceCodeRow{
+			{
+				SeverityDetails: formats.SeverityDetails{
+					Severity:         "High",
+					SeverityNumValue: 31,
+				},
+				Finding:  "Exposed service endpoint",
+				Outcomes: "publicly-exposed",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId: "service-rule",
+					Cwe:    []string{"CWE-918"},
+				},
+				Location: formats.Location{
+					File:        "service.yaml",
+					StartLine:   3,
+					StartColumn: 4,
+					EndLine:     5,
+					EndColumn:   6,
+					Snippet:     "port: 8080",
+				},
+			},
+		},
 	}
 
 	issuesRows, err := scanResultsToIssuesCollection(auditResults)
@@ -217,6 +255,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 		assert.ElementsMatch(t, expectedOutput.IacVulnerabilities, issuesRows.IacVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.SecretsVulnerabilities, issuesRows.SecretsVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.SastVulnerabilities, issuesRows.SastVulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.ServicesVulnerabilities, issuesRows.ServicesVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.LicensesViolations, issuesRows.LicensesViolations)
 	}
 }
@@ -1333,6 +1372,7 @@ func TestIsScanFailedInSourceOrTarget(t *testing.T) {
 }
 
 func preparePullRequestTest(t *testing.T, projectName string) (utils.Repository, vcsclient.VcsClient, func()) {
+	utils.SkipIfNoJFrogEnv(t)
 	params, restoreEnv := utils.VerifyEnv(t)
 
 	// Set test-specific environment variables

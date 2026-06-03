@@ -898,6 +898,120 @@ func TestSnippetReviewContent(t *testing.T) {
 	}
 }
 
+func TestScanSummaryContentWithServices(t *testing.T) {
+	testIssues := issues.ScansIssuesCollection{
+		ScanStatus: formats.ScanStatus{
+			ScaStatusCode:      utils.NewIntPtr(0),
+			ServicesStatusCode: utils.NewIntPtr(0),
+		},
+		ServicesVulnerabilities: []formats.SourceCodeRow{
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+			{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}},
+		},
+	}
+	context := results.ResultContext{IncludeVulnerabilities: true}
+	testCases := []struct {
+		name   string
+		writer OutputWriter
+	}{
+		{name: "Standard output", writer: &StandardOutput{MarkdownOutput{hasInternetConnection: true}}},
+		{name: "Simplified output", writer: &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}}},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			output := ScanSummaryContent(testIssues, context, false, tc.writer)
+			assert.Contains(t, output, "**Services**")
+			assert.Contains(t, output, "✅ Done")
+			assert.Contains(t, output, "2 Issues Found")
+			assert.Contains(t, output, "Frogbot scanned for vulnerabilities and found 2 issues")
+		})
+	}
+}
+
+func TestServicesReviewContent(t *testing.T) {
+	testCases := []struct {
+		name   string
+		issues []formats.SourceCodeRow
+		cases  []OutputTestCase
+	}{
+		{
+			name: "Services review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "High"},
+				Finding:         "Exposed service endpoint",
+				Outcomes:        "publicly-exposed",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "service-rule",
+					Cwe:                     []string{"CWE-918"},
+					ScannerDescription:      "Services scanner description",
+					ScannerShortDescription: "Short description",
+					Origin:                  "JFrog",
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_review_content_simplified.md")},
+				},
+			},
+		},
+		{
+			name: "Services violation review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Critical"},
+				Finding:         "Misconfigured service port",
+				Outcomes:        "misconfigured-port",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "service-rule",
+					Cwe:                     []string{"CWE-200"},
+					ScannerDescription:      "Services scanner description",
+					ScannerShortDescription: "Short description",
+					Origin:                  "JFrog",
+				},
+				ViolationContext: formats.ViolationContext{
+					Watch:    "services-watch",
+					IssueId:  "services-violation-id",
+					Policies: []string{"policy1"},
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_violation_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_violation_review_content_simplified.md")},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				violations := false
+				for _, issue := range tc.issues {
+					if issue.Watch != "" {
+						violations = true
+						break
+					}
+				}
+				assert.Equal(t, expectedOutput, ServicesReviewContent(violations, test.writer, tc.issues...))
+			})
+		}
+	}
+}
+
 func TestSecretsReviewContent(t *testing.T) {
 	testCases := []struct {
 		name   string

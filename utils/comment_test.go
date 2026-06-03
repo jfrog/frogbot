@@ -253,6 +253,74 @@ func TestGetNewReviewComments(t *testing.T) {
 			expectedOutput: []ReviewComment{},
 		},
 		{
+			name: "Services review comments",
+			issues: &issues.ScansIssuesCollection{
+				ServicesVulnerabilities: []formats.SourceCodeRow{
+					{
+						SeverityDetails: formats.SeverityDetails{
+							Severity:         "High",
+							SeverityNumValue: 13,
+						},
+						Finding:  "Exposed service endpoint",
+						Outcomes: "publicly-exposed",
+						ScannerInfo: formats.ScannerInfo{
+							RuleId: "service-rule",
+							Cwe:    []string{"CWE-918"},
+						},
+						Location: formats.Location{
+							File:        "service.yaml",
+							StartLine:   3,
+							StartColumn: 4,
+							EndLine:     5,
+							EndColumn:   6,
+							Snippet:     "port: 8080",
+						},
+					},
+				},
+			},
+			expectedOutput: []ReviewComment{
+				{
+					Location: formats.Location{
+						File:        "service.yaml",
+						StartLine:   3,
+						StartColumn: 4,
+						EndLine:     5,
+						EndColumn:   6,
+						Snippet:     "port: 8080",
+					},
+					Type: ServicesComment,
+					CommentInfo: vcsclient.PullRequestComment{
+						CommentInfo: vcsclient.CommentInfo{
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ServicesReviewContent(false, writer, formats.SourceCodeRow{
+								SeverityDetails: formats.SeverityDetails{
+									Severity:         "High",
+									SeverityNumValue: 13,
+								},
+								Finding:  "Exposed service endpoint",
+								Outcomes: "publicly-exposed",
+								ScannerInfo: formats.ScannerInfo{
+									RuleId: "service-rule",
+									Cwe:    []string{"CWE-918"},
+								},
+							}), writer),
+						},
+						PullRequestDiff: vcsclient.PullRequestDiff{
+							OriginalFilePath:    "service.yaml",
+							OriginalStartLine:   3,
+							OriginalStartColumn: 4,
+							OriginalEndLine:     5,
+							OriginalEndColumn:   6,
+							NewFilePath:         "service.yaml",
+							NewStartLine:        3,
+							NewStartColumn:      4,
+							NewEndLine:          5,
+							NewEndColumn:        6,
+						},
+					},
+				},
+			},
+		},
+		{
 			name:                    "Secret review comments",
 			generateSecretsComments: true,
 			issues: &issues.ScansIssuesCollection{

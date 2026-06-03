@@ -340,10 +340,12 @@ func ConvertSarifPathsToRelative(issues *issues.ScansIssuesCollection, workingDi
 	convertSarifPathsInCveApplicability(issues.ScaVulnerabilities, workingDirs...)
 	convertSarifPathsInIacs(issues.IacVulnerabilities, workingDirs...)
 	convertSarifPathsInSecrets(issues.SecretsVulnerabilities, workingDirs...)
+	convertSarifPathsInServices(issues.ServicesVulnerabilities, workingDirs...)
 	convertSarifPathsInSast(issues.SastVulnerabilities, workingDirs...)
 	convertSarifPathsInCveApplicability(issues.ScaViolations, workingDirs...)
 	convertSarifPathsInIacs(issues.IacViolations, workingDirs...)
 	convertSarifPathsInSecrets(issues.SecretsViolations, workingDirs...)
+	convertSarifPathsInServices(issues.ServicesViolations, workingDirs...)
 	convertSarifPathsInSast(issues.SastViolations, workingDirs...)
 }
 
@@ -371,10 +373,18 @@ func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string
 }
 
 func convertSarifPathsInSecrets(secrets []formats.SourceCodeRow, workingDirs ...string) {
-	for i := range secrets {
-		secret := &secrets[i]
+	convertSarifPathsInSourceCodeRows(secrets, workingDirs...)
+}
+
+func convertSarifPathsInServices(services []formats.SourceCodeRow, workingDirs ...string) {
+	convertSarifPathsInSourceCodeRows(services, workingDirs...)
+}
+
+func convertSarifPathsInSourceCodeRows(rows []formats.SourceCodeRow, workingDirs ...string) {
+	for i := range rows {
+		row := &rows[i]
 		for _, wd := range workingDirs {
-			secret.Location.File = utils.GetRelativePath(secret.Location.File, wd)
+			row.Location.File = utils.GetRelativePath(row.Location.File, wd)
 		}
 	}
 }

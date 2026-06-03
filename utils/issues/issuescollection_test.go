@@ -145,8 +145,22 @@ func getTestData() ScansIssuesCollection {
 				SeverityDetails: formats.SeverityDetails{Severity: "High"},
 			},
 		},
+		ServicesVulnerabilities: []formats.SourceCodeRow{{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}}},
+		ServicesViolations: []formats.SourceCodeRow{{
+			SeverityDetails: formats.SeverityDetails{Severity: "Low"},
+			ViolationContext: formats.ViolationContext{
+				IssueId: "services-violation-id",
+				Watch:   "services-watch",
+			},
+		}},
 	}
 	return issuesCollection
+}
+
+func getServicesOnlyTestData() ScansIssuesCollection {
+	return ScansIssuesCollection{
+		ServicesVulnerabilities: []formats.SourceCodeRow{{SeverityDetails: formats.SeverityDetails{Severity: "High"}}},
+	}
 }
 
 func TestGetAllIssuesCount(t *testing.T) {
@@ -158,12 +172,12 @@ func TestGetAllIssuesCount(t *testing.T) {
 		{
 			name:             "With Secrets",
 			includeSecrets:   true,
-			expectedFindings: 9,
+			expectedFindings: 11,
 		},
 		{
 			name:             "No Secrets",
 			includeSecrets:   false,
-			expectedFindings: 7,
+			expectedFindings: 9,
 		},
 	}
 	issuesCollection := getTestData()
@@ -184,12 +198,12 @@ func TestGetTotalVulnerabilities(t *testing.T) {
 		{
 			name:             "With Secrets",
 			includeSecrets:   true,
-			expectedFindings: 6,
+			expectedFindings: 7,
 		},
 		{
 			name:             "No Secrets",
 			includeSecrets:   false,
-			expectedFindings: 5,
+			expectedFindings: 6,
 		},
 	}
 	issuesCollection := getTestData()
@@ -210,12 +224,12 @@ func TestGetTotalViolations(t *testing.T) {
 		{
 			name:             "With Secrets",
 			includeSecrets:   true,
-			expectedFindings: 3,
+			expectedFindings: 4,
 		},
 		{
 			name:             "No Secrets",
 			includeSecrets:   false,
-			expectedFindings: 2,
+			expectedFindings: 3,
 		},
 	}
 	issuesCollection := getTestData()
@@ -291,6 +305,25 @@ func TestGetScanIssuesSeverityCount(t *testing.T) {
 			vulnerabilities:       true,
 			violation:             true,
 			expectedSeverityCount: map[string]int{"High": 2},
+		},
+		{
+			name:                  "Services Vulnerabilities",
+			scanType:              utils.ServicesScan,
+			vulnerabilities:       true,
+			expectedSeverityCount: map[string]int{"Medium": 1},
+		},
+		{
+			name:                  "Services Violations",
+			scanType:              utils.ServicesScan,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"Low": 1},
+		},
+		{
+			name:                  "Services Vulnerabilities and Violations",
+			scanType:              utils.ServicesScan,
+			vulnerabilities:       true,
+			violation:             true,
+			expectedSeverityCount: map[string]int{"Medium": 1, "Low": 1},
 		},
 		{
 			name:                  "Sast Vulnerabilities",
@@ -378,6 +411,16 @@ func TestIssuesExists(t *testing.T) {
 			includeSecrets: true,
 			expected:       true,
 		},
+		{
+			name:     "With Services only",
+			issues:   getServicesOnlyTestData(),
+			expected: true,
+		},
+		{
+			name:     "With Services only and secrets excluded",
+			issues:   getServicesOnlyTestData(),
+			expected: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -417,6 +460,12 @@ func TestIsFailPrRuleApplied(t *testing.T) {
 			expected:               true,
 		},
 		{
+			name:                   "Services violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "services",
+			expected:               true,
+		},
+		{
 			name:                   "Sast violations with fail PR rule",
 			issues:                 getTestData(),
 			scannerToAddFailPrRule: "sast",
@@ -439,6 +488,8 @@ func TestIsFailPrRuleApplied(t *testing.T) {
 				tc.issues.LicensesViolations[0].FailPr = true
 			case "secrets":
 				tc.issues.SecretsViolations[0].FailPr = true
+			case "services":
+				tc.issues.ServicesViolations[0].FailPr = true
 			case "sast":
 				tc.issues.SastViolations = append(tc.issues.SastViolations, formats.SourceCodeRow{
 					ViolationContext: formats.ViolationContext{
@@ -490,8 +541,16 @@ func TestHasErrors(t *testing.T) {
 				ScaStatusCode:           utils.NewIntPtr(-1),
 				SastStatusCode:          utils.NewIntPtr(0),
 				SecretsStatusCode:       utils.NewIntPtr(33),
+				ServicesStatusCode:      utils.NewIntPtr(51),
 				IacStatusCode:           utils.NewIntPtr(0),
 				ApplicabilityStatusCode: utils.NewIntPtr(0),
+			},
+			expected: true,
+		},
+		{
+			name: "Services scan failed",
+			status: formats.ScanStatus{
+				ServicesStatusCode: utils.NewIntPtr(33),
 			},
 			expected: true,
 		},
@@ -506,9 +565,10 @@ func TestHasErrors(t *testing.T) {
 
 func TestIsScanNotCompleted(t *testing.T) {
 	issues := ScansIssuesCollection{ScanStatus: formats.ScanStatus{
-		ScaStatusCode:     utils.NewIntPtr(-1),
-		SastStatusCode:    utils.NewIntPtr(0),
-		SecretsStatusCode: utils.NewIntPtr(33),
+		ScaStatusCode:      utils.NewIntPtr(-1),
+		SastStatusCode:     utils.NewIntPtr(0),
+		SecretsStatusCode:  utils.NewIntPtr(33),
+		ServicesStatusCode: utils.NewIntPtr(51),
 	}}
 	testCases := []struct {
 		name     string
@@ -534,6 +594,11 @@ func TestIsScanNotCompleted(t *testing.T) {
 			scan:     utils.IacScan,
 			expected: true,
 		},
+		{
+			name:     "Services scan failed",
+			scan:     utils.ServicesScan,
+			expected: true,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -552,12 +617,14 @@ func TestAppendStatus(t *testing.T) {
 		SastStatusCode:          utils.NewIntPtr(33),
 		ApplicabilityStatusCode: utils.NewIntPtr(0),
 		SecretsStatusCode:       utils.NewIntPtr(51),
+		ServicesStatusCode:      utils.NewIntPtr(44),
 	}
 	expectedStatus := formats.ScanStatus{
 		ScaStatusCode:           utils.NewIntPtr(-1),
 		SastStatusCode:          utils.NewIntPtr(33),
 		ApplicabilityStatusCode: utils.NewIntPtr(0),
 		SecretsStatusCode:       utils.NewIntPtr(51),
+		ServicesStatusCode:      utils.NewIntPtr(44),
 	}
 	issues := ScansIssuesCollection{ScanStatus: oldStatus}
 	issues.AppendStatus(newStatus)

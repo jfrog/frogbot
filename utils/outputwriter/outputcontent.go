@@ -20,7 +20,6 @@ const (
 	FrogbotTitlePrefix      = "[🐸 Frogbot]"
 	FrogbotRepoUrl          = "https://github.com/jfrog/frogbot"
 	FrogbotDocumentationUrl = "https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot"
-	JfrogSupportUrl         = "https://jfrog.com/support/"
 	ReviewCommentId         = "FrogbotReviewComment"
 
 	scanSummaryTitle             = "📗 Scan Summary"
@@ -35,6 +34,7 @@ const (
 
 	//#nosec G101 -- not a secret
 	secretsTitle            = "🤫 Secret"
+	servicesTitle           = "🔌 Services"
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE"
 	iacTitle                = "🛠️ Infrastructure as Code"
 	sastTitle               = "🎯 Static Application Security Testing (SAST)"
@@ -172,6 +172,7 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.Res
 	if includeSecrets {
 		secretsDetails = getScanSecurityIssuesDetails(issues, context, utils.SecretsScan, writer)
 	}
+	servicesDetails := getScanSecurityIssuesDetails(issues, context, utils.ServicesScan, writer)
 	table := NewMarkdownTableWithColumns(
 		NewMarkdownTableSingleValueColumn("Scan Category", "⚠️", false),
 		NewMarkdownTableSingleValueColumn("Status", "⚠️", true),
@@ -181,6 +182,7 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.Res
 	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
 	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.SastScan)), getScanSecurityIssuesDetails(issues, context, utils.SastScan, writer))
 	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), secretsDetails)
+	table.AddRow(MarkAsBold("Services"), getSubScanResultStatus(issues.GetScanStatus(utils.ServicesScan)), servicesDetails)
 	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, context, utils.IacScan, writer))
 	WriteContent(&contentBuilder, table.Build())
 	return contentBuilder.String()
@@ -225,6 +227,8 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, context r
 		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SastScan, countVulnerabilities, countViolations)
 	case utils.SecretsScan:
 		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SecretsScan, countVulnerabilities, countViolations)
+	case utils.ServicesScan:
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.ServicesScan, countVulnerabilities, countViolations)
 	case utils.IacScan:
 		severityCountMap = issues.GetScanIssuesSeverityCount(utils.IacScan, countVulnerabilities, countViolations)
 	}
@@ -523,6 +527,16 @@ func SecretReviewContent(violation bool, writer OutputWriter, issues ...formats.
 	return contentBuilder.String()
 }
 
+func ServicesReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(fmt.Sprintf("%s %s", servicesTitle, getIssueType(violation)), 2),
+		writer.MarkInCenter(getServicesDescriptionTable(writer, issues...)),
+		getJasFullDescription(violation, writer, getServicesRuleFullDescriptionTable, issues...),
+	)
+	return contentBuilder.String()
+}
+
 func SnippetReviewContent(
 	violation bool,
 	writer OutputWriter,
@@ -594,6 +608,36 @@ func getSecretsDescriptionTable(writer OutputWriter, issues ...formats.SourceCod
 func getSecretsRuleFullDescriptionTable(info formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
 	table := getBaseJasDetailsTable(info, writer)
 	table.AddRow(MarkAsBold("Abbreviation:"), info.RuleId)
+	return table
+}
+
+func getServicesDescriptionTable(writer OutputWriter, issues ...formats.SourceCodeRow) string {
+	table := NewMarkdownTable("Severity", "ID", "CWE", "Outcomes", "Finding", "Watch Name", "Policies").SetDelimiter(writer.Separator())
+	table.GetColumnInfo("ID").OmitEmpty = true
+	table.GetColumnInfo("CWE").OmitEmpty = true
+	table.GetColumnInfo("Outcomes").OmitEmpty = true
+	table.GetColumnInfo("Watch Name").OmitEmpty = true
+	table.GetColumnInfo("Policies").OmitEmpty = true
+	for _, issue := range issues {
+		table.AddRowWithCellData(
+			NewCellData(writer.FormattedSeverity(issue.Severity, jasutils.Applicable.String())),
+			NewCellData(issue.IssueId),
+			NewCellData(strings.Join(issue.Cwe, ", ")),
+			NewCellData(issue.Outcomes),
+			NewCellData(issue.Finding),
+			NewCellData(issue.Watch),
+			NewCellData(issue.Policies...),
+		)
+	}
+	return table.Build()
+}
+
+func getServicesRuleFullDescriptionTable(info formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
+	table := getBaseJasDetailsTable(info, writer)
+	table.AddRow(MarkAsBold("Rule ID:"), info.RuleId)
+	if len(info.Cwe) > 0 {
+		table.AddRow(MarkAsBold("CWE:"), strings.Join(info.Cwe, ", "))
+	}
 	return table
 }
 
