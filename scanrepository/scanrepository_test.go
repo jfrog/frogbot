@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	services2 "github.com/jfrog/jfrog-client-go/xsc/services"
 
 	"github.com/CycloneDX/cyclonedx-go"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -499,7 +500,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				ResultsMetaData: results.ResultsMetaData{
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScanTarget: results.ScanTarget{Target: "target1", Technology: techutils.Npm},
 					ScaResults: &results.ScaScanResults{
 						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
 					},
@@ -521,7 +522,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				ResultsMetaData: results.ResultsMetaData{
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScanTarget: results.ScanTarget{Target: "target1", Technology: techutils.Npm},
 					ScaResults: &results.ScaScanResults{
 						Sbom: loadTestSBOM(t, "sbom_multiple_vulns_same_pkg.json"),
 					},
@@ -541,7 +542,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				ResultsMetaData: results.ResultsMetaData{
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
 				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScanTarget: results.ScanTarget{Target: "target1", Technology: techutils.Npm},
 					ScaResults: &results.ScaScanResults{
 						Sbom: loadTestSBOM(t, "sbom_no_fix_version.json"),
 					},
@@ -561,7 +562,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 				ResultsMetaData: results.ResultsMetaData{
 					ResultContext: results.ResultContext{Watches: []string{"w1"}}},
 				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScanTarget: results.ScanTarget{Target: "target1", Technology: techutils.Npm},
 				}},
 				Violations: &violationutils.Violations{
 					Sca: []violationutils.CveViolation{

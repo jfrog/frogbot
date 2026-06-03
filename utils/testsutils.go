@@ -100,6 +100,13 @@ func ChangeToTempDirWithCallback(t *testing.T) (string, func() error) {
 	return tmpDir, callback
 }
 
+// SkipIfNoJFrogEnv skips integration tests when JFrog platform credentials are not configured.
+func SkipIfNoJFrogEnv(t *testing.T) {
+	if strings.TrimSuffix(os.Getenv(JFrogUrlEnv), "/") == "" {
+		t.Skipf("skipping: %s is not set (integration tests run in CI with platform credentials)", JFrogUrlEnv)
+	}
+}
+
 // Check connection details with JFrog instance.
 // Return a callback method that restores the credentials after the test is done.
 func VerifyEnv(t *testing.T) (server config.ServerDetails, restoreFunc func()) {

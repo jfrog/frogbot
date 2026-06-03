@@ -307,7 +307,7 @@ func TestConvertToGitLabDependencyScanningReport(t *testing.T) {
 
 	t.Run("failure status when GetErrors returns error", func(t *testing.T) {
 		sr := scanResultsWithSbomOnly()
-		sr.GeneralErrors = []results.SkippableError{{ActualError: errors.New("scanner failed")}}
+		sr.GeneralError = errors.New("scanner failed")
 		report, err := ConvertToGitLabDependencyScanningReport(sr, start, end, version)
 		require.NoError(t, err)
 		assert.Equal(t, "failure", report.Scan.Status)
