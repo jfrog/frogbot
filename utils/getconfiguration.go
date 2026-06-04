@@ -482,7 +482,8 @@ func extractVcsProviderFromEnv() (vcsutils.VcsProvider, error) {
 
 func SanitizeEnv() error {
 	for _, env := range os.Environ() {
-		if !strings.HasPrefix(env, "JF_") {
+		// We leave JF_SAST_DEFAULT_SCAN_MODE as this must be populated as env var to the Sast scanner
+		if !strings.HasPrefix(env, "JF_") || strings.HasPrefix(env, "JF_SAST") {
 			continue
 		}
 		envSplit := strings.Split(env, "=")
