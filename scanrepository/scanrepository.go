@@ -583,6 +583,7 @@ func (cfp *ScanRepositoryCmd) cloneRepositoryOrUseLocalAndCheckoutToBranch() (te
 	log.Debug("Created temp working directory:", tempWd)
 
 	if cfp.scanDetails.UseLocalRepository {
+		log.Debug("JF_USE_LOCAL_REPOSITORY was set to true. Copying local repository to tmp dir...")
 		var curDir string
 		if curDir, err = os.Getwd(); err != nil {
 			return
