@@ -106,10 +106,12 @@ echoGreetings() {
 download_to() {
   dl_url="$1"
   dl_out="$2"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
-    curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
-  elif [ -n "${JF_USER:-}" ]; then
-    curl -fLg -u "${JF_USER}:${JF_PASSWORD:-}" -X GET "${dl_url}" -o "${dl_out}"
+  if [ -n "${REMOTE_PATH}" ]; then
+    if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+      curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
+    else
+      curl -fLg -u "${JF_USER}:${JF_PASSWORD:-}" -X GET "${dl_url}" -o "${dl_out}"
+    fi
   else
     curl -fLg -X GET "${dl_url}" -o "${dl_out}"
   fi
@@ -117,10 +119,12 @@ download_to() {
 
 head_request() {
   dl_url="$1"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
-    curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
-  elif [ -n "${JF_USER:-}" ]; then
-    curl -sfILg -u "${JF_USER}:${JF_PASSWORD:-}" "${dl_url}"
+  if [ -n "${REMOTE_PATH}" ]; then
+    if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+      curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
+    else
+      curl -sfILg -u "${JF_USER}:${JF_PASSWORD:-}" "${dl_url}"
+    fi
   else
     curl -sfILg "${dl_url}"
   fi
@@ -142,10 +146,12 @@ artifact_url_to_storage_url() {
 
 storage_request() {
   local storage_url="$1"
-  if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
-    curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
-  elif [ -n "${JF_USER:-}" ]; then
-    curl -sfLg -u "${JF_USER}:${JF_PASSWORD:-}" "${storage_url}"
+  if [ -n "${REMOTE_PATH}" ]; then
+    if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+      curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
+    else
+      curl -sfLg -u "${JF_USER}:${JF_PASSWORD:-}" "${storage_url}"
+    fi
   else
     curl -sfLg "${storage_url}"
   fi
