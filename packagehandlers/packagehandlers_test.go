@@ -395,6 +395,36 @@ func TestUpdateDependency(t *testing.T) {
 	}
 }
 
+func TestNormalizeGoModulePath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "keeps slash-separated module path",
+			input:    "go.opentelemetry.io/otel/sdk",
+			expected: "go.opentelemetry.io/otel/sdk",
+		},
+		{
+			name:     "converts colon-separated module path",
+			input:    "go.opentelemetry.io:otel:sdk",
+			expected: "go.opentelemetry.io/otel/sdk",
+		},
+		{
+			name:     "converts github module path",
+			input:    "github.com:golang:go",
+			expected: "github.com/golang/go",
+		},
+	}
+
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			assert.Equal(t, test.expected, normalizeGoModulePath(test.input))
+		})
+	}
+}
+
 func TestPipPackageRegex(t *testing.T) {
 	var pipPackagesRegexTests = []pipPackageRegexTest{
 		{"oslo.config", "oslo.config>=1.12.1,<1.13"},
