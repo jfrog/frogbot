@@ -161,6 +161,10 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's configuration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
 		return totalFindings, nil
 	}
+	if scanResults == nil {
+		log.Info("No scan results found")
+		return totalFindings, nil
+	}
 
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)
 	if err != nil {
