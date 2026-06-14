@@ -285,10 +285,11 @@ func (sr *ScanRepositoryCmd) fixMultiplePackages(vulnerabilities map[string]*uti
 // else, return the error
 func (sr *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	var errUnsupportedFix *utils.ErrUnsupportedFix
+	var errUnsupportedFixShared *securitypkgupdaters.ErrUnsupportedFix
 	var errNoChangesToCommit *utils.ErrNothingToCommit
 
 	switch {
-	case errors.As(err, &errUnsupportedFix):
+	case errors.As(err, &errUnsupportedFix), errors.As(err, &errUnsupportedFixShared):
 		log.Debug(strings.TrimSpace(err.Error()))
 	case errors.As(err, &errNoChangesToCommit):
 		log.Info(err.Error())
@@ -570,18 +571,20 @@ func (sr *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vuln
 		sr.updaters = make(map[techutils.Technology]securitypkgupdaters.PackageUpdater)
 	}
 
+	fixDetails := &securitypkgupdaters.FixDetails{
+		ImpactedDependencyName:    vulnDetails.ImpactedDependencyName,
+		ImpactedDependencyVersion: vulnDetails.ImpactedDependencyVersion,
+		SuggestedFixedVersion:     vulnDetails.SuggestedFixedVersion,
+		IsDirectDependency:        vulnDetails.IsDirectDependency,
+		Technology:                vulnDetails.Technology,
+		Components:                vulnDetails.Components,
+		IssueId:                   vulnDetails.IssueId,
+	}
+
 	handler, cached := sr.updaters[vulnDetails.Technology]
 	if !cached {
 		var supported bool
-		handler, supported = securitypkgupdaters.GetCompatiblePackageUpdater(&securitypkgupdaters.FixDetails{
-				ImpactedDependencyName:    vulnDetails.ImpactedDependencyName,
-				ImpactedDependencyVersion: vulnDetails.ImpactedDependencyVersion,
-				SuggestedFixedVersion:     vulnDetails.SuggestedFixedVersion,
-				IsDirectDependency:        vulnDetails.IsDirectDependency,
-				Technology:                vulnDetails.Technology,
-				Components:                vulnDetails.Components,
-				IssueId:                   vulnDetails.IssueId,
-			})
+		handler, supported = securitypkgupdaters.GetCompatiblePackageUpdater(fixDetails)
 		if !supported {
 			log.Debug(fmt.Sprintf("Technology '%s' is not supported for automatic fix — skipping", vulnDetails.Technology))
 			sr.updaters[vulnDetails.Technology] = nil // cache nil to skip on next call
@@ -593,16 +596,7 @@ func (sr *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vuln
 		return
 	}
 
-	fixDetails := &securitypkgupdaters.FixDetails{
-		ImpactedDependencyName:    vulnDetails.ImpactedDependencyName,
-		ImpactedDependencyVersion: vulnDetails.ImpactedDependencyVersion,
-		SuggestedFixedVersion:     vulnDetails.SuggestedFixedVersion,
-		IsDirectDependency:        vulnDetails.IsDirectDependency,
-		Technology:                vulnDetails.Technology,
-		Components:                vulnDetails.Components,
-		IssueId:                   vulnDetails.IssueId,
-	}
-	return sr.updaters[vulnDetails.Technology].UpdateDependency(fixDetails)
+	return handler.UpdateDependency(fixDetails)
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.
