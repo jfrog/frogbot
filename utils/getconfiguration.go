@@ -538,12 +538,20 @@ func validateConfigProfile(configProfile *services.ConfigProfile) error {
 		return errors.New("received a nil config profile")
 	}
 
-	if len(configProfile.Modules) != 1 {
-		return fmt.Errorf("%s config profile returned with %d modules. A profile must have exactly 1 module", configProfile.ProfileName, len(configProfile.Modules))
+	if len(configProfile.Modules) == 0 {
+		log.Warn(fmt.Sprintf("%s config profile returned with 0 modules. Using default module", configProfile.ProfileName))
+		configProfile.Modules = createDefaultConfig()
+	}
+	if len(configProfile.Modules) > 1 {
+		log.Warn(fmt.Sprintf("%s config profile returned with %d modules. Only the first module will be used", configProfile.ProfileName, len(configProfile.Modules)))
 	}
 
 	if configProfile.Modules[0].PathFromRoot != "." {
 		return fmt.Errorf("the module in the config profile should be associated with the root of the repository. Expected pathFromRoot to be '.' but received '%s'", configProfile.Modules[0].PathFromRoot)
 	}
 	return nil
+}
+
+func createDefaultConfig() []services.Module {
+	return []services.Module{{PathFromRoot: ".", ScanConfig: services.ScanConfig{ScaScannerConfig: services.ScaScannerConfig{EnableScaScan: true}}}}
 }
