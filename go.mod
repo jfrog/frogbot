@@ -130,7 +130,7 @@ require (
 )
 
 //orto:missconfiguration-service
-replace github.com/jfrog/jfrog-cli-security => github.com/orto17/jfrog-cli-security v0.0.0-20260603084957-decd729f1c04
+replace github.com/jfrog/jfrog-cli-security => github.com/orto17/jfrog-cli-security v0.0.0-20260616102058-ea6b4c628c96
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
