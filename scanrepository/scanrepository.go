@@ -248,7 +248,7 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 		}
 	}
 	if err != nil {
-		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
+		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, "failed to fix vulnerable dependencies", err)
 	}
 	return nil
 }
