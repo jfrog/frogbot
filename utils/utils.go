@@ -466,7 +466,7 @@ func isUrlAccessible(url string) bool {
 // If not - instead of returning an error we log the error and continue as if we didn't have an error
 func CreateErrorIfFailUponScannerErrorEnabled(fail bool, messageForLog string, err error) error {
 	if !fail {
-		log.Warn(messageForLog)
+		log.Warn(fmt.Sprintf("%s: %s", messageForLog, err))
 		return nil
 	}
 	return err
