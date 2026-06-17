@@ -1,0 +1,68 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+mainClassName = 'com.example.Main'
+
+group 'com.example'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.10.1'
+    implementation group: 'commons-collections', name: 'commons-collections', version: '3.2.1'
+
+    // This repeated dependency is required in order to check 'create-fix' captures all formats of direct dependencies
+    implementation 'junit:junit:4.13.1'
+    implementation "junit:junit:4.13.1"
+    implementation 'junit:junit:4.13.1:javadoc'
+    implementation('junit:junit:4.13.1')
+
+    implementation group: 'junit', name: 'junit', version: '4.13.1'
+    implementation group: "junit", name: "junit", version: "4.13.1"
+    implementation group: 'junit', name: 'junit', version: '4.13.1', classifier: 'javadoc'
+    implementation(group: 'junit', name: 'junit', version: '4.13.1', classifier: 'javadoc')
+
+    implementation 'junit:junit:4.13.1',
+            'commons-io:commons-io:2.7'
+
+    implementation(
+            group: 'junit', name: 'junit', version: '4.13.1'
+    )
+
+    implementation("junit:junit:4.13.1") {
+        exclude module: "SomeModule"
+    }
+
+    implementation(
+            [group: 'junit', name: 'junit', version: '4.13.1'],
+            ['junit:junit:4.13.1']
+    )
+
+    implementation "my.group:my.dot.name:1.9.9"
+    implementation group: 'my.group', name: 'my.dot.name', version: '1.9.9'
+
+    // This dependency is required in order to check we fix only vulnerable rows
+    implementation "junit:junit:5.7"
+    implementation "junit2:junit2:4.7"
+
+    // This repeated dependency is required to check that 'create-fix' doesn't fix lines with unsupported-version fix
+    // When the package was found as vulnerable by xRay and fix is applicable somewhere else in the build file
+    implementation(group: 'commons-io', name: 'commons-io', version: '1.+')
+    implementation(group: 'commons-io', name: 'commons-io', version: '[1.1, 3.5)')
+    implementation('commons-io:commons-io:latest.release')
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src']
+        }
+    }
+}
