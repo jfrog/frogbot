@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/utils/remediation/packageupdaters"
+	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/remediation/sca/packageupdaters"
 
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
