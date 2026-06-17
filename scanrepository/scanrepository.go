@@ -291,7 +291,7 @@ func (cfp *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository
 		err = cfp.fixIssuesSeparatePRs(repository, vulnerabilitiesByWdMap)
 	}
 	if err != nil {
-		return utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
+		return utils.CreateErrorIfPartialResultsDisabled(cfp.scanDetails.AllowPartialResults(), "failed to fix vulnerable dependencies", err)
 	}
 	return
 }

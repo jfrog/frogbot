@@ -585,7 +585,7 @@ func isUrlAccessible(url string) bool {
 // This function checks if partial results are allowed by the user. If so instead of returning an error we log the error and continue as if we didn't have an error
 func CreateErrorIfPartialResultsDisabled(allowPartial bool, messageForLog string, err error) error {
 	if allowPartial {
-		log.Warn(messageForLog)
+		log.Warn(fmt.Sprintf("%s: %v", messageForLog, err))
 		return nil
 	}
 	return err
