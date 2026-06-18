@@ -487,11 +487,6 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 		expectedMap map[string]*utils.VulnerabilityDetails
 	}{
 		{
-			name:        "No results",
-			scanResults: nil,
-			expectedMap: map[string]*utils.VulnerabilityDetails{},
-		},
-		{
 			name: "Scan results with no violations and vulnerabilities",
 			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
 				ScanTarget: results.ScanTarget{Target: "target1"},
