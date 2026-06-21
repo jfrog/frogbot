@@ -198,7 +198,7 @@ func TestScanPullRequest(t *testing.T) {
 		failOnSecurityIssues bool
 	}{
 		{
-			testName:             "ScanPullRequest.",
+			testName:             "ScanPullRequest",
 			configPath:           testProjConfigPath,
 			projectName:          "test-proj",
 			failOnSecurityIssues: true,
