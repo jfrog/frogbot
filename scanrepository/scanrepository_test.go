@@ -567,7 +567,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 					Sca: []violationutils.CveViolation{
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol1@1.0.0",
 									PackageURL: "pkg:npm/viol1@1.0.0",
 								},
@@ -580,7 +580,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 						},
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol2@2.0.0",
 									PackageURL: "pkg:npm/viol2@2.0.0",
 								},
@@ -682,7 +682,7 @@ func TestGetTotalFindingsFromScanResults(t *testing.T) {
 					Sca: []violationutils.CveViolation{
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol1@1.0.0",
 									PackageURL: "pkg:npm/viol1@1.0.0",
 								},
@@ -691,7 +691,7 @@ func TestGetTotalFindingsFromScanResults(t *testing.T) {
 						},
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol2@2.0.0",
 									PackageURL: "pkg:npm/viol2@2.0.0",
 								},
@@ -718,7 +718,7 @@ func TestGetTotalFindingsFromScanResults(t *testing.T) {
 					Sca: []violationutils.CveViolation{
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol1@1.0.0",
 									PackageURL: "pkg:npm/viol1@1.0.0",
 								},
@@ -727,7 +727,7 @@ func TestGetTotalFindingsFromScanResults(t *testing.T) {
 						},
 						{
 							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: cyclonedx.Component{
+								ImpactedComponent: &cyclonedx.Component{
 									BOMRef:     "pkg:npm/viol2@2.0.0",
 									PackageURL: "pkg:npm/viol2@2.0.0",
 								},
