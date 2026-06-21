@@ -149,6 +149,13 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 			return 0, err
 		}
 	}
+	if scanResults == nil {
+		err = fmt.Errorf("scan returned empty results for branch '%s'", sr.scanDetails.BaseBranch())
+		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Downstream processing will be skipped", sr.scanDetails.BaseBranch()), err); err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
 	defer func() {
 		// Always check policy even if an error occurred during the scan
 		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
@@ -497,10 +504,6 @@ func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir
 
 // Create a vulnerabilities map - a map with 'impacted package' as a key and all the necessary information of this vulnerability as value.
 func (sr *ScanRepositoryCmd) createVulnerabilitiesMap(failUponError bool, scanResults *results.SecurityCommandResults) (map[string]*utils.VulnerabilityDetails, error) {
-	if scanResults == nil {
-		log.Info("No scan results found")
-		return nil, nil
-	}
 	vulnerabilitiesMap := map[string]*utils.VulnerabilityDetails{}
 	simpleJsonResult, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSimpleJson(scanResults)
 	if err != nil {
