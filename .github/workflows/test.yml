@@ -29,11 +29,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -84,11 +83,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -194,11 +192,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -239,11 +236,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -284,11 +280,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -323,11 +318,10 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Start FastCI Optimization
-        uses: jfrog-fastci/fastci@main
+      - name: Start Boost Optimization
+        uses: jfrog/boost@v0
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          fastci_otel_token: ${{ secrets.FASTCI_TOKEN }}
+          accept_terms: yes
 
       - name: Setup Go
         uses: actions/setup-go@v5
