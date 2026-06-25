@@ -257,7 +257,7 @@ func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults)
 	return stringReport, hasRuns, err
 }
 
-func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
+func CloneRepoToTempDir(client vcsclient.VcsClient, username, token, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -265,12 +265,17 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
-		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoOwner, repoName)
+	if err != nil {
+		err = fmt.Errorf("failed to get repository info for <%s/%s>: %s", repoOwner, repoName, err.Error())
 		return
 	}
-	log.Debug("Repository download completed")
+	log.Debug(fmt.Sprintf("Cloning <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
+	if err = NewGitManager().SetAuth(username, token).SetUrl(repoInfo.CloneInfo.HTTP).Clone(wd, branch); err != nil {
+		err = fmt.Errorf("failed to clone branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
+		return
+	}
+	log.Debug("Repository clone completed")
 	return
 }
 

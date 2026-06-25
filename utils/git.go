@@ -82,6 +82,11 @@ func (gm *GitManager) SetAuth(username, token string) *GitManager {
 	return gm
 }
 
+func (gm *GitManager) SetUrl(remoteHttpsGitUrl string) *GitManager {
+	gm.remoteGitUrl = remoteHttpsGitUrl
+	return gm
+}
+
 func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, error) {
 	// Check if the .git directory exists
 	dotGitExists, err := fileutils.IsDirExists(git.GitDirName, false)

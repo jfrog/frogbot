@@ -116,7 +116,9 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 	cleanup = func() error { return errors.Join(cleanupSource(), cleanupTarget()) }
 
 	log.Info("Downloading source branch code...")
-	if sourceBranchWd, cleanupSource, err = utils.DownloadRepoToTempDir(scanDetails.Client(),
+	if sourceBranchWd, cleanupSource, err = utils.CloneRepoToTempDir(scanDetails.Client(),
+		scanDetails.Username,
+		scanDetails.Token,
 		scanDetails.PullRequestDetails.Source.Owner,
 		scanDetails.PullRequestDetails.Source.Repository,
 		scanDetails.PullRequestDetails.Source.Name,
@@ -125,7 +127,7 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 		return
 	}
 	target := repoConfig.Params.Git.PullRequestDetails.Target
-	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
+	if targetBranchWd, cleanupTarget, err = utils.CloneRepoToTempDir(scanDetails.Client(), scanDetails.Username, scanDetails.Token, target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
