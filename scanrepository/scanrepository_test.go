@@ -40,6 +40,11 @@ func floatPtr(f float64) *float64 {
 	return &f
 }
 
+func componentPtr(id string) *cyclonedx.Component {
+	c := results.CreateScaComponentFromXrayCompId(id)
+	return &c
+}
+
 var testPackagesData = []struct {
 	packageType string
 	commandName string
@@ -571,7 +576,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 									Severity:      severityutils.Critical,
 									Watch:         "w1",
 								},
-								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol1"),
+								ImpactedComponent: componentPtr("viol1"),
 								DirectComponents:  []formats.ComponentRow{{Name: "viol1", Version: "1.0.0"}},
 								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}}},
 							},
@@ -598,7 +603,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 									Severity:      severityutils.Critical,
 									Watch:         "w1",
 								},
-								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol1"),
+								ImpactedComponent: componentPtr("viol1"),
 								DirectComponents:  []formats.ComponentRow{{Name: "viol1", Version: "1.0.0"}},
 								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}}},
 							},
@@ -625,7 +630,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 									Severity:      severityutils.High,
 									Watch:         "w1",
 								},
-								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol2"),
+								ImpactedComponent: componentPtr("viol2"),
 								DirectComponents:  []formats.ComponentRow{{Name: "viol2", Version: "2.0.0"}},
 								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}, {Name: "viol2", Version: "2.0.0"}}},
 							},
@@ -652,7 +657,7 @@ func TestCreateVulnerabilitiesMap(t *testing.T) {
 									Severity:      severityutils.High,
 									Watch:         "w1",
 								},
-								ImpactedComponent: results.CreateScaComponentFromXrayCompId("viol2"),
+								ImpactedComponent: componentPtr("viol2"),
 								DirectComponents:  []formats.ComponentRow{{Name: "viol2", Version: "2.0.0"}},
 								ImpactPaths:       [][]formats.ComponentRow{{{Name: "root"}, {Name: "viol1", Version: "1.0.0"}, {Name: "viol2", Version: "2.0.0"}}},
 							},

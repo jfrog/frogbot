@@ -31,10 +31,10 @@
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.5]<br>[5.1.8]<br>[6.2.2]<br>[7.4.8]<br>[8.0.6]<br>[9.0.7]<br>[10.2.3] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.4]<br>[5.1.7]<br>[6.2.1]<br>[7.4.7]<br>[8.0.5]<br>[9.0.6]<br>[10.2.1] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
-| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2026-48526 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
 | ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-48522 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
 | ![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | CVE-2026-48524 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-48526 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-32597 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.12.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2025-45768 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | - |
 
@@ -197,19 +197,6 @@ function redosDetector(input_string, limit) {
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
-<details><summary><b>[ CVE-2026-48526 ] pyjwt 1.7.1</b></summary>
-
-### Vulnerability Details
-|                 |                   |
-| --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Not Covered |
-| **Direct Dependencies:** | pyjwt:1.7.1 |
-| **Impacted Dependency:** | pyjwt:1.7.1 |
-| **Fixed Versions:** | [2.13.0] |
-| **CVSS V3:** | 7.4 |
-
-PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, when the verifier is decoding JSON Web Tokens, while supporting both asymmetric and HMAC algorithms, the library does not validate use of JSON Web Keys in HMAC algorithm, allowing attacker to use the issuer public key as the secret key for HMAC algorithm. This vulnerability is fixed in 2.13.0.<br></details>
-
 <details><summary><b>[ CVE-2022-29217 ] pyjwt 1.7.1</b></summary>
 
 ### Vulnerability Details
@@ -280,6 +267,19 @@ PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, PyJWKClient
 | **CVSS V3:** | 3.7 |
 
 PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, PyJWKClient.get_signing_key() forces a fresh HTTP request to the JWKS endpoint for every JWT with an unknown kid value, with no rate limiting. Since kid comes from the unverified token header, an attacker can trigger unlimited outbound requests. The vulnerability surfaces only when a JWKS fetch fails; an attacker can attempt to provoke that with sustained unknown-kid traffic, but the outcome depends on upstream JWKS-endpoint behavior (rate limiting, transient errors) which is beyond the attacker's control. This vulnerability is fixed in 2.13.0.<br></details>
+
+<details><summary><b>[ CVE-2026-48526 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.13.0] |
+| **CVSS V3:** | 7.4 |
+
+PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, when the verifier is decoding JSON Web Tokens, while supporting both asymmetric and HMAC algorithms, the library does not validate use of JSON Web Keys in HMAC algorithm, allowing attacker to use the issuer public key as the secret key for HMAC algorithm. This vulnerability is fixed in 2.13.0.<br></details>
 
 <details><summary><b>[ CVE-2026-32597 ] pyjwt 1.7.1</b></summary>
 
