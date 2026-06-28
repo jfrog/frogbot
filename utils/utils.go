@@ -275,7 +275,7 @@ func CloneRepoToTempDir(client vcsclient.VcsClient, username, token, repoOwner, 
 		err = fmt.Errorf("failed to clone branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
 		return
 	}
-	log.Debug("Repository clone completed.")
+	log.Debug("Repository clone completed")
 	return
 }
 
