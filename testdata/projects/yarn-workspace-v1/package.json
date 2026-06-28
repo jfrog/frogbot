@@ -1,0 +1,9 @@
+{
+  "name": "workspace-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@1.22.19"
+}

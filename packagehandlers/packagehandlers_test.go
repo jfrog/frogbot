@@ -1,6 +1,7 @@
 package packagehandlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -913,6 +915,229 @@ func compareFixedFileToComparisonFile(t *testing.T, descriptorFileAbsPath string
 	assert.NoError(t, err)
 
 	assert.ElementsMatch(t, expectedFileContent, fixedFileContent)
+}
+
+func TestFindYarnWorkspaceRoot(t *testing.T) {
+	tests := []struct {
+		name            string
+		rootPkgJson     string
+		pkgAPkgJson     string
+		expectWorkspace bool
+		expectErr       bool
+		expectedPkgName string
+	}{
+		{
+			name:            "package inside workspace with array workspaces",
+			rootPkgJson:     `{"name":"root","version":"1.0.0","workspaces":["packages/*"]}`,
+			pkgAPkgJson:     `{"name":"pkg-a","version":"1.0.0","dependencies":{"minimist":"1.2.5"}}`,
+			expectWorkspace: true,
+			expectedPkgName: "pkg-a",
+		},
+		{
+			name:            "package inside workspace with object workspaces (nohoist)",
+			rootPkgJson:     `{"name":"root","workspaces":{"packages":["packages/*"],"nohoist":["**/react"]}}`,
+			pkgAPkgJson:     `{"name":"pkg-a","version":"1.0.0"}`,
+			expectWorkspace: true,
+			expectedPkgName: "pkg-a",
+		},
+		{
+			name:            "package missing name field",
+			rootPkgJson:     `{"name":"root","workspaces":["packages/*"]}`,
+			pkgAPkgJson:     `{"version":"1.0.0"}`,
+			expectWorkspace: false,
+			expectErr:       true,
+		},
+		{
+			name:            "standalone project without workspaces",
+			rootPkgJson:     "",
+			pkgAPkgJson:     `{"name":"standalone","version":"1.0.0"}`,
+			expectWorkspace: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rootDir, err := os.MkdirTemp("", "yarn-ws-test-")
+			assert.NoError(t, err)
+			defer func() { assert.NoError(t, fileutils.RemoveTempDir(rootDir)) }()
+
+			pkgADir := filepath.Join(rootDir, "packages", "pkg-a")
+			assert.NoError(t, os.MkdirAll(pkgADir, 0755))
+
+			if tc.rootPkgJson != "" {
+				assert.NoError(t, os.WriteFile(filepath.Join(rootDir, "package.json"), []byte(tc.rootPkgJson), 0644))
+			}
+			assert.NoError(t, os.WriteFile(filepath.Join(pkgADir, "package.json"), []byte(tc.pkgAPkgJson), 0644))
+
+			ws, err := findYarnWorkspaceRoot(pkgADir)
+			if tc.expectErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			if !tc.expectWorkspace {
+				assert.Nil(t, ws)
+				return
+			}
+			assert.NotNil(t, ws)
+			assert.Equal(t, rootDir, ws.rootDir)
+			assert.Equal(t, tc.expectedPkgName, ws.packageName)
+		})
+	}
+}
+
+func TestGetYarnVersionFromYarnrc(t *testing.T) {
+	tests := []struct {
+		name            string
+		fileContent     string
+		fileExists      bool
+		expectedVersion string
+	}{
+		{
+			name:            "v1 yarnPath",
+			fileContent:     "nodeLinker: node-modules\nyarnPath: .yarn/releases/yarn-1.22.19.cjs\n",
+			fileExists:      true,
+			expectedVersion: "1.22.19",
+		},
+		{
+			name:            "v3 yarnPath",
+			fileContent:     "nodeLinker: node-modules\nyarnPath: .yarn/releases/yarn-3.4.1.cjs\n",
+			fileExists:      true,
+			expectedVersion: "3.4.1",
+		},
+		{
+			name:            "no yarnPath entry",
+			fileContent:     "nodeLinker: node-modules\n",
+			fileExists:      true,
+			expectedVersion: "",
+		},
+		{
+			name:            "file does not exist",
+			fileExists:      false,
+			expectedVersion: "",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			dir, err := os.MkdirTemp("", "yarn-version-test-")
+			assert.NoError(t, err)
+			defer func() { assert.NoError(t, fileutils.RemoveTempDir(dir)) }()
+
+			if tc.fileExists {
+				assert.NoError(t, os.WriteFile(filepath.Join(dir, ".yarnrc.yml"), []byte(tc.fileContent), 0644))
+			}
+
+			got, err := getYarnVersionFromYarnrc(dir)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedVersion, got)
+		})
+	}
+}
+
+func TestYarnWorkspaceUpdateDependency(t *testing.T) {
+	testcases := []struct {
+		name           string
+		yarnSourceDir  string // existing test project supplying the yarn binary
+		yarnVersion    string
+		yarnBinaryName string
+	}{
+		{
+			name:           "v1 workspace",
+			yarnSourceDir:  "yarn1",
+			yarnVersion:    "1.22.19",
+			yarnBinaryName: "yarn-1.22.19.cjs",
+		},
+		{
+			name:           "v2 workspace",
+			yarnSourceDir:  "yarn2",
+			yarnVersion:    "3.4.1",
+			yarnBinaryName: "yarn-3.4.1.cjs",
+		},
+	}
+
+	for _, tc := range testcases {
+		t.Run(tc.name, func(t *testing.T) {
+			testdataDir, err := filepath.Abs(filepath.Join("..", "testdata", "projects"))
+			assert.NoError(t, err)
+
+			// Build the workspace in a temp dir:
+			//   <tmpRoot>/package.json           — workspace root
+			//   <tmpRoot>/.yarnrc.yml            — yarnPath → packages/pkg-a binary
+			//   <tmpRoot>/yarn.lock              — copied from source project
+			//   <tmpRoot>/packages/pkg-a/        — copy of existing yarn project
+			tmpRoot, err := os.MkdirTemp("", "yarn-ws-integ-")
+			assert.NoError(t, err)
+			defer func() { assert.NoError(t, fileutils.RemoveTempDir(tmpRoot)) }()
+
+			pkgADir := filepath.Join(tmpRoot, "packages", "pkg-a")
+			assert.NoError(t, os.MkdirAll(pkgADir, 0755))
+
+			// Copy the existing yarn project into packages/pkg-a.
+			assert.NoError(t, biutils.CopyDir(filepath.Join(testdataDir, tc.yarnSourceDir), pkgADir, true, nil))
+
+			// Give the workspace package a stable name.
+			pkgAJson := filepath.Join(pkgADir, "package.json")
+			rawPkg, err := os.ReadFile(pkgAJson)
+			assert.NoError(t, err)
+			var pkg map[string]interface{}
+			assert.NoError(t, json.Unmarshal(rawPkg, &pkg))
+			pkg["name"] = "pkg-a"
+			out, err := json.MarshalIndent(pkg, "", "  ")
+			assert.NoError(t, err)
+			assert.NoError(t, os.WriteFile(pkgAJson, out, 0644))
+
+			// Create the workspace root package.json.
+			// "private": true is required by Yarn v1 to enable workspace mode.
+			rootPkg := map[string]interface{}{
+				"name":           "workspace-root",
+				"version":        "1.0.0",
+				"private":        true,
+				"workspaces":     []string{"packages/*"},
+				"packageManager": "yarn@" + tc.yarnVersion,
+			}
+			rootPkgOut, err := json.MarshalIndent(rootPkg, "", "  ")
+			assert.NoError(t, err)
+			assert.NoError(t, os.WriteFile(filepath.Join(tmpRoot, "package.json"), rootPkgOut, 0644))
+
+			// Create the root .yarnrc.yml pointing to the binary we copied into pkg-a.
+			binaryRelPath := filepath.Join("packages", "pkg-a", ".yarn", "releases", tc.yarnBinaryName)
+			yarnrcContent := fmt.Sprintf("nodeLinker: node-modules\nyarnPath: %s\n", filepath.ToSlash(binaryRelPath))
+			assert.NoError(t, os.WriteFile(filepath.Join(tmpRoot, ".yarnrc.yml"), []byte(yarnrcContent), 0644))
+
+			// Copy the yarn.lock from the source project to the workspace root.
+			lockData, err := os.ReadFile(filepath.Join(testdataDir, tc.yarnSourceDir, "yarn.lock"))
+			assert.NoError(t, err)
+			assert.NoError(t, os.WriteFile(filepath.Join(tmpRoot, "yarn.lock"), lockData, 0644))
+
+			// Simulate what scanrepository does: Chdir into the workspace package directory.
+			currDir, err := os.Getwd()
+			assert.NoError(t, err)
+			assert.NoError(t, os.Chdir(pkgADir))
+			defer func() { assert.NoError(t, os.Chdir(currDir)) }()
+
+			handler := &YarnPackageHandler{}
+			handler.SetCommonParams(&config.ServerDetails{}, "")
+
+			vulnDetails := &utils.VulnerabilityDetails{
+				SuggestedFixedVersion: "1.2.6",
+				IsDirectDependency:    true,
+				VulnerabilityOrViolationRow: formats.VulnerabilityOrViolationRow{
+					Technology: techutils.Yarn,
+					ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+						ImpactedDependencyName: "minimist",
+					},
+				},
+			}
+
+			assert.NoError(t, handler.UpdateDependency(vulnDetails))
+
+			// Verify the workspace package's descriptor was updated.
+			fixed, err := os.ReadFile(pkgAJson)
+			assert.NoError(t, err)
+			assert.Contains(t, string(fixed), "1.2.6")
+		})
+	}
 }
 
 func TestGradleIsVersionSupportedForFix(t *testing.T) {
