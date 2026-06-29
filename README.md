@@ -4,15 +4,17 @@
 
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
-[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/main/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
 
-| Branch |                                                                                                                                                                                    Status                                                                                                                                                                                    |
-|:------:|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| master | [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/jfrog/frogbot/actions/workflows/test.yml?branch=master)  [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg?branch=master)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml?branch=master) |
-|  dev   |                [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg?branch=dev)](https://github.com/jfrog/frogbot/actions/workflows/test.yml?branch=dev)  [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg?branch=dev)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml?branch=dev)                |
+| Branch | Status |
+|:------:|:------:|
+| main | [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/jfrog/frogbot/actions/workflows/test.yml?branch=main)  [![GitHub Action Test](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml/badge.svg?branch=main)](https://github.com/jfrog/frogbot/actions/workflows/action-test.yml?branch=main) |
+| v2_main *(maintenance only)* | [![Build status](https://github.com/jfrog/frogbot/actions/workflows/test-v2.yml/badge.svg?branch=v2_main)](https://github.com/jfrog/frogbot/actions/workflows/test-v2.yml?branch=v2_main) |
 
 </div>
+
+> **⚠️ Frogbot V2 — Maintenance Only:** V2 (`v2_main` branch) is in sunset mode. It is **not accepting new features or general contributions** — only critical bug and security fixes until its official end-of-life. All active development happens on `main` (V3). See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 <div id="what-is-frogbot"></div>
 
@@ -32,7 +34,7 @@ JFrog Frogbot is a Git bot that scans your Git repositories for security vulnera
 - **Infrastructure as Code scans (IaC)**: Scan Infrastructure as Code (Terraform) files for early detection of cloud and infrastructure misconfigurations.
 
 ## 🏁 Getting started
-Read the [Frogbot Documentation](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot) to get started.  
+Read the [Frogbot Documentation](https://docs.jfrog.com/security/docs/frogbot-v3) to get started.  
 
 ## 📛 Adding the Frogbot badge
 
@@ -42,7 +44,7 @@ You can show people that your repository is scanned by Frogbot by adding a badge
 
 You can add this badge by copying the following markdown snippet and pasting it into your repository's README.md file.
 ```
-[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/master/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
+[![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/main/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
 ```
 
 ## 🔥 Reporting issues

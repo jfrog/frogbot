@@ -56,6 +56,9 @@ buildAndUpload () {
   if [[ -n "${FROGBOT_GPG_KEY_ID:-}" ]] && command -v gpg >/dev/null 2>&1; then
     gpg --batch --yes --local-user "$FROGBOT_GPG_KEY_ID" --detach-sign --armor -o "${LAST_OUT_PATH}.asc" "$LAST_OUT_PATH"
   fi
+
+  destPath="${pkgPath}/${version}/${pkg}/${exeName}"
+  jf rt u "${LAST_OUT_PATH}" "${destPath}"
 }
 
 verifyVersionMatching () {
@@ -78,6 +81,7 @@ verifyVersionMatching () {
 }
 
 version="${1:?version argument required, e.g. 2.0.0-test}"
+pkgPath="jfs-frogbot-releases-local/v3"
 OUTPUT_ROOT="${REPO_ROOT}/v3/${version}"
 mkdir -p "$OUTPUT_ROOT"
 echo "Local artifacts: ${OUTPUT_ROOT}/"
@@ -99,8 +103,8 @@ buildAndUpload 'frogbot-windows-amd64' 'windows' 'amd64' '.exe'
 
 if [[ -n "${FROGBOT_GPG_PUBLIC_KEY_FILE:-}" ]] && [[ -f "${FROGBOT_GPG_PUBLIC_KEY_FILE}" ]]; then
   cp "${FROGBOT_GPG_PUBLIC_KEY_FILE}" "${OUTPUT_ROOT}/frogbot-signing-key.asc"
+  jf rt u "${OUTPUT_ROOT}/frogbot-signing-key.asc" "${pkgPath}/${version}/frogbot-signing-key.asc"
 fi
-cp "./buildscripts/getFrogbot.sh" "${OUTPUT_ROOT}/getFrogbot.sh"
-chmod +x "${OUTPUT_ROOT}/getFrogbot.sh"
+jf rt u "./buildscripts/getFrogbot.sh" "${pkgPath}/${version}/" --flat
 
 echo "Done. Artifacts ready at: ${OUTPUT_ROOT}/"
