@@ -77,7 +77,15 @@ func (py *PythonPackageHandler) handlePip(vulnDetails *utils.VulnerabilityDetail
 	if fixedFile == "" {
 		return fmt.Errorf("impacted package %s not found, fix failed", vulnDetails.ImpactedDependencyName)
 	}
-	if err = os.WriteFile(py.pipRequirementsFile, []byte(fixedFile), 0600); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	resolvedWritePath, err := utils.ValidateFileWithinDir(filepath.Join(wd, py.pipRequirementsFile), wd)
+	if err != nil {
+		return fmt.Errorf("wrong requirements file input '%s': %s", py.pipRequirementsFile, err.Error())
+	}
+	if err = os.WriteFile(resolvedWritePath, []byte(fixedFile), 0600); err != nil {
 		err = fmt.Errorf("an error occured while writing the fixed version of %s to the requirements file:\n%s", vulnDetails.SuggestedFixedVersion, err.Error())
 	}
 	return
@@ -112,10 +120,11 @@ func (py *PythonPackageHandler) tryReadRequirementFile(file string) (string, err
 		return "", err
 	}
 	fullPath := filepath.Join(wd, file)
-	if !strings.HasPrefix(filepath.Clean(fullPath), wd) {
-		return "", errors.New("wrong requirements file input: " + fullPath)
+	resolvedPath, err := utils.ValidateFileWithinDir(fullPath, wd)
+	if err != nil {
+		return "", fmt.Errorf("wrong requirements file input '%s': %s", file, err.Error())
 	}
-	data, err := os.ReadFile(filepath.Clean(file))
+	data, err := os.ReadFile(resolvedPath)
 	if err != nil {
 		return "", errors.New("an error occurred while attempting to read the requirements file:\n" + err.Error())
 	}
