@@ -1061,3 +1061,51 @@ func createTestConfigProfile(aggregateFixes, failUponAnyScannerError bool) servi
 		}},
 	}
 }
+
+func TestPrintScanResultsTable(t *testing.T) {
+	tests := []struct {
+		name        string
+		scanResults *results.SecurityCommandResults
+	}{
+		{
+			name:        "nil scan results should not panic",
+			scanResults: nil,
+		},
+		{
+			name: "empty scan results should not panic",
+			scanResults: &results.SecurityCommandResults{
+				Targets: []*results.TargetResults{},
+			},
+		},
+		{
+			name: "scan results with vulnerabilities should print without error",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+				},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "test-target"},
+					ScaResults: &results.ScaScanResults{
+						DeprecatedXrayResults: []services.ScanResponse{{
+							Vulnerabilities: []services.Vulnerability{
+								{
+									Cves:       []services.Cve{{Id: "CVE-2022-0001"}},
+									Severity:   "High",
+									Components: map[string]services.Component{"test-dep:1.0.0": {FixedVersions: []string{"1.0.1"}}},
+								},
+							},
+						}},
+					},
+				}},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assert.NotPanics(t, func() {
+				utils.PrintScanResultsTable(test.scanResults)
+			})
+		})
+	}
+}
