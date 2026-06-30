@@ -17,6 +17,7 @@ import (
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
+	"github.com/jfrog/jfrog-cli-core/v2/common/format"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/usage"
 	"github.com/jfrog/jfrog-cli-security/utils"
@@ -589,4 +590,16 @@ func CreateErrorIfPartialResultsDisabled(allowPartial bool, messageForLog string
 		return nil
 	}
 	return err
+}
+
+func PrintScanResultsTable(scanResults *results.SecurityCommandResults) {
+	if scanResults == nil {
+		return
+	}
+	if err := output.NewResultsWriter(scanResults).
+		SetOutputFormat(format.Table).
+		SetPrintExtendedTable(true).
+		PrintScanResults(); err != nil {
+		log.Warn(fmt.Sprintf("Failed to print scan results table: %s", err.Error()))
+	}
 }
