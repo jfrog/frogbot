@@ -1,18 +1,18 @@
-name: "Go Tests - V3"
+name: "Go Tests - v2"
 
 on:
   push:
-    branches: [main]
+    branches: [v2_main]
   # Triggers the workflow on labeled PRs only.
   pull_request_target:
     types: [labeled]
-    branches: [main]
+    branches: [v2_main]
 
 
 # Ensures that only the latest commit is running for each PR at a time.
 # Ignores this rule for push events.
 concurrency:
-  group: ${{ github.event.pull_request.number || github.sha }}
+  group: v2-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 env:
   EXTERNAL_OTEL_ENDPOINT: ingress.coralogix.us:443
@@ -77,8 +77,8 @@ jobs:
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
 
-          - name: 'Package Updaters'
-            package: 'packageupdaters'
+          - name: 'Package Handlers'
+            package: 'packagehandlers'
 
         os: [ ubuntu, windows, macos ]
     steps:
@@ -179,7 +179,7 @@ jobs:
 
       - name: Run Tests
         if: ${{ matrix.suite.name != 'GitHub Integration' || matrix.os == 'ubuntu' }}
-        run: go test github.com/jfrog/frogbot/v3/${{ matrix.suite.package }} -v -race -timeout 50m -cover
+        run: go test github.com/jfrog/frogbot/v2/${{ matrix.suite.package }} -v -race -timeout 50m -cover
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
@@ -204,6 +204,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: false
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -221,7 +222,7 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_V3_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITHUB_TOKEN }}
+          FROGBOT_V2_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITHUB_TOKEN }}
 
   azure-integration:
     name: Azure Integration Tests
@@ -247,6 +248,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: false
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -264,7 +266,7 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_V3_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_AZURE_TOKEN }}
+          FROGBOT_V2_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_AZURE_TOKEN }}
 
   gitlab-integration:
     name: GitLab Integration Tests
@@ -290,6 +292,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: false
+
       - name: Go Cache Build & Tests
         uses: actions/cache@v4
         with:
@@ -307,7 +310,7 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_V3_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITLAB_TOKEN }}
+          FROGBOT_V2_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITLAB_TOKEN }}
 
   bitbucket-server-integration:
     name: Bitbucket Server Integration Tests
@@ -353,6 +356,6 @@ jobs:
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
-          FROGBOT_V3_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_BB_SERVER_TOKEN }}
+          FROGBOT_V2_TESTS_BB_SERVER_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_BB_SERVER_TOKEN }}
           JFROG_CLI_LOG_LEVEL: "DEBUG"
         run: go test -tags integration -v bitbucket_server_test.go commands.go integrationutils.go
