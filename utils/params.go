@@ -920,10 +920,20 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 	return
 }
 
+func invalidModuleCountError(profileName string, moduleCount int) error {
+	switch {
+	case moduleCount == 0:
+		return fmt.Errorf("no modules were found in '%s' profile. Frogbot currently supports only one module per config profile", profileName)
+	case moduleCount > 1:
+		return fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", profileName)
+	default:
+		return nil
+	}
+}
+
 func verifyConfigProfileValidity(configProfile *services.ConfigProfile) (err error) {
 	// Currently, only a single Module that represents the entire project is supported
-	if len(configProfile.Modules) != 1 {
-		err = fmt.Errorf("more than one module was found '%s' profile. Frogbot currently supports only one module per config profile", configProfile.ProfileName)
+	if err = invalidModuleCountError(configProfile.ProfileName, len(configProfile.Modules)); err != nil {
 		return
 	}
 	if configProfile.Modules[0].PathFromRoot != "." {

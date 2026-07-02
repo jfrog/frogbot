@@ -828,6 +828,55 @@ func TestGetConfigProfileIfExistsAndValid(t *testing.T) {
 	}
 }
 
+func TestInvalidModuleCountError(t *testing.T) {
+	t.Run("no modules", func(t *testing.T) {
+		err := invalidModuleCountError("empty-profile", 0)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no modules were found")
+	})
+
+	t.Run("multiple modules", func(t *testing.T) {
+		err := invalidModuleCountError("multi-profile", 2)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "more than one module")
+	})
+
+	t.Run("single module", func(t *testing.T) {
+		assert.NoError(t, invalidModuleCountError("valid-profile", 1))
+	})
+}
+
+func TestVerifyConfigProfileValidityModuleCount(t *testing.T) {
+	t.Run("no modules", func(t *testing.T) {
+		err := verifyConfigProfileValidity(&services.ConfigProfile{
+			ProfileName: "empty-profile",
+			Modules:     []services.Module{},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no modules were found")
+	})
+
+	t.Run("multiple modules", func(t *testing.T) {
+		err := verifyConfigProfileValidity(&services.ConfigProfile{
+			ProfileName: "multi-profile",
+			Modules: []services.Module{
+				{ModuleName: "a", PathFromRoot: "."},
+				{ModuleName: "b", PathFromRoot: "."},
+			},
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "more than one module")
+	})
+
+	t.Run("single module", func(t *testing.T) {
+		err := verifyConfigProfileValidity(&services.ConfigProfile{
+			ProfileName: "valid-profile",
+			Modules:     []services.Module{{ModuleName: "mod", PathFromRoot: "."}},
+		})
+		assert.NoError(t, err)
+	})
+}
+
 func createMockVcsClient(t *testing.T, repoOwner, repoName string) *testdata.MockVcsClient {
 	mockVcsClient := testdata.NewMockVcsClient(gomock.NewController(t))
 	mockVcsClient.EXPECT().GetRepositoryInfo(context.Background(), repoOwner, repoName).Return(vcsclient.RepositoryInfo{
