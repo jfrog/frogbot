@@ -539,7 +539,7 @@ func validateConfigProfile(configProfile *services.ConfigProfile) error {
 	}
 
 	if len(configProfile.Modules) != 1 {
-		return fmt.Errorf("%s config profile returned with %d modules. A profile must have exactly 1 module", configProfile.ProfileName, len(configProfile.Modules))
+		return fmt.Errorf("expected exactly 1 module in '%s' profile, found %d. Frogbot currently supports only one module per config profile", configProfile.ProfileName, len(configProfile.Modules))
 	}
 
 	if configProfile.Modules[0].PathFromRoot != "." {
