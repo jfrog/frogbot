@@ -59,7 +59,7 @@ verifyArtifact_storage_request_jf() {
   repo_path="${repo_path#/}"
   local repo="${repo_path%%/*}"
   local path="${repo_path#*/}"
-  jf rt curl -s "/api/storage/${repo}/${path}"
+  jf rt curl "/api/storage/${repo}/${path}" -s
 }
 
 verifyArtifact_artifact_url_to_storage_url() {
