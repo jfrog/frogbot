@@ -29,6 +29,7 @@ import (
 
 	"github.com/jfrog/frogbot/v2/packagehandlers"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
 )
 
@@ -194,7 +195,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 			continue
 		}
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
-		shouldFailBuild = shouldFailBuild || (scanResults.Violations != nil && scanResults.Violations.ShouldFailBuild())
+		if resolvedViolations := issues.ResolveViolations(scanResults); resolvedViolations != nil && resolvedViolations.ShouldFailBuild() {
+			issues.LogFailingPolicyRulesForBuild(resolvedViolations)
+			shouldFailBuild = true
+		}
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
 			// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 			// Currently available on GitHub only
