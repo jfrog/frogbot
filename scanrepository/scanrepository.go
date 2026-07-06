@@ -160,6 +160,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 		// Always check policy even if an error occurred during the scan
 		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
 	}()
+	utils.PrintScanResultsTable(scanResults)
 	totalFindings = getTotalFindingsFromScanResults(scanResults)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 	sr.uploadGitLabScanResultsIfNeeded(repository, scanResults)
