@@ -158,22 +158,22 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	log.Info("-----------------------------------------------------------")
 
 	// Audit PR code
-	issues, resultContext, scanResults, err := auditPullRequestAndReport(repo, client)
+	issuesCollection, resultContext, scanResults, err := auditPullRequestAndReport(repo, client)
 	if err != nil {
 		return
 	}
 
 	// Output results
-	shouldSendExposedSecretsEmail := issues.SecretsIssuesExists() && repo.SmtpServer != ""
+	shouldSendExposedSecretsEmail := issuesCollection.SecretsIssuesExists() && repo.SmtpServer != ""
 	if shouldSendExposedSecretsEmail {
-		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, append(issues.SecretsVulnerabilities, issues.SecretsViolations...))
+		secretsEmailDetails := utils.NewSecretsEmailDetails(client, repo, append(issuesCollection.SecretsVulnerabilities, issuesCollection.SecretsViolations...))
 		if err = utils.AlertSecretsExposed(secretsEmailDetails); err != nil {
 			return
 		}
 	}
 
 	// Handle PR comments for scan output
-	if err = utils.HandlePullRequestCommentsAfterScan(issues, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
+	if err = utils.HandlePullRequestCommentsAfterScan(issuesCollection, resultContext, repo, client, int(pullRequestDetails.ID)); err != nil {
 		return
 	}
 
@@ -184,7 +184,8 @@ func scanPullRequest(repo *utils.Repository, client vcsclient.VcsClient) (err er
 	}
 
 	// Fail the Frogbot task if a security issue is found and Frogbot isn't configured to avoid the failure.
-	if toFailTaskStatus(repo, issues) {
+	if toFailTaskStatus(repo, issuesCollection) {
+		issues.LogFailingPolicyRulesForPr(issues.ResolveViolations(scanResults))
 		err = errors.New(SecurityIssueFoundErr)
 		return
 	}
