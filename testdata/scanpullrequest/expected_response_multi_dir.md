@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 10 issues
+- Frogbot scanned for vulnerabilities and found 11 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>10 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 8 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> 1 Low<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>11 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 9 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> 1 Low<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -31,6 +31,7 @@
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.5]<br>[5.1.8]<br>[6.2.2]<br>[7.4.8]<br>[8.0.6]<br>[9.0.7]<br>[10.2.3] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.4]<br>[5.1.7]<br>[6.2.1]<br>[7.4.7]<br>[8.0.5]<br>[9.0.6]<br>[10.2.1] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-13149 | Not Applicable | minimatch:3.0.4 | brace-expansion 1.1.15 | [5.0.7] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
 | ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-48522 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
 | ![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | CVE-2026-48524 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
@@ -196,6 +197,19 @@ function redosDetector(input_string, limit) {
 | **CVSS V3:** | 7.5 |
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
+
+<details><summary><b>[ CVE-2026-13149 ] brace-expansion 1.1.15</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | minimatch:3.0.4 |
+| **Impacted Dependency:** | brace-expansion:1.1.15 |
+| **Fixed Versions:** | [5.0.7] |
+| **CVSS V3:** | - |
+
+brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function exhibits exponential-time complexity in the number of consecutive non-expanding '{}' brace groups. An attacker who passes a crafted string to expand(), directly or transitively, can cause significant CPU consumption and event-loop blocking. The max option does not mitigate this, as it bounds the output size rather than the recursion work.<br></details>
 
 <details><summary><b>[ CVE-2022-29217 ] pyjwt 1.7.1</b></summary>
 
