@@ -325,6 +325,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		scanResults = aggregatedScanResults
 	}
 
+	utils.PrintScanResultsTable(scanResults)
 	return
 }
 

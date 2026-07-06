@@ -193,6 +193,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 			}
 			continue
 		}
+		utils.PrintScanResultsTable(scanResults)
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
 		shouldFailBuild = shouldFailBuild || (scanResults.Violations != nil && scanResults.Violations.ShouldFailBuild())
 		if repository.GitProvider.String() == vcsutils.GitHub.String() {
