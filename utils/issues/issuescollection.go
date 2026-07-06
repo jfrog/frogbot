@@ -5,6 +5,7 @@ import (
 
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
@@ -18,6 +19,7 @@ type ScansIssuesCollection struct {
 	formats.ScanStatus
 
 	LicensesViolations []formats.LicenseViolationRow
+	OpRiskViolations   []formats.OperationalRiskViolationRow
 
 	ScaVulnerabilities []formats.VulnerabilityOrViolationRow
 	ScaViolations      []formats.VulnerabilityOrViolationRow
@@ -30,6 +32,8 @@ type ScansIssuesCollection struct {
 
 	SastViolations      []formats.SourceCodeRow
 	SastVulnerabilities []formats.SourceCodeRow
+
+	Violations *violationutils.Violations
 }
 
 // General methods
@@ -49,6 +53,9 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	}
 	if len(issues.LicensesViolations) > 0 {
 		ic.LicensesViolations = append(ic.LicensesViolations, issues.LicensesViolations...)
+	}
+	if len(issues.OpRiskViolations) > 0 {
+		ic.OpRiskViolations = append(ic.OpRiskViolations, issues.OpRiskViolations...)
 	}
 	// Secrets
 	if len(issues.SecretsVulnerabilities) > 0 {
@@ -70,6 +77,11 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	}
 	if len(issues.IacViolations) > 0 {
 		ic.IacViolations = append(ic.IacViolations, issues.IacViolations...)
+	}
+	// Last-write-wins, not a true merge: today only one non-nil Violations source is ever appended
+	// (scan-pr calls Append exactly once, from the source-branch scan). Revisit if that changes.
+	if issues.Violations != nil {
+		ic.Violations = issues.Violations
 	}
 }
 
@@ -221,6 +233,12 @@ func (ic *ScansIssuesCollection) IsFailPrRuleApplied() bool {
 	for _, licenseViolation := range ic.LicensesViolations {
 		if licenseViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, licenseViolation.ViolationContext.Watch))
+			return true
+		}
+	}
+	for _, opRiskViolation := range ic.OpRiskViolations {
+		if opRiskViolation.FailPr {
+			log.Debug(fmt.Sprintf(FailPrRuleMessage, opRiskViolation.ViolationContext.Watch))
 			return true
 		}
 	}

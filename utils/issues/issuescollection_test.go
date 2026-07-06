@@ -411,6 +411,12 @@ func TestIsFailPrRuleApplied(t *testing.T) {
 			expected:               true,
 		},
 		{
+			name:                   "OpRisk violations with fail PR rule",
+			issues:                 getTestData(),
+			scannerToAddFailPrRule: "oprisk",
+			expected:               true,
+		},
+		{
 			name:                   "Secrets violations with fail PR rule",
 			issues:                 getTestData(),
 			scannerToAddFailPrRule: "secrets",
@@ -437,6 +443,13 @@ func TestIsFailPrRuleApplied(t *testing.T) {
 				tc.issues.ScaViolations[0].FailPr = true
 			case "licenses":
 				tc.issues.LicensesViolations[0].FailPr = true
+			case "oprisk":
+				tc.issues.OpRiskViolations = append(tc.issues.OpRiskViolations, formats.OperationalRiskViolationRow{
+					ViolationContext: formats.ViolationContext{
+						Watch:  "oprisk-watch",
+						FailPr: true,
+					},
+				})
 			case "secrets":
 				tc.issues.SecretsViolations[0].FailPr = true
 			case "sast":
