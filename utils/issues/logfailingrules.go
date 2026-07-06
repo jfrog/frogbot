@@ -21,13 +21,13 @@ const (
 	failActionBuild
 )
 
-type ruleTriple struct {
+type violationTrigger struct {
 	watch  string
 	policy string
 	rule   string
 }
 
-func (t ruleTriple) String() string {
+func (t violationTrigger) String() string {
 	// Rule name is not available for JAS (Secrets/IaC/SAST) violations - Xray does not provide it.
 	if t.rule == "" {
 		return fmt.Sprintf("Watch: '%s', Policy: '%s'", t.watch, t.policy)
@@ -41,7 +41,7 @@ func (t ruleTriple) String() string {
 // cross-referenced against the corresponding table row.
 type failingIssue struct {
 	description string
-	triples     []ruleTriple
+	triples     []violationTrigger
 }
 
 func LogFailingPolicyRulesForPr(violations *violationutils.Violations) {
@@ -94,7 +94,7 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 			return
 		}
 		seenTriples[issueKey][tripleKey] = true
-		issue.triples = append(issue.triples, ruleTriple{watch: watch, policy: p.PolicyName, rule: p.Rule})
+		issue.triples = append(issue.triples, violationTrigger{watch: watch, policy: p.PolicyName, rule: p.Rule})
 	}
 
 	// Sca, License, and Operational Risk violations
@@ -223,6 +223,10 @@ func isFailActionMatched(p violationutils.Policy, action failAction) bool {
 }
 
 func logFailingIssues(issuesFound []failingIssue, action failAction) {
+	log.Info(renderFailingIssues(issuesFound, action))
+}
+
+func renderFailingIssues(issuesFound []failingIssue, action failAction) string {
 	var lines []string
 	for _, issue := range issuesFound {
 		lines = append(lines, "  - "+issue.description)
@@ -235,9 +239,9 @@ func logFailingIssues(issuesFound []failingIssue, action failAction) {
 	if action == failActionBuild {
 		actionDesc = "the build"
 	}
-	log.Info(fmt.Sprintf(
+	return fmt.Sprintf(
 		"The following findings triggered a policy rule configured to fail %s:\n%s",
 		actionDesc,
 		strings.Join(lines, "\n"),
-	))
+	)
 }
