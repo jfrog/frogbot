@@ -524,7 +524,6 @@ func PrintScanResultsTable(scanResults *results.SecurityCommandResults) {
 	}
 	if err := output.NewResultsWriter(scanResults).
 		SetOutputFormat(format.Table).
-		SetPrintExtendedTable(true).
 		PrintScanResults(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to print scan results table: %s", err.Error()))
 	}
