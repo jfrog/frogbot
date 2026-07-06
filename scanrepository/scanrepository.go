@@ -30,6 +30,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
@@ -158,7 +159,10 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 	}
 	defer func() {
 		// Always check policy even if an error occurred during the scan
-		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
+		if policyErr := policy.CheckPolicyFailBuildError(scanResults); policyErr != nil {
+			issues.LogFailingPolicyRulesForBuild(scanResults.Violations)
+			err = errors.Join(err, policyErr)
+		}
 	}()
 	utils.PrintScanResultsTable(scanResults)
 	totalFindings = getTotalFindingsFromScanResults(scanResults)

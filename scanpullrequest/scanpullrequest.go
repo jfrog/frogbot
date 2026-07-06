@@ -57,6 +57,7 @@ func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.
 		return
 	}
 	if pullRequestIssues.IsFailPrRuleApplied() {
+		issues.LogFailingPolicyRulesForPr(pullRequestIssues.Violations)
 		err = errors.New(SecurityIssueFoundErr)
 		return
 	}
@@ -437,6 +438,7 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,
 		LicensesViolations: simpleJsonResults.LicensesViolations,
+		OpRiskViolations:   simpleJsonResults.OperationalRiskViolations,
 
 		IacVulnerabilities: simpleJsonResults.IacsVulnerabilities,
 		IacViolations:      simpleJsonResults.IacsViolations,
@@ -446,6 +448,8 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 
 		SastVulnerabilities: simpleJsonResults.SastVulnerabilities,
 		SastViolations:      simpleJsonResults.SastViolations,
+
+		Violations: scanResults.Violations,
 	}
 	if len(workingDirs) == 0 {
 		workingDirs = scanResults.GetTargetsPaths()
