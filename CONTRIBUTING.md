@@ -1,8 +1,27 @@
 # 📖 Guidelines
 
+## Branch Structure
+
+This repository has two branches that accept pull requests:
+
+| Branch | Purpose                                                                                                                                                          |
+|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `main` | **V3 — active development.** All new features, improvements, and bug fixes go here. PRs are opened directly against `main`.                                      |
+| `v2_main` | **V2 — maintenance only. Not intended for new contributions.** Only critical bug and security fixes are accepted here, and only until V2's official end-of-life. |
+
+> **⚠️ V2 is on sunset.** Frogbot V2 is no longer accepting new features or general code contributions. The `v2_main` branch exists solely for critical bug and security patches until official end-of-life. If you want to contribute something new, please target the `main` branch (V3).
+
+### Contributing to V3 (active development)
+
+- Open pull requests directly against the **`main`** branch.
 - If the existing tests do not already cover your changes, please add tests.
-- Pull requests should be created on the _dev_ branch.
 - Please run `go fmt ./...` for formatting the code before submitting the pull request.
+
+### Contributing a critical fix to V2
+
+- Open pull requests against the **`v2_main`** branch.
+- Only critical bug fixes and security patches are accepted — no new features, no refactoring, no general improvements.
+- Clearly explain in your PR description why the fix is critical and cannot be addressed in V3 instead.
 
 # ⚒️ Building and Testing the Sources
 
@@ -48,7 +67,7 @@ go generate ./...
 To run the tests, follow these steps:
 
 1. Set the `JF_URL` & `JF_ACCESS_TOKEN` environment variables with your JFrog platform credentials.
-2. execute the following command:
+2. Execute the following command:
 
 ```sh
 go test -v ./...
