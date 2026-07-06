@@ -326,7 +326,6 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 	}
 
 	utils.PrintScanResultsTable(scanResults)
-
 	return
 }
 
