@@ -194,6 +194,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 			}
 			continue
 		}
+		utils.PrintScanResultsTable(scanResults)
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
 		if resolvedViolations := issues.ResolveViolations(scanResults); resolvedViolations != nil && resolvedViolations.ShouldFailBuild() {
 			issues.LogFailingPolicyRulesForBuild(resolvedViolations)
