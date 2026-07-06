@@ -41,7 +41,7 @@ func (t violationTrigger) String() string {
 // cross-referenced against the corresponding table row.
 type failingIssue struct {
 	description string
-	triples     []violationTrigger
+	triggers    []violationTrigger
 }
 
 func LogFailingPolicyRulesForPr(violations *violationutils.Violations) {
@@ -80,21 +80,21 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 		return nil
 	}
 	byKey := map[string]*failingIssue{}
-	seenTriples := map[string]map[string]bool{}
+	seenTriggers := map[string]map[string]bool{}
 
-	addTriple := func(issueKey, description, watch string, p violationutils.Policy) {
+	addTrigger := func(issueKey, description, watch string, p violationutils.Policy) {
 		issue, exists := byKey[issueKey]
 		if !exists {
 			issue = &failingIssue{description: description}
 			byKey[issueKey] = issue
-			seenTriples[issueKey] = map[string]bool{}
+			seenTriggers[issueKey] = map[string]bool{}
 		}
-		tripleKey := fmt.Sprintf("%s|%s|%s", watch, p.PolicyName, p.Rule)
-		if seenTriples[issueKey][tripleKey] {
+		triggerKey := fmt.Sprintf("%s|%s|%s", watch, p.PolicyName, p.Rule)
+		if seenTriggers[issueKey][triggerKey] {
 			return
 		}
-		seenTriples[issueKey][tripleKey] = true
-		issue.triples = append(issue.triples, violationTrigger{watch: watch, policy: p.PolicyName, rule: p.Rule})
+		seenTriggers[issueKey][triggerKey] = true
+		issue.triggers = append(issue.triggers, violationTrigger{watch: watch, policy: p.PolicyName, rule: p.Rule})
 	}
 
 	// Sca, License, and Operational Risk violations
@@ -105,7 +105,7 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 			if !isFailActionMatched(p, action) || shouldSkipCvePolicy(p, v) {
 				continue
 			}
-			addTriple(key, description, v.Watch, p)
+			addTrigger(key, description, v.Watch, p)
 		}
 	}
 	for _, v := range violations.License {
@@ -114,7 +114,7 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 			if !isFailActionMatched(p, action) {
 				continue
 			}
-			addTriple(key, description, v.Watch, p)
+			addTrigger(key, description, v.Watch, p)
 		}
 	}
 	for _, v := range violations.OpRisk {
@@ -123,7 +123,7 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 			if !isFailActionMatched(p, action) {
 				continue
 			}
-			addTriple(key, description, v.Watch, p)
+			addTrigger(key, description, v.Watch, p)
 		}
 	}
 
@@ -139,20 +139,20 @@ func collectFailingIssues(violations *violationutils.Violations, action failActi
 			if !isFailActionMatched(p, action) {
 				continue
 			}
-			addTriple(key, description, v.Watch, p)
+			addTrigger(key, description, v.Watch, p)
 		}
 	}
 
 	var issuesFound []failingIssue
 	for _, issue := range byKey {
-		sort.Slice(issue.triples, func(i, j int) bool {
-			if issue.triples[i].watch != issue.triples[j].watch {
-				return issue.triples[i].watch < issue.triples[j].watch
+		sort.Slice(issue.triggers, func(i, j int) bool {
+			if issue.triggers[i].watch != issue.triggers[j].watch {
+				return issue.triggers[i].watch < issue.triggers[j].watch
 			}
-			if issue.triples[i].policy != issue.triples[j].policy {
-				return issue.triples[i].policy < issue.triples[j].policy
+			if issue.triggers[i].policy != issue.triggers[j].policy {
+				return issue.triggers[i].policy < issue.triggers[j].policy
 			}
-			return issue.triples[i].rule < issue.triples[j].rule
+			return issue.triggers[i].rule < issue.triggers[j].rule
 		})
 		issuesFound = append(issuesFound, *issue)
 	}
@@ -231,8 +231,8 @@ func renderFailingIssues(issuesFound []failingIssue, action failAction) string {
 	for _, issue := range issuesFound {
 		lines = append(lines, "  - "+issue.description)
 		lines = append(lines, "      Triggered:")
-		for _, t := range issue.triples {
-			lines = append(lines, "        - "+t.String())
+		for _, trigger := range issue.triggers {
+			lines = append(lines, "        - "+trigger.String())
 		}
 	}
 	actionDesc := "the pull request"

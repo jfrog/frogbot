@@ -68,7 +68,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2026-4800 (lodash@4.17.20)",
-					triples:     []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
+					triggers:    []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
 				},
 			},
 		},
@@ -101,7 +101,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2026-4800 (lodash@4.17.20)",
-					triples: []violationTrigger{
+					triggers: []violationTrigger{
 						{watch: "watch-a", policy: "pol-a", rule: "rule-a"},
 						{watch: "watch-b", policy: "pol-b", rule: "rule-b"},
 					},
@@ -137,7 +137,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2026-4800 (lodash@4.17.20)",
-					triples:     []violationTrigger{{watch: "watch-a", policy: "pol-a", rule: "rule-a"}},
+					triggers:    []violationTrigger{{watch: "watch-a", policy: "pol-a", rule: "rule-a"}},
 				},
 			},
 		},
@@ -180,7 +180,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2026-4800 (lodash@4.17.20)",
-					triples:     []violationTrigger{{watch: "watch-applicable", policy: "pol-a", rule: "rule-a"}},
+					triggers:    []violationTrigger{{watch: "watch-applicable", policy: "pol-a", rule: "rule-a"}},
 				},
 			},
 		},
@@ -206,7 +206,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2026-4800 (lodash@4.17.20)",
-					triples:     []violationTrigger{{watch: "watch1", policy: "pol-pr", rule: "rule-pr"}},
+					triggers:    []violationTrigger{{watch: "watch1", policy: "pol-pr", rule: "rule-pr"}},
 				},
 			},
 		},
@@ -229,7 +229,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "License: GPL-3.0-only (requests@2.25.1)",
-					triples:     []violationTrigger{{watch: "license-watch", policy: "banned-licenses", rule: "block-copyleft"}},
+					triggers:    []violationTrigger{{watch: "license-watch", policy: "banned-licenses", rule: "block-copyleft"}},
 				},
 			},
 		},
@@ -253,7 +253,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "Operational Risk: EOL (old-lib@0.1.0)",
-					triples:     []violationTrigger{{watch: "oprisk-watch", policy: "oprisk-pol", rule: "oprisk-rule"}},
+					triggers:    []violationTrigger{{watch: "oprisk-watch", policy: "oprisk-pol", rule: "oprisk-rule"}},
 				},
 			},
 		},
@@ -278,7 +278,7 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "secrets/api_secrets/tokens:1:9 [rule: generic-api-key]",
-					triples:     []violationTrigger{{watch: "appsec-watch", policy: "no-secrets", rule: "block-any-secret"}},
+					triggers:    []violationTrigger{{watch: "appsec-watch", policy: "no-secrets", rule: "block-any-secret"}},
 				},
 			},
 		},
@@ -317,11 +317,11 @@ func TestCollectFailingIssuesForPr(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "iac/gcp/k8s-oss/module.tf:19:1 [rule: gcp-private-endpoint]",
-					triples:     []violationTrigger{{watch: "appsec-watch", policy: "iac-hardening", rule: "block-medium-iac"}},
+					triggers:    []violationTrigger{{watch: "appsec-watch", policy: "iac-hardening", rule: "block-medium-iac"}},
 				},
 				{
 					description: "sast/flask_webgoat/__init__.py:29:12 [rule: cleartext-connection]",
-					triples:     []violationTrigger{{watch: "appsec-watch", policy: "sast-medium", rule: "block-medium-sast"}},
+					triggers:    []violationTrigger{{watch: "appsec-watch", policy: "sast-medium", rule: "block-medium-sast"}},
 				},
 			},
 		},
@@ -377,7 +377,7 @@ func TestCollectFailingIssuesForBuild(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "CVE-2021-44906 (minimist@1.2.5)",
-					triples:     []violationTrigger{{watch: "build-watch", policy: "build-policy", rule: "build-rule"}},
+					triggers:    []violationTrigger{{watch: "build-watch", policy: "build-policy", rule: "build-rule"}},
 				},
 			},
 		},
@@ -405,7 +405,7 @@ func TestCollectFailingIssuesForBuild(t *testing.T) {
 			expectedIssues: []failingIssue{
 				{
 					description: "secrets/secret_generic/gibberish:1:1 [rule: generic-secret]",
-					triples:     []violationTrigger{{watch: "mixed-watch", policy: "pol-build", rule: "rule-build"}},
+					triggers:    []violationTrigger{{watch: "mixed-watch", policy: "pol-build", rule: "rule-build"}},
 				},
 			},
 		},
@@ -477,7 +477,7 @@ func TestJasIssueIdentity(t *testing.T) {
 	assert.Equal(t, "secrets/api_secrets/tokens:1:9 [rule: generic-api-key]", description)
 }
 
-func TestRuleTripleString(t *testing.T) {
+func TestViolationTriggerString(t *testing.T) {
 	assert.Equal(t, "Watch: 'w', Policy: 'p', Rule: 'r'", violationTrigger{watch: "w", policy: "p", rule: "r"}.String())
 	// Xray does not provide a rule name for JAS (Secrets/IaC/SAST) violations - it must be omitted, not printed empty.
 	assert.Equal(t, "Watch: 'w', Policy: 'p'", violationTrigger{watch: "w", policy: "p"}.String())
@@ -522,7 +522,7 @@ func TestResolveViolations_IgnoresMisleadingEmptyTopLevelViolations(t *testing.T
 	assert.Equal(t, []failingIssue{
 		{
 			description: "CVE-2026-4800 (lodash@4.17.20)",
-			triples:     []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
+			triggers:    []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
 		},
 	}, issuesFound)
 }
@@ -569,7 +569,7 @@ func TestResolveViolations_DerivesFromLegacySCAViolation(t *testing.T) {
 	assert.Equal(t, []failingIssue{
 		{
 			description: "CVE-2026-4800 (lodash@4.17.20)",
-			triples:     []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
+			triggers:    []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
 		},
 	}, issuesFound)
 }
