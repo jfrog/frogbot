@@ -2,6 +2,7 @@ package issues
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -596,7 +597,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 			issuesFound := collectFailingIssues(tc.violations, tc.action)
 			expected, err := os.ReadFile(tc.expectedFile)
 			require.NoError(t, err)
-			assert.Equal(t, string(expected), renderFailingIssues(issuesFound, tc.action))
+			// Normalization for Windows
+			expectedText := strings.ReplaceAll(string(expected), "\r\n", "\n")
+			assert.Equal(t, expectedText, renderFailingIssues(issuesFound, tc.action))
 		})
 	}
 }
