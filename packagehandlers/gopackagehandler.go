@@ -1,6 +1,8 @@
 package packagehandlers
 
 import (
+	"strings"
+
 	"github.com/jfrog/frogbot/v2/utils"
 	golangutils "github.com/jfrog/jfrog-cli-artifactory/artifactory/commands/golang"
 )
@@ -17,5 +19,11 @@ func (golang *GoPackageHandler) UpdateDependency(vulnDetails *utils.Vulnerabilit
 		}
 	}
 	// In Golang, we can address every dependency as a direct dependency.
-	return golang.CommonPackageHandler.UpdateDependency(vulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
+	normalizedVulnDetails := *vulnDetails
+	normalizedVulnDetails.ImpactedDependencyName = normalizeGoModulePath(vulnDetails.ImpactedDependencyName)
+	return golang.CommonPackageHandler.UpdateDependency(&normalizedVulnDetails, vulnDetails.Technology.GetPackageInstallationCommand())
+}
+
+func normalizeGoModulePath(packageName string) string {
+	return strings.ReplaceAll(packageName, ":", "/")
 }
