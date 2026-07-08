@@ -149,6 +149,13 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 			return 0, err
 		}
 	}
+	if scanResults == nil {
+		err = fmt.Errorf("scan returned empty results for branch '%s'", sr.scanDetails.BaseBranch())
+		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Downstream processing will be skipped", sr.scanDetails.BaseBranch()), err); err != nil {
+			return 0, err
+		}
+		return 0, nil
+	}
 	defer func() {
 		// Always check policy even if an error occurred during the scan
 		err = errors.Join(err, policy.CheckPolicyFailBuildError(scanResults))
@@ -161,7 +168,6 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's configuration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
 		return totalFindings, nil
 	}
-
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred while preparing the vulnerabilities map for branch '%s'.", sr.scanDetails.BaseBranch()), err); err != nil {
@@ -248,7 +254,7 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 		}
 	}
 	if err != nil {
-		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("failed to fix vulnerable dependencies: %s", err.Error()), err)
+		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, "failed to fix vulnerable dependencies", err)
 	}
 	return nil
 }

@@ -638,6 +638,116 @@ func loadTestSBOM(t *testing.T, filename string) *cyclonedx.BOM {
 	return bom
 }
 
+func TestGetTotalFindingsFromScanResults(t *testing.T) {
+	testCases := []struct {
+		name          string
+		scanResults   *results.SecurityCommandResults
+		expectedCount int
+	}{
+		{
+			name:          "Nil scan results",
+			scanResults:   nil,
+			expectedCount: 0,
+		},
+		{
+			name: "No violations or vulnerabilities",
+			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
+				ScanTarget: results.ScanTarget{Target: "target1"},
+			}}},
+			expectedCount: 0,
+		},
+		{
+			name: "Vulnerabilities only",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
+					},
+				}},
+			},
+			expectedCount: 4,
+		},
+		{
+			name: "Violations only",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{Watches: []string{"w1"}}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+				}},
+				Violations: &violationutils.Violations{
+					Sca: []violationutils.CveViolation{
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: &cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol1@1.0.0",
+									PackageURL: "pkg:npm/viol1@1.0.0",
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: &cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol2@2.0.0",
+									PackageURL: "pkg:npm/viol2@2.0.0",
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
+						},
+					},
+				},
+			},
+			expectedCount: 2,
+		},
+		{
+			name: "Violations take precedence over vulnerabilities",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
+					ScaResults: &results.ScaScanResults{
+						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
+					},
+				}},
+				Violations: &violationutils.Violations{
+					Sca: []violationutils.CveViolation{
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: &cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol1@1.0.0",
+									PackageURL: "pkg:npm/viol1@1.0.0",
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
+						},
+						{
+							ScaViolation: violationutils.ScaViolation{
+								ImpactedComponent: &cyclonedx.Component{
+									BOMRef:     "pkg:npm/viol2@2.0.0",
+									PackageURL: "pkg:npm/viol2@2.0.0",
+								},
+							},
+							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
+						},
+					},
+				},
+			},
+			expectedCount: 2,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			assert.Equal(t, testCase.expectedCount, getTotalFindingsFromScanResults(testCase.scanResults))
+		})
+	}
+}
+
 // Verifies unsupported packages return specific error
 // Other logic is implemented inside each package-handler.
 func TestUpdatePackageToFixedVersion(t *testing.T) {
