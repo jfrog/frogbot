@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jfrog/frogbot/v3/packageupdaters"
+	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/remediation/sca/packageupdaters"
 
 	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
@@ -55,7 +55,7 @@ type ScanRepositoryCmd struct {
 	baseWd          string
 	gitManager      *utils.GitManager
 	projectTech     []techutils.Technology
-	updaters        map[techutils.Technology]packageupdaters.PackageUpdater
+	updaters        map[techutils.Technology]securitypkgupdaters.PackageUpdater
 	customTemplates utils.CustomTemplates
 	XrayVersion     string
 	XscVersion      string
@@ -296,10 +296,11 @@ func (sr *ScanRepositoryCmd) fixMultiplePackages(vulnerabilities map[string]*uti
 // else, return the error
 func (sr *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 	var errUnsupportedFix *utils.ErrUnsupportedFix
+	var errUnsupportedFixShared *securitypkgupdaters.ErrUnsupportedFix
 	var errNoChangesToCommit *utils.ErrNothingToCommit
 
 	switch {
-	case errors.As(err, &errUnsupportedFix):
+	case errors.As(err, &errUnsupportedFix), errors.As(err, &errUnsupportedFixShared):
 		log.Debug(strings.TrimSpace(err.Error()))
 	case errors.As(err, &errNoChangesToCommit):
 		log.Info(err.Error())
@@ -578,18 +579,35 @@ func (sr *ScanRepositoryCmd) updatePackageToFixedVersion(vulnDetails *utils.Vuln
 	}
 
 	if sr.updaters == nil {
-		sr.updaters = make(map[techutils.Technology]packageupdaters.PackageUpdater)
+		sr.updaters = make(map[techutils.Technology]securitypkgupdaters.PackageUpdater)
 	}
 
-	handler := sr.updaters[vulnDetails.Technology]
-	if handler == nil {
-		handler = packageupdaters.GetCompatiblePackageUpdater(vulnDetails, sr.scanDetails)
+	fixDetails := &securitypkgupdaters.FixDetails{
+		ImpactedDependencyName:    vulnDetails.ImpactedDependencyName,
+		ImpactedDependencyVersion: vulnDetails.ImpactedDependencyVersion,
+		SuggestedFixedVersion:     vulnDetails.SuggestedFixedVersion,
+		IsDirectDependency:        vulnDetails.IsDirectDependency,
+		Technology:                vulnDetails.Technology,
+		Components:                vulnDetails.Components,
+		IssueId:                   vulnDetails.IssueId,
+	}
+
+	handler, cached := sr.updaters[vulnDetails.Technology]
+	if !cached {
+		var supported bool
+		handler, supported = securitypkgupdaters.GetCompatiblePackageUpdater(fixDetails)
+		if !supported {
+			log.Debug(fmt.Sprintf("Technology '%s' is not supported for automatic fix — skipping", vulnDetails.Technology))
+			sr.updaters[vulnDetails.Technology] = nil // cache nil to skip on next call
+			return
+		}
 		sr.updaters[vulnDetails.Technology] = handler
-	} else if _, unsupported := handler.(*packageupdaters.UnsupportedPackageUpdater); unsupported {
+	} else if handler == nil {
+		// Previously determined to be unsupported.
 		return
 	}
 
-	return sr.updaters[vulnDetails.Technology].UpdateDependency(vulnDetails)
+	return handler.UpdateDependency(fixDetails)
 }
 
 // The getRemoteBranchScanHash function extracts the checksum written inside the pull request body and returns it.

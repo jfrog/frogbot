@@ -463,7 +463,7 @@ Thanks to @ljharb for back-porting the fix to legacy versions of minimatch.<br><
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | - |
-| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 5.0.7<br></details> |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.16<br></details> |
 
 brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function exhibits exponential-time complexity in the number of consecutive non-expanding '{}' brace groups. An attacker who passes a crafted string to expand(), directly or transitively, can cause significant CPU consumption and event-loop blocking. The max option does not mitigate this, as it bounds the output size rather than the recursion work.<br></details>
 

@@ -17,7 +17,6 @@ var IntegrationTestPackages = []string{
 	"github.com/jfrog/frogbot/v3",
 	"github.com/jfrog/frogbot/v3/scanrepository",
 	"github.com/jfrog/frogbot/v3/scanpullrequest",
-	"github.com/jfrog/frogbot/v3/packageupdaters",
 }
 
 func TestUnitTests(t *testing.T) {
