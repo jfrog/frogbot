@@ -18,6 +18,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-core/v2/common/commands"
+	"github.com/jfrog/jfrog-cli-core/v2/common/format"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
@@ -515,4 +516,15 @@ func writeCycloneDxToDir(outputDir string, scanResults *results.SecurityCommandR
 	}
 	log.Info(fmt.Sprintf("CycloneDX SBOM written to %s", path))
 	return nil
+}
+
+func PrintScanResultsTable(scanResults *results.SecurityCommandResults) {
+	if scanResults == nil {
+		return
+	}
+	if err := output.NewResultsWriter(scanResults).
+		SetOutputFormat(format.Table).
+		PrintScanResults(); err != nil {
+		log.Warn(fmt.Sprintf("Failed to print scan results table: %s", err.Error()))
+	}
 }

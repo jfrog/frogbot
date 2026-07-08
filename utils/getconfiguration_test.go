@@ -383,7 +383,7 @@ func TestValidateConfigProfile(t *testing.T) {
 				ProfileName: "my-profile",
 				Modules:     []services.Module{},
 			},
-			expectedError: "my-profile config profile returned with 0 modules. A profile must have exactly 1 module",
+			expectedError: "expected exactly 1 module in 'my-profile' profile, found 0. Frogbot currently supports only one module per config profile",
 		},
 		{
 			name: "Multiple modules",
@@ -394,7 +394,7 @@ func TestValidateConfigProfile(t *testing.T) {
 					{ModuleName: "module-2", PathFromRoot: "subdir"},
 				},
 			},
-			expectedError: "my-profile config profile returned with 2 modules. A profile must have exactly 1 module",
+			expectedError: "expected exactly 1 module in 'my-profile' profile, found 2. Frogbot currently supports only one module per config profile",
 		},
 		{
 			name: "Module path not at root",
