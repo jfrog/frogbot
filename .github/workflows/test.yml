@@ -77,6 +77,9 @@ jobs:
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
 
+          - name: 'Auto Fix'
+            package: 'autofix'
+
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
