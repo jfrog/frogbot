@@ -126,6 +126,38 @@ export class Utils {
     }
 
     /**
+     * Execute frogbot auto-fix command.
+     */
+    public static async execAutoFix() {
+        core.exportVariable('JF_COMPONENT_NAME', core.getInput('component-name'));
+        core.exportVariable('JF_AFFECTED_VERSION', core.getInput('affected-version'));
+        core.exportVariable('JF_FIX_VERSION', core.getInput('fix-version'));
+
+        const commitHash: string = core.getInput('commit-hash');
+        if (commitHash) {
+            core.exportVariable('JF_COMMIT_HASH', commitHash);
+        }
+
+        const branchName: string = core.getInput('branch-name');
+        if (branchName) {
+            core.exportVariable('JF_GIT_BASE_BRANCH', branchName);
+        } else if (!process.env.JF_GIT_BASE_BRANCH) {
+            const git: SimpleGit = simpleGit();
+            try {
+                const currentBranch: BranchSummary = await git.branch();
+                core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+            } catch (error) {
+                throw new Error('Error getting current branch from the .git folder: ' + error);
+            }
+        }
+
+        const res: number = await exec(Utils.getExecutableName(), ['auto-fix']);
+        if (res !== core.ExitCode.Success) {
+            throw new Error('Frogbot exited with exit code ' + res);
+        }
+    }
+
+    /**
      * Try to load the Frogbot executables from cache.
      *
      * @param version  - Frogbot version
