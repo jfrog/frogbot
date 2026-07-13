@@ -2,6 +2,7 @@ package autofix
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -61,7 +62,10 @@ func fixDependency(componentName, affectedVersion, fixVersion string) (bool, err
 		return false, err
 	}
 	if len(descriptorPaths) == 0 {
-		return false, nil
+		return false, fmt.Errorf("component '%s@%s' was not found in the project dependency tree", componentName, affectedVersion)
+	}
+	if tech == techutils.NoTech {
+		return false, fmt.Errorf("could not determine package manager for component '%s@%s'", componentName, affectedVersion)
 	}
 
 	updater, err := newUpdater(tech)
@@ -88,12 +92,28 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 	gitManager = gitManager.SetGitParams(&repository.Params.Git)
 
 	fixBranchName := generateAutoFixBranchName(componentName, fixVersion)
+
+	existsInRemote, err := gitManager.BranchExistsInRemote(fixBranchName)
+	if err != nil {
+		return fmt.Errorf("failed to check if fix branch '%s' exists: %w", fixBranchName, err)
+	}
+	if existsInRemote {
+		log.Info(fmt.Sprintf("Skipping fix pull request for dependency '%s' to version '%s': a fix branch already exists. If the pull request was previously closed, delete the fix branch to allow a new one to be created.",
+			componentName, fixVersion))
+		return nil
+	}
+
 	if err = gitManager.CreateBranchAndCheckout(fixBranchName, true); err != nil {
 		return fmt.Errorf("failed to create fix branch '%s': %w", fixBranchName, err)
 	}
 
 	commitMessage := fmt.Sprintf("fix: update %s from %s to %s", componentName, affectedVersion, fixVersion)
 	if err = gitManager.AddAllAndCommit(commitMessage, componentName); err != nil {
+		var errNoChanges *utils.ErrNothingToCommit
+		if errors.As(err, &errNoChanges) {
+			log.Info(err.Error())
+			return nil
+		}
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
@@ -187,8 +207,8 @@ func buildPRBody(componentName, affectedVersion, fixVersion string) string {
 func generateAutoFixBranchName(componentName, fixVersion string) string {
 	safe := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-").Replace(componentName)
 	branchName := fmt.Sprintf("%s/%s-%s", autoFixBranchPrefix, safe, fixVersion)
-	if len(branchName) > 255 {
-		branchName = branchName[:255]
+	if len(branchName) > 100 {
+		branchName = branchName[:100]
 	}
 	return branchName
 }

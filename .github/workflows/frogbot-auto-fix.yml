@@ -31,6 +31,8 @@ jobs:
 
       - uses: jfrog/frogbot/autofix@v3
         env:
+          JF_URL: ${{ secrets.FROGBOT_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.FROGBOT_ACCESS_TOKEN }}
           JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           component-name: ${{ inputs.component-name }}

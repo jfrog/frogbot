@@ -42,6 +42,10 @@ function main() {
             yield utils_1.Utils.setupOidcTokenIfNeeded(jfrogUrl);
             const eventName = yield utils_1.Utils.setFrogbotEnv();
             yield utils_1.Utils.addToPath();
+            if (core.getInput('command') === 'auto-fix') {
+                yield utils_1.Utils.execAutoFix();
+                return;
+            }
             switch (eventName) {
                 case 'pull_request':
                 case 'pull_request_target':
