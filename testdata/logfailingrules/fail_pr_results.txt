@@ -1,19 +1,25 @@
 The following findings triggered a policy rule configured to fail the pull request:
   - CVE-2025-6624 (snyk@1.995.0)
+      Violation: https://myserver.com/ui/violations/2078174694150950912
       Triggered:
         - Watch: 'pr-security-watch', Policy: 'high-cves', Rule: 'block-high-severity'
   - License: AGPL-3.0 (some-lib@1.0.0)
+      Violation: https://myserver.com/ui/violations/2078174694180311040
       Triggered:
         - Watch: 'pr-license-watch', Policy: 'strict-oss-policy', Rule: 'block-non-permissive'
   - Operational Risk: Deprecated (old-pkg@0.9.0)
+      Violation: https://myserver.com/ui/violations/2078174694192893952
       Triggered:
         - Watch: 'pr-oprisk-watch', Policy: 'deprecated-policy', Rule: 'block-deprecated'
   - iac/gcp/k8s-pipelines-bp/module.tf:105:1 [rule: missing-auto-upgrade]
+      Violation: https://myserver.com/ui/violations/2078175401017004032
       Triggered:
         - Watch: 'pr-appsec-watch', Policy: 'iac-hardening-pr', Rule: 'block-medium-iac-pr'
   - sast/flask_webgoat/ui.py:25:9 [rule: info-leak]
+      Violation: https://myserver.com/ui/violations/2078179035133956096
       Triggered:
         - Watch: 'pr-appsec-watch', Policy: 'sast-low-pr', Rule: 'block-low-sast-pr'
   - secrets/secret_generic/gibberish:1:1 [rule: generic-secret]
+      Violation: https://myserver.com/ui/violations/2078175401000226816
       Triggered:
         - Watch: 'pr-appsec-watch', Policy: 'no-secrets-pr', Rule: 'block-any-secret-pr'
