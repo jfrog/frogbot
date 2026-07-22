@@ -16,7 +16,7 @@ jobs:
       - name: Setup Go with cache
         uses: jfrog/.github/actions/install-go-with-cache@main
 
-      # Generate mocks
+      # Generate mockss
       - name: Generate mocks
         run: go generate ./...
 
