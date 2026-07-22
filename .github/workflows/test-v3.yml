@@ -19,9 +19,11 @@ jobs:
           labels: "safe to test"
 
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
@@ -74,9 +76,11 @@ jobs:
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
@@ -184,9 +188,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
@@ -229,9 +235,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
@@ -274,9 +282,11 @@ jobs:
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
@@ -313,9 +323,11 @@ jobs:
     needs: Pretest
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
 
       - name: Start FastCI Optimization
         uses: jfrog-fastci/fastci@main
