@@ -1,6 +1,6 @@
 module github.com/jfrog/frogbot/v2
 
-go 1.26.3
+go 1.26.5
 
 replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v0.10.0
 
@@ -9,12 +9,12 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20260615080618-42488b58c305
-	github.com/jfrog/froggit-go v1.23.0
+	github.com/jfrog/build-info-go v1.13.1-0.20260713073853-4f3044bf0940
+	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260702071632-62c27c48b207
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260721044519-d4e49af4db2c
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260624085155-5ba797de2616
-	github.com/jfrog/jfrog-cli-security v1.31.1
+	github.com/jfrog/jfrog-cli-security v1.31.3
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260624085832-de0c68a23c43
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
 	github.com/owenrumney/go-sarif/v3 v3.2.3
@@ -33,6 +33,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/beevik/etree v1.6.0 // indirect
 	github.com/buger/jsonparser v1.2.0 // indirect
 	github.com/c-bata/go-prompt v0.2.6 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -115,7 +116,7 @@ require (
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
