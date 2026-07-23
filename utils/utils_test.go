@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -11,15 +11,21 @@ import (
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/golang/mock/gomock"
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/jfrog/frogbot/v3/testdata"
 	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
 	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
@@ -486,6 +492,50 @@ func TestUploadSbomSnapshotToGithubDependencyGraph(t *testing.T) {
 			restoreEnv()
 		})
 	}
+}
+
+func TestUploadPrSarifToGithubSecurityTab(t *testing.T) {
+	client := testdata.NewMockVcsClient(gomock.NewController(t))
+	scanResults := &results.SecurityCommandResults{
+		ResultsMetaData: results.ResultsMetaData{
+			Entitlements:  results.Entitlements{Jas: true},
+			ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+		},
+		Targets: []*results.TargetResults{{
+			JasResults: &results.JasScansResults{
+				JasVulnerabilities: results.JasScanResults{
+					SastScanResults: []*sarif.Run{
+						sarifutils.CreateRunWithDummyResults(
+							sarifutils.CreateResultWithLocations(
+								"XSS vulnerability",
+								"rule",
+								severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
+								sarifutils.CreateLocation("index.js", 1, 1, 1, 10, "snippet"),
+							),
+						),
+					},
+				},
+			},
+		}},
+	}
+	repository := &Repository{Params: Params{
+		Git: Git{
+			RepoOwner:          "owner",
+			RepoName:           "repo",
+			PullRequestDetails: vcsclient.PullRequestInfo{Source: vcsclient.BranchInfo{Name: "feature"}},
+		},
+		JFrogPlatform: JFrogPlatform{XrayVersion: "3.0.0"},
+	}}
+	client.EXPECT().
+		GetLatestCommit(context.Background(), "owner", "repo", "feature").
+		Return(vcsclient.CommitInfo{Hash: "commit-sha"}, nil)
+	client.EXPECT().
+		UploadCodeScanningWithRef(context.Background(), "owner", "repo", "refs/pull/17/head", "commit-sha", gomock.Any()).
+		Return("sarif-id", nil)
+
+	err := UploadPrSarifToGithubSecurityTab(scanResults, repository, 17, client)
+
+	assert.NoError(t, err)
 }
 
 func TestUpdateFixVersionIfMax(t *testing.T) {

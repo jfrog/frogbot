@@ -27,6 +27,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/http/httpclient"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
@@ -55,6 +56,10 @@ const (
 		"Update %s version to %s to fix this vulnerability."
 	JfrogHomeDirEnv         = "JFROG_CLI_HOME_DIR"
 	cyclonedxOutputFilename = "cyclonedx.json"
+
+	gitIntegrationEventsCompleteStatus      = "completed"
+	gitIntegrationEventsFailedStatus        = "failed"
+	gitIntegrationEventUploadPrSarifResults = "Source Code Upload PR Results To Code Scanning"
 )
 
 var (
@@ -203,6 +208,58 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
 	return nil
+}
+
+func UploadPrSarifToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, prId int64, client vcsclient.VcsClient) error {
+	report, hasRuns, err := GenerateFrogbotSarifReport(scanResults)
+	if err != nil {
+		return err
+	}
+	if !hasRuns {
+		log.Info("No runs found in the SARIF report, skipping upload to GitHub Security Tab")
+		return nil
+	}
+
+	ctx := context.Background()
+	commit, err := client.GetLatestCommit(ctx, repo.Params.Git.RepoOwner, repo.Params.Git.RepoName, repo.Params.Git.PullRequestDetails.Source.Name)
+	if err != nil {
+		return err
+	}
+
+	prRef := fmt.Sprintf("refs/pull/%d/head", prId)
+	branch := fmt.Sprintf("PR-%d", prId)
+	_, err = client.UploadCodeScanningWithRef(ctx, repo.Params.Git.RepoOwner, repo.Params.Git.RepoName, prRef, commit.Hash, report)
+	if err != nil {
+		sendGitIntegrationEvent(repo, branch, gitIntegrationEventUploadPrSarifResults, err)
+		return err
+	}
+
+	log.Info(fmt.Sprintf("Successfully uploaded security scan results to GitHub Code Scanning for PR #%d", prId))
+	sendGitIntegrationEvent(repo, branch, gitIntegrationEventUploadPrSarifResults, nil)
+	return nil
+}
+
+func sendGitIntegrationEvent(repo *Repository, branch, eventType string, eventErr error) {
+	eventStatus := gitIntegrationEventsCompleteStatus
+	failureReason := ""
+	if eventErr != nil {
+		eventStatus = gitIntegrationEventsFailedStatus
+		failureReason = eventErr.Error()
+	}
+	if err := xsc.SendGitIntegrationEvent(
+		&repo.Server,
+		repo.Params.JFrogPlatform.XrayVersion,
+		repo.Params.JFrogPlatform.JFrogProjectKey,
+		eventType,
+		string(GitHub),
+		repo.Params.Git.RepoOwner,
+		repo.Params.Git.RepoName,
+		branch,
+		eventStatus,
+		failureReason,
+	); err != nil {
+		log.Info(fmt.Sprintf("failed to send git integration event: %s", err.Error()))
+	}
 }
 
 func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *results.SecurityCommandResults, client vcsclient.VcsClient, branch string) error {

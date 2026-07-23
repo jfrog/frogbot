@@ -54,6 +54,17 @@ func TestExtractParamsFromEnvPlatformScanPullRequest(t *testing.T) {
 	extractAndAssertParamsFromEnv(t, true, ScanPullRequest)
 }
 
+func TestUploadPrSecurityResultsToVcsEnv(t *testing.T) {
+	t.Setenv(UploadPrSecurityResultsToVcsEnv, "true")
+	gitParams := &Git{PullRequestDetails: vcsclient.PullRequestInfo{ID: 1}}
+	gitConfig := &Git{}
+
+	err := gitConfig.setDefaultsIfNeeded(gitParams, ScanPullRequest)
+
+	assert.NoError(t, err)
+	assert.True(t, gitConfig.UploadPrSecurityResultsToVcs)
+}
+
 // Test extraction in ScanRepository command
 // Pull request ID's default is 0, which means we will have branches related variables.
 func TestExtractParamsFromEnvPlatformScanRepository(t *testing.T) {

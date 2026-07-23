@@ -424,7 +424,7 @@ func TestAuditDiffInPullRequest(t *testing.T) {
 			repoConfig, client, cleanUpTest := preparePullRequestTest(t, test.projectName)
 			defer cleanUpTest()
 
-			issuesCollection, _, err := auditPullRequestAndReport(&repoConfig, client)
+			issuesCollection, _, _, err := auditPullRequestAndReport(&repoConfig, client)
 			assert.NoError(t, err)
 			assert.NotNil(t, issuesCollection)
 			assert.Len(t, issuesCollection.IacVulnerabilities, test.expectedIssues.Iac)

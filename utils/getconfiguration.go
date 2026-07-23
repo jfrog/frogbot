@@ -69,13 +69,14 @@ func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner                  string
-	RepoName                   string
-	Branches                   []string
-	PullRequestDetails         vcsclient.PullRequestInfo
-	RepositoryCloneUrl         string
-	UploadSbomToVcs            *bool
-	GitlabScanResultsOutputDir string
+	RepoOwner                    string
+	RepoName                     string
+	Branches                     []string
+	PullRequestDetails           vcsclient.PullRequestInfo
+	RepositoryCloneUrl           string
+	UploadSbomToVcs              *bool
+	UploadPrSecurityResultsToVcs bool
+	GitlabScanResultsOutputDir   string
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -115,6 +116,9 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 		return err
 	}
 	g.UploadSbomToVcs = &envValue
+	if g.UploadPrSecurityResultsToVcs, err = getBoolEnv(UploadPrSecurityResultsToVcsEnv, false); err != nil {
+		return err
+	}
 	return
 }
 
