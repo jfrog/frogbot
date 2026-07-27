@@ -189,8 +189,8 @@ func VulnerabilityDetailsToMD5Hash(vulnerabilities ...formats.VulnerabilityOrVio
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
-	report, hasRuns, err := GenerateFrogbotSarifReport(scanResults)
+func UploadRepoSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, branch string, client vcsclient.VcsClient) error {
+	report, hasRuns, err := generateFrogbotSarifReport(scanResults)
 	if err != nil {
 		return err
 	}
@@ -203,6 +203,31 @@ func UploadSarifResultsToGithubSecurityTab(scanResults *results.SecurityCommandR
 		return fmt.Errorf("upload code scanning for %s branch failed with: %s", branch, err.Error())
 	}
 	log.Info("The complete scanning results have been uploaded to your Code Scanning alerts view")
+	return nil
+}
+
+func UploadPrSarifToGithubSecurityTab(scanResults *results.SecurityCommandResults, repo *Repository, prId int64, client vcsclient.VcsClient) error {
+	report, hasRuns, err := generateFrogbotSarifReport(scanResults)
+	if err != nil {
+		return err
+	}
+	if !hasRuns {
+		log.Info("No runs found in the SARIF report, skipping upload to GitHub Security Tab")
+		return nil
+	}
+
+	ctx := context.Background()
+	commit, err := client.GetLatestCommit(ctx, repo.Params.Git.RepoOwner, repo.Params.Git.RepoName, repo.Params.Git.PullRequestDetails.Source.Name)
+	if err != nil {
+		return fmt.Errorf("failed to get latest commit for PR #%d source branch: %s", prId, err.Error())
+	}
+
+	prRef := fmt.Sprintf("refs/pull/%d/head", prId)
+	if _, err = client.UploadCodeScanningWithRef(ctx, repo.Params.Git.RepoOwner, repo.Params.Git.RepoName, prRef, commit.Hash, report); err != nil {
+		return fmt.Errorf("failed to upload PR security results to GitHub Code Scanning: %s", err.Error())
+	}
+
+	log.Info(fmt.Sprintf("Successfully uploaded security scan results to GitHub Code Scanning for PR #%d", prId))
 	return nil
 }
 
@@ -242,7 +267,7 @@ func UploadSbomSnapshotToGithubDependencyGraph(owner, repo string, scanResults *
 	return nil
 }
 
-func GenerateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, bool, error) {
+func generateFrogbotSarifReport(extendedResults *results.SecurityCommandResults) (string, bool, error) {
 	if extendedResults == nil {
 		return "", false, fmt.Errorf("got an empty scan results")
 	}
