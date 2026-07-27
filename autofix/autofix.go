@@ -22,6 +22,7 @@ const (
 	fixVersionEnv       = "JF_FIX_VERSION"
 	commitHashEnv       = "JF_COMMIT_HASH"
 	autoFixBranchPrefix = "jfrog-auto-fix"
+	autoFixBranchMaxLen = 255
 )
 
 type AutoFixCmd struct{}
@@ -62,7 +63,8 @@ func fixDependency(componentName, affectedVersion, fixVersion string) (bool, err
 		return false, err
 	}
 	if len(descriptorPaths) == 0 {
-		return false, fmt.Errorf("component '%s@%s' was not found in the project dependency tree", componentName, affectedVersion)
+		log.Info(fmt.Sprintf("Component '%s@%s' was not found in the project dependency tree; skipping auto-fix", componentName, affectedVersion))
+		return false, nil
 	}
 	if tech == techutils.NoTech {
 		return false, fmt.Errorf("could not determine package manager for component '%s@%s'", componentName, affectedVersion)
@@ -117,12 +119,15 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 
-	if err = gitManager.Push(true, fixBranchName); err != nil {
+	if err = gitManager.Push(false, fixBranchName); err != nil {
 		return fmt.Errorf("failed to push branch '%s': %w", fixBranchName, err)
 	}
 	log.Info(fmt.Sprintf("Branch '%s' pushed to origin", fixBranchName))
 
-	baseBranch := repository.Params.Git.Branches[0]
+	baseBranch, err := resolveBaseBranch(repository)
+	if err != nil {
+		return err
+	}
 	prTitle := fmt.Sprintf("[Auto-Fix] Update %s to %s", componentName, fixVersion)
 	log.Info(fmt.Sprintf("Creating pull request from '%s' to '%s'", fixBranchName, baseBranch))
 	if err = client.CreatePullRequest(context.Background(),
@@ -133,6 +138,13 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 
 	log.Info("Pull request created successfully")
 	return nil
+}
+
+func resolveBaseBranch(repository utils.Repository) (string, error) {
+	if len(repository.Params.Git.Branches) == 0 {
+		return "", fmt.Errorf("no base branch provided. Please set the `JF_GIT_BASE_BRANCH` environment variable")
+	}
+	return repository.Params.Git.Branches[0], nil
 }
 
 func validateInputs(componentName, affectedVersion, fixVersion string) error {
@@ -207,8 +219,8 @@ func buildPRBody(componentName, affectedVersion, fixVersion string) string {
 func generateAutoFixBranchName(componentName, fixVersion string) string {
 	safe := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-").Replace(componentName)
 	branchName := fmt.Sprintf("%s/%s-%s", autoFixBranchPrefix, safe, fixVersion)
-	if len(branchName) > 100 {
-		branchName = branchName[:100]
+	if len(branchName) > autoFixBranchMaxLen {
+		branchName = strings.TrimRight(branchName[:autoFixBranchMaxLen], "-/")
 	}
 	return branchName
 }

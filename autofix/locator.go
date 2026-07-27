@@ -45,11 +45,6 @@ func extractDescriptorPaths(sbom *cyclonedx.BOM, componentName, affectedVersion 
 		return nil, techutils.NoTech, fmt.Errorf("SBOM is empty")
 	}
 
-	normalise := func(name string) string {
-		return strings.ReplaceAll(name, ":", "/")
-	}
-	normaliseComponentName := normalise(componentName)
-
 	seen := map[string]bool{}
 	var paths []string
 	tech := techutils.NoTech
@@ -58,13 +53,13 @@ func extractDescriptorPaths(sbom *cyclonedx.BOM, componentName, affectedVersion 
 		compName, compVersion, compType := techutils.SplitPackageURL(component.PackageURL)
 		log.Debug(fmt.Sprintf("Inspecting SBOM component: %s@%s (type: %s)", compName, compVersion, compType))
 
-		if normalise(compName) != normaliseComponentName || compVersion != affectedVersion {
+		if !componentNamesMatch(componentName, compName) || compVersion != affectedVersion {
 			continue
 		}
 		log.Debug(fmt.Sprintf("Matched component '%s@%s' — checking evidence occurrences", compName, compVersion))
 
 		if tech == techutils.NoTech {
-			tech = techutils.ToTechnology(compType)
+			tech = technologyFromPurlType(compType)
 		}
 
 		if component.Evidence == nil || component.Evidence.Occurrences == nil {
@@ -85,4 +80,32 @@ func extractDescriptorPaths(sbom *cyclonedx.BOM, componentName, affectedVersion 
 		}
 	}
 	return paths, tech, nil
+}
+
+// technologyFromPurlType maps a PURL type to a package manager.
+// Ambiguous types like "pypi" default to Pip for auto-fix purposes.
+func technologyFromPurlType(purlType string) techutils.Technology {
+	if tech := techutils.ToTechnology(purlType); tech != techutils.NoTech {
+		return tech
+	}
+	if strings.EqualFold(purlType, techutils.Pypi) {
+		return techutils.Pip
+	}
+	return techutils.NoTech
+}
+
+// componentNamesMatch compares a user-supplied component name with a PURL name.
+// Maven coordinates may use ":" or "/"; PyPI names are case-insensitive and treat "-", "_", "." as equivalent.
+func componentNamesMatch(input, fromPurl string) bool {
+	normaliseMaven := func(name string) string {
+		return strings.ReplaceAll(name, ":", "/")
+	}
+	if normaliseMaven(input) == normaliseMaven(fromPurl) {
+		return true
+	}
+	normalisePip := func(name string) string {
+		name = strings.ToLower(name)
+		return strings.NewReplacer("_", "-", ".", "-").Replace(name)
+	}
+	return normalisePip(input) == normalisePip(fromPurl)
 }

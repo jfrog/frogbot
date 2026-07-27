@@ -98,6 +98,26 @@ func TestExtractDescriptorPaths(t *testing.T) {
 			expectedPaths:   nil,
 			expectedTech:    techutils.Maven,
 		},
+		{
+			name: "maven colon vs slash",
+			sbom: &cyclonedx.BOM{Components: &[]cyclonedx.Component{
+				makeComponent("pkg:maven/com.example/lib@1.0.0", "pom.xml"),
+			}},
+			componentName:   "com.example:lib",
+			affectedVersion: "1.0.0",
+			expectedPaths:   []string{"pom.xml"},
+			expectedTech:    techutils.Maven,
+		},
+		{
+			name: "pip name normalization",
+			sbom: &cyclonedx.BOM{Components: &[]cyclonedx.Component{
+				makeComponent("pkg:pypi/Py_JWT@2.0.0", "requirements.txt"),
+			}},
+			componentName:   "py.jwt",
+			affectedVersion: "2.0.0",
+			expectedPaths:   []string{"requirements.txt"},
+			expectedTech:    techutils.Pip,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -111,4 +131,10 @@ func TestExtractDescriptorPaths(t *testing.T) {
 			assert.Equal(t, tc.expectedPaths, paths)
 		})
 	}
+}
+
+func TestComponentNamesMatch(t *testing.T) {
+	assert.True(t, componentNamesMatch("com.example:lib", "com.example/lib"))
+	assert.True(t, componentNamesMatch("Py_JWT", "py.jwt"))
+	assert.False(t, componentNamesMatch("lodash", "underscore"))
 }

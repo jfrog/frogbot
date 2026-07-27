@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/jfrog/frogbot/v3/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 )
 
@@ -65,6 +66,7 @@ func TestGenerateAutoFixBranchName(t *testing.T) {
 		fixVersion    string
 		notContains   []string
 		maxLen        int
+		exactLen      bool
 	}{
 		{
 			name:          "basic — colon replaced",
@@ -82,21 +84,43 @@ func TestGenerateAutoFixBranchName(t *testing.T) {
 			name:          "long name truncated",
 			componentName: strings.Repeat("a", 300),
 			fixVersion:    "1.0.0",
-			maxLen:        255,
+			maxLen:        autoFixBranchMaxLen,
+			exactLen:      true,
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			name := generateAutoFixBranchName(tc.componentName, tc.fixVersion)
 			assert.True(t, strings.HasPrefix(name, autoFixBranchPrefix+"/"))
+			assert.False(t, strings.HasSuffix(name, "-"))
+			assert.False(t, strings.HasSuffix(name, "/"))
 			for _, s := range tc.notContains {
 				assert.NotContains(t, name, s)
 			}
 			if tc.maxLen > 0 {
 				assert.LessOrEqual(t, len(name), tc.maxLen)
+				if tc.exactLen {
+					assert.Equal(t, tc.maxLen, len(name))
+				}
 			}
 		})
 	}
+}
+
+func TestResolveBaseBranch(t *testing.T) {
+	t.Run("present", func(t *testing.T) {
+		repo := utils.Repository{}
+		repo.Params.Git.Branches = []string{"main"}
+		branch, err := resolveBaseBranch(repo)
+		require.NoError(t, err)
+		assert.Equal(t, "main", branch)
+	})
+	t.Run("empty", func(t *testing.T) {
+		repo := utils.Repository{}
+		_, err := resolveBaseBranch(repo)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "JF_GIT_BASE_BRANCH")
+	})
 }
 
 func TestBuildPRBody(t *testing.T) {

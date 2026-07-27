@@ -40,6 +40,7 @@ const (
 	ScanPullRequest                     = "scan-pull-request"
 	ScanRepository                      = "scan-repository"
 	AutoFix                             = "auto-fix"
+	RootDir                             = "."
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"
 	frogbotUrl                          = "https://github.com/jfrog/frogbot"
