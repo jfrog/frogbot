@@ -136,7 +136,7 @@ jobs:
         if: runner.os == 'macOS'
 
       - name: Install dotnet
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4
         with:
           dotnet-version: "6.x"
 
@@ -159,7 +159,7 @@ jobs:
           version: 1.0
 
       - name: Install Pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d  # v3
         with:
           version: 8
 
