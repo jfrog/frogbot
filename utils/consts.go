@@ -41,6 +41,7 @@ const (
 	GitAzureProjectEnv              = "JF_GIT_AZURE_PROJECT"
 	GitBitBucketUsernameEnv         = "JF_GIT_BB_USERNAME"
 	GitDependencyGraphSubmissionEnv = "JF_UPLOAD_SBOM_TO_VCS"
+	UploadPrSecurityResultsToVcsEnv = "JF_UPLOAD_PR_SECURITY_RESULTS_TO_VCS"
 
 	//#nosec G101 -- False positive - no hardcoded credentials.
 	GitTokenEnv                   = "JF_GIT_TOKEN"

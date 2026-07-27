@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 6 issues
+- Frogbot scanned for vulnerabilities and found 7 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>6 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 6 High<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>7 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 7 High<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -29,6 +29,7 @@
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-14257 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-13149 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 
@@ -456,16 +457,173 @@ Any application that passes user-controlled strings to `minimatch()` as the patt
 
 Thanks to @ljharb for back-porting the fix to legacy versions of minimatch.<br></details>
 
+<details><summary><b>[ CVE-2026-14257 ] brace-expansion 1.1.12</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **CVSS V3:** | 7.5 |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 5.0.8<br></details> |
+
+### Summary
+
+`expand()` bounds the *number* of results it produces (the `max` option,
+`100_000` by default) but not their *length*. By chaining many brace groups,
+an attacker keeps the result count under `max` while making every result grow
+with the number of groups. Building `max` long results — plus the intermediate
+arrays combined at each brace group — exhausts memory and crashes the Node
+process with an **uncatchable** out-of-memory error. `try/catch` around
+`expand()` does not help: the fatal error terminates the process.
+
+A ~7.5 KB input (`'{a,b}'.repeat(1500)`) is enough to crash a default Node
+process.
+
+### Details
+
+For `N` chained brace groups such as `'{a,b}'.repeat(N)`:
+
+- the result count is `2^N`, immediately capped at `max` (`100_000`), so the
+  `max` protection appears to hold, but
+- each result is `N` characters long, so the total output size is
+  `max × N` characters, which grows without bound in `N`.
+
+`expand_` combines each brace set with the fully-expanded tail:
+
+```js
+const post = m.post.length ? expand_(m.post, max, false) : ['']
+...
+for (let j = 0; j < N.length; j++) {
+  for (let k = 0; k < post.length && expansions.length < max; k++) {
+    const expansion = pre + N[j] + post[k]   // grows one group longer per level
+    ...
+    expansions.push(expansion)
+  }
+}
+```
+
+The loop guard `expansions.length < max` limits how many strings are built, but
+nothing limits how long they get. Each recursion level materializes another
+array of up to `max` strings, one character longer than the level below, and —
+because V8 represents `pre + N[j] + post[k]` as a cons-string (rope) that
+references `post[k]` — those intermediate strings stay reachable through the
+whole chain. Memory therefore scales with `max × N`.
+
+Measured on `5.0.7` (`'{a,b}'.repeat(N)`, default `max`):
+
+| groups (N) | input bytes | result count | peak RSS |
+|---|---|---|---|
+| 20 | 100 | 100,000 | ~80 MB |
+| 50 | 250 | 100,000 | ~214 MB |
+| 100 | 500 | 100,000 | ~409 MB |
+| 300 | 1,500 | 100,000 | ~1,148 MB |
+| 1500 | 7,500 | — | **OOM crash** |
+
+### Proof of concept
+
+```js
+const { expand } = require('brace-expansion')
+
+// ~7.5 KB input — crashes the process with a fatal, uncatchable OOM:
+//   FATAL ERROR: ... JavaScript heap out of memory
+try {
+  expand('{a,b}'.repeat(1500))
+} catch (e) {
+  // never reached — the process is already dead
+}
+```
+
+### Impact
+
+Any application that passes attacker-influenced strings to
+`brace-expansion.expand()` — directly, or transitively via `minimatch` / `glob`
+brace patterns — can be crashed by a small request. Because the failure is a
+fatal V8 out-of-memory error rather than a thrown exception, it cannot be caught
+and it takes down the whole worker/process, denying service.
+
+### Remediation
+
+Upgrade to a patched release. The fix bounds the total number of characters a
+single `expand()` call may accumulate (`EXPANSION_MAX_LENGTH`, default
+`4_000_000`, configurable via a new `maxLength` option), applied inside the
+output-building loops so intermediate arrays are bounded too. Once the limit is
+reached, output is truncated — consistent with how `max` already truncates —
+instead of growing without bound. The limit sits well above any realistic
+expansion (100,000 results hitting `max` measure ~1M characters), so legitimate
+input is unaffected.
+
+After the fix, `'{a,b}'.repeat(1500)` returns a bounded, truncated result in
+~0.7 s using ~340 MB and never crashes, including under a constrained 512 MB
+heap.
+
+The fix bounds memory but the algorithm still rebuilds intermediate arrays at
+each level (roughly `O(N × maxLength)` work on this input class). A streaming
+rewrite that produces output in `O(total output size)` can be a non-urgent
+follow-up.
+
+If immediate upgrade isn't possible, avoid passing untrusted input to
+`expand()` / glob brace patterns, or pass a small explicit `max` **and**
+`maxLength`.<br></details>
+
 <details><summary><b>[ CVE-2026-13149 ] brace-expansion 1.1.12</b></summary>
 
 ### Vulnerability Details
 |                 |                   |
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
-| **CVSS V3:** | - |
+| **CVSS V3:** | 5.3 |
 | **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.16<br></details> |
 
-brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function exhibits exponential-time complexity in the number of consecutive non-expanding '{}' brace groups. An attacker who passes a crafted string to expand(), directly or transitively, can cause significant CPU consumption and event-loop blocking. The max option does not mitigate this, as it bounds the output size rather than the recursion work.<br></details>
+### Summary
+brace-expansion's expand() exhibits exponential-time - O(2ⁿ) - behavior in the number of consecutive non-expanding {} groups. A short, all-ASCII input (~90 bytes/30 groups) blocks the calling thread for minutes; a slightly longer input hangs it effectively indefinitely. Because the dominant consumers run on Node's single-threaded event loop, one small input can fully stall a worker/process.
+
+In `expand_`, `post` is computed unconditionally at the top of the function, before the early-return branches that don't use it:
+```js
+const post = m.post.length ? expand_(m.post, max, false) : [''];   // always recurses
+  ...
+if (!isSequence && !isOptions) {
+  if (m.post.match(/,(?!,).*\}/)) {
+    str = m.pre + '{' + m.body + escClose + m.post;
+    return expand_(str, max, true); // restart — `post` discarded
+  }
+  return [str];
+}
+```
+
+For input like a{},{},…, the first {} is non-expanding, so control reaches the {a},b} rewrite branch - but `expand_` has already recursed into post over the entire remaining tail, only to throw the result away.
+Each level therefore spawns two recursive expansions over essentially the same remaining work: `T(n) = 2·T(n−1) ⇒ O(2ⁿ)`.
+
+The max option does not mitigate this: max only bounds the output-building loops; neither the post recursion nor the rewrite recursion consults it.
+  
+Measured on 5.0.6:
+
+| groups (n) | input bytes | time |
+|---|---|---|
+| 20 | 60 | 130 ms |
+| 24 | 72 | 1.9 s |
+| 26 | 78 | 7.8 s |
+| 30 (PoC) | 90 | ~2 min |
+
+### Proof of concept
+```js
+const { expand } = require('brace-expansion');
+// 30 non-expanding groups, ~90 bytes — blocks for minutes:
+expand('a{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}');
+```
+
+### Impact
+
+Any application that passes attacker-influenced strings to brace-expansion.expand() - directly or transitively via minimatch/glob brace patterns - can be driven into a multi-minute-to-indefinite CPU hang by a tiny request, denying service on that thread/process.
+
+### Remediation
+
+Upgrade to a patched release. The fix:
+1. Defers computing post until after the early-return branches (and computes it locally in the $-suffix branch), so post is only expanded when a brace set actually expands and the value is used. This alone removes the exponential.
+1. Converts the {a},b} rewrite from recursion to an in-function loop, so a long run of rewrites cannot grow the call stack.
+
+Verified: the PoC drops from ~2 min to 0.55 ms, 5,000 groups complete in ~344 ms, and output is identical to 5.0.6 across a behavioral-equivalence suite (sequences, padding, $-prefix, a{},b}c, {},a}b, x{{a,b}}y, etc.). Post-fix complexity is ~O(n²) on this input class - acceptable for the security fix; a linear rewrite can be a non-urgent follow-up.
+
+If immediate upgrade isn't possible, avoid passing untrusted input to expand() / glob brace patterns, or run such expansion under a timeout/worker.<br></details>
 
 <details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
 
