@@ -130,7 +130,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+// attiasas:add_audit_scan_results_url
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260727105645-fc8d44d62e4c
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -138,6 +139,7 @@ require (
 
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
-// replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
+// attiasas:feature/XRAY-132336-add-git-route-api
+replace github.com/jfrog/jfrog-client-go => github.com/attiasas/jfrog-client-go v0.0.0-20260726133026-33d5d7623ced
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
