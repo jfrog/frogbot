@@ -14,7 +14,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260624085155-5ba797de2616
 	github.com/jfrog/jfrog-cli-security v1.31.3
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260624085832-de0c68a23c43
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260728084229-b4b7a5c98201
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7

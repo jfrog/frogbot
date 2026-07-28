@@ -158,6 +158,8 @@ github.com/jfrog/jfrog-cli-security v1.31.3 h1:WVkonz9/0zuNKKz/350uguXmK771NymMu
 github.com/jfrog/jfrog-cli-security v1.31.3/go.mod h1:C9DINxsrKdF5ciebWDMtt5/qfriNcKPPh1HJ5HXnotg=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20260624085832-de0c68a23c43 h1:akoiWauP27YxVXcRkCC8ahgDLxqiARUAVEB+KUPO2OE=
 github.com/jfrog/jfrog-client-go v1.55.1-0.20260624085832-de0c68a23c43/go.mod h1:FHpjN1nTDoj96xd6obe27EOgGErqzU0rQgC96L3Ch9E=
+github.com/jfrog/jfrog-client-go v1.55.1-0.20260728084229-b4b7a5c98201 h1:1LdE+OGPcTJkVIJLEWjRFx8WRnfcuFwDxxEqkWI3GCY=
+github.com/jfrog/jfrog-client-go v1.55.1-0.20260728084229-b4b7a5c98201/go.mod h1:FHpjN1nTDoj96xd6obe27EOgGErqzU0rQgC96L3Ch9E=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
 github.com/jhump/protoreflect v1.15.1/go.mod h1:jD/2GMKKE6OqX8qTjhADU1e6DShO+gavG9e0Q693nKo=
 github.com/kevinburke/ssh_config v1.6.0 h1:J1FBfmuVosPHf5GRdltRLhPJtJpTlMdKTBjRgTaQBFY=
