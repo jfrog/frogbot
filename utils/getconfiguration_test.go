@@ -177,6 +177,12 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	assert.Equal(t, vcsutils.GitHub, gitParams.GitProvider)
 	assert.Equal(t, "jfrog", gitParams.RepoOwner)
 	assert.Equal(t, "token123", gitParams.Token)
+	assert.Empty(t, gitParams.Workspace)
+
+	SetEnvAndAssert(t, map[string]string{GitWorkspaceEnv: "my-workspace"})
+	gitParams, err = extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-workspace", gitParams.Workspace)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {

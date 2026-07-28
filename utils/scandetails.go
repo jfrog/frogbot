@@ -60,6 +60,9 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey string, includeVulnerabilities bool) *ScanDetails {
 	includeSnippetDetection := strings.ToLower(os.Getenv(plugin.SnippetDetectionEnvVariable)) == "true"
 	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false, includeSnippetDetection)
+	if sc.Git != nil {
+		sc.ResultContext.WorkspaceName = sc.Git.Workspace
+	}
 	return sc
 }
 
@@ -153,8 +156,9 @@ func (sc *ScanDetails) createGitInfoContext(scannedBranch, gitProject string, cl
 	}
 	// Get Source commit details.
 	gitInfo = &xscservices.XscGitInfoContext{
-		Source:      sourceCommit,
-		GitProvider: sc.Git.GitProvider.String(),
+		Source:        sourceCommit,
+		GitProvider:   sc.Git.GitProvider.String(),
+		WorkspaceName: sc.Git.Workspace,
 	}
 	if prDetails == nil {
 		return

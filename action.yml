@@ -12,6 +12,9 @@ inputs:
   oidc-audience:
     description: "By default, this is the URL of the GitHub repository owner, such as the organization that owns the repository."
     required: false
+  workspace-name:
+    description: "Optional JFrog Xray workspace name identifying this scan target. Exported as JF_GIT_WORKSPACE."
+    required: false
 runs:
   using: "node24"
   main: "action/lib/main.js"
