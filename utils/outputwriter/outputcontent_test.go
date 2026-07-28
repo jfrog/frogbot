@@ -133,6 +133,90 @@ func TestGetMainCommentContent(t *testing.T) {
 	}
 }
 
+func TestGetScanPullRequestCommentContentWithResultsPlatformURL(t *testing.T) {
+	const (
+		resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+		content    = "scan findings"
+	)
+	link := MarkAsLink(scanResultsLinkText, resultsURL)
+
+	testCases := []struct {
+		name         string
+		writer       OutputWriter
+		issuesExist  bool
+		content      []string
+		expectDetail bool
+	}{
+		{
+			name:         "findings standard output",
+			writer:       &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist:  true,
+			content:      []string{content},
+			expectDetail: true,
+		},
+		{
+			name:         "findings simplified output",
+			writer:       &SimplifiedOutput{},
+			issuesExist:  true,
+			content:      []string{content},
+			expectDetail: true,
+		},
+		{
+			name:        "successful scan",
+			writer:      &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			comments := GetScanPullRequestCommentContent(
+				testCase.content,
+				testCase.issuesExist,
+				resultsURL,
+				testCase.writer,
+			)
+
+			require.Len(t, comments, 1)
+			assert.Contains(t, comments[0], link)
+			if testCase.expectDetail {
+				assert.Less(t, strings.Index(comments[0], link), strings.Index(comments[0], content))
+			}
+		})
+	}
+}
+
+func TestGetScanPullRequestCommentContentWithoutResultsPlatformURL(t *testing.T) {
+	writer := &StandardOutput{MarkdownOutput{hasInternetConnection: true}}
+	content := []string{"scan findings"}
+
+	expected := GetMainCommentContent(content, true, true, writer)
+	actual := GetScanPullRequestCommentContent(content, true, "", writer)
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetScanPullRequestCommentContentAddsLinkOnlyToFirstSplitComment(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	writer := &SimplifiedOutput{MarkdownOutput{
+		descriptionSizeLimit: 1200,
+		commentSizeLimit:     1200,
+	}}
+
+	comments := GetScanPullRequestCommentContent(
+		[]string{strings.Repeat("a", 800), strings.Repeat("b", 800)},
+		true,
+		resultsURL,
+		writer,
+	)
+
+	require.Greater(t, len(comments), 1)
+	assert.Contains(t, comments[0], resultsURL)
+	for _, comment := range comments[1:] {
+		assert.NotContains(t, comment, resultsURL)
+	}
+}
+
 func TestScanSummaryContent(t *testing.T) {
 	testScanStatus := formats.ScanStatus{
 		ScaStatusCode:           utils.NewIntPtr(0),
