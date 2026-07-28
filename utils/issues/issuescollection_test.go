@@ -576,3 +576,17 @@ func TestAppendStatus(t *testing.T) {
 	issues.AppendStatus(newStatus)
 	assert.Equal(t, expectedStatus, issues.ScanStatus)
 }
+
+func TestAppendResultsPlatformURL(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	target := &ScansIssuesCollection{}
+
+	target.Append(&ScansIssuesCollection{ResultsPlatformURL: resultsURL})
+	assert.Equal(t, resultsURL, target.ResultsPlatformURL)
+
+	target.Append(nil)
+	assert.Equal(t, resultsURL, target.ResultsPlatformURL)
+
+	target.Append(&ScansIssuesCollection{})
+	assert.Empty(t, target.ResultsPlatformURL)
+}

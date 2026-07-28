@@ -2,6 +2,7 @@ package outputwriter
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -12,6 +13,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v3/utils/issues"
 )
@@ -125,7 +127,7 @@ func TestGetMainCommentContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				output := GetMainCommentContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, test.writer)
+				output := GetMainCommentContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, "", test.writer)
 				assert.Len(t, output, 1)
 				assert.Equal(t, expectedOutput, output[0])
 			})
@@ -133,7 +135,7 @@ func TestGetMainCommentContent(t *testing.T) {
 	}
 }
 
-func TestGetScanPullRequestCommentContentWithResultsPlatformURL(t *testing.T) {
+func TestGetMainCommentContentWithResultsPlatformURL(t *testing.T) {
 	const (
 		resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
 		content    = "scan findings"
@@ -144,41 +146,55 @@ func TestGetScanPullRequestCommentContentWithResultsPlatformURL(t *testing.T) {
 		name         string
 		writer       OutputWriter
 		issuesExist  bool
+		isComment    bool
 		content      []string
 		expectDetail bool
 	}{
 		{
-			name:         "findings standard output",
+			name:         "PR summary findings standard output",
 			writer:       &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 			issuesExist:  true,
+			isComment:    true,
 			content:      []string{content},
 			expectDetail: true,
 		},
 		{
-			name:         "findings simplified output",
+			name:         "PR summary findings simplified output",
 			writer:       &SimplifiedOutput{},
 			issuesExist:  true,
+			isComment:    true,
 			content:      []string{content},
 			expectDetail: true,
 		},
 		{
-			name:        "successful scan",
+			name:        "successful PR scan",
 			writer:      &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
 			issuesExist: false,
+			isComment:   true,
+		},
+		{
+			name:         "fix PR details include link",
+			writer:       &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist:  true,
+			isComment:    false,
+			content:      []string{content},
+			expectDetail: true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			comments := GetScanPullRequestCommentContent(
+			comments := GetMainCommentContent(
 				testCase.content,
 				testCase.issuesExist,
+				testCase.isComment,
 				resultsURL,
 				testCase.writer,
 			)
 
 			require.Len(t, comments, 1)
 			assert.Contains(t, comments[0], link)
+			assert.Contains(t, comments[0], testCase.writer.MarkAsTitle(link, 3))
 			if testCase.expectDetail {
 				assert.Less(t, strings.Index(comments[0], link), strings.Index(comments[0], content))
 			}
@@ -186,25 +202,27 @@ func TestGetScanPullRequestCommentContentWithResultsPlatformURL(t *testing.T) {
 	}
 }
 
-func TestGetScanPullRequestCommentContentWithoutResultsPlatformURL(t *testing.T) {
+func TestGetMainCommentContentWithoutResultsPlatformURL(t *testing.T) {
 	writer := &StandardOutput{MarkdownOutput{hasInternetConnection: true}}
 	content := []string{"scan findings"}
 
-	expected := GetMainCommentContent(content, true, true, writer)
-	actual := GetScanPullRequestCommentContent(content, true, "", writer)
+	comments := GetMainCommentContent(content, true, true, "", writer)
 
-	assert.Equal(t, expected, actual)
+	require.Len(t, comments, 1)
+	assert.Contains(t, comments[0], content[0])
+	assert.NotContains(t, comments[0], scanResultsLinkText)
 }
 
-func TestGetScanPullRequestCommentContentAddsLinkOnlyToFirstSplitComment(t *testing.T) {
+func TestGetMainCommentContentAddsLinkOnlyToFirstSplitComment(t *testing.T) {
 	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
 	writer := &SimplifiedOutput{MarkdownOutput{
 		descriptionSizeLimit: 1200,
 		commentSizeLimit:     1200,
 	}}
 
-	comments := GetScanPullRequestCommentContent(
+	comments := GetMainCommentContent(
 		[]string{strings.Repeat("a", 800), strings.Repeat("b", 800)},
+		true,
 		true,
 		resultsURL,
 		writer,
