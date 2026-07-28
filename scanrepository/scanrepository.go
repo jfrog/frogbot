@@ -217,7 +217,7 @@ func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository 
 	if repository.Params.Git.GitProvider.String() == vcsutils.GitHub.String() {
 		// Uploads Sarif results to GitHub in order to view the scan in the code scanning UI
 		// Currently available on GitHub only
-		if err := utils.UploadSarifResultsToGithubSecurityTab(scanResults, repository, sr.scanDetails.BaseBranch(), sr.scanDetails.Client()); err != nil {
+		if err := utils.UploadRepoSarifResultsToGithubSecurityTab(scanResults, repository, sr.scanDetails.BaseBranch(), sr.scanDetails.Client()); err != nil {
 			log.Warn(err)
 		}
 
