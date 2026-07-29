@@ -365,6 +365,7 @@ func GetVulnerabiltiesUniqueID(vulnerability formats.VulnerabilityOrViolationRow
 func ConvertSarifPathsToRelative(issues *issues.ScansIssuesCollection, workingDirs ...string) {
 	convertSarifPathsInCveApplicability(issues.ScaVulnerabilities, workingDirs...)
 	convertSarifPathsInIacs(issues.IacVulnerabilities, workingDirs...)
+	convertSarifPathsInServices(issues.ServicesVulnerabilities, workingDirs...)
 	convertSarifPathsInSecrets(issues.SecretsVulnerabilities, workingDirs...)
 	convertSarifPathsInSast(issues.SastVulnerabilities, workingDirs...)
 	convertSarifPathsInCveApplicability(issues.ScaViolations, workingDirs...)
@@ -392,6 +393,15 @@ func convertSarifPathsInIacs(iacs []formats.SourceCodeRow, workingDirs ...string
 		iac := &iacs[i]
 		for _, wd := range workingDirs {
 			iac.Location.File = utils.GetRelativePath(iac.Location.File, wd)
+		}
+	}
+}
+
+func convertSarifPathsInServices(services []formats.SourceCodeRow, workingDirs ...string) {
+	for i := range services {
+		service := &services[i]
+		for _, wd := range workingDirs {
+			service.Location.File = utils.GetRelativePath(service.Location.File, wd)
 		}
 	}
 }

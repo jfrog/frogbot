@@ -27,6 +27,9 @@ type ScansIssuesCollection struct {
 	IacVulnerabilities []formats.SourceCodeRow
 	IacViolations      []formats.SourceCodeRow
 
+	ServicesVulnerabilities []formats.SourceCodeRow
+	ServicesViolations      []formats.SourceCodeRow
+
 	SecretsVulnerabilities []formats.SourceCodeRow
 	SecretsViolations      []formats.SourceCodeRow
 
@@ -78,6 +81,13 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	if len(issues.IacViolations) > 0 {
 		ic.IacViolations = append(ic.IacViolations, issues.IacViolations...)
 	}
+	// Services
+	if len(issues.ServicesVulnerabilities) > 0 {
+		ic.ServicesVulnerabilities = append(ic.ServicesVulnerabilities, issues.ServicesVulnerabilities...)
+	}
+	if len(issues.ServicesViolations) > 0 {
+		ic.ServicesViolations = append(ic.ServicesViolations, issues.ServicesViolations...)
+	}
 	// Last-write-wins, not a true merge: today only one non-nil Violations source is ever appended
 	// (scan-pr calls Append exactly once, from the source-branch scan). Revisit if that changes.
 	if issues.Violations != nil {
@@ -91,6 +101,9 @@ func (ic *ScansIssuesCollection) AppendStatus(scanStatus formats.ScanStatus) {
 	}
 	if ic.IacStatusCode == nil || (*ic.IacStatusCode == 0 && scanStatus.IacStatusCode != nil) {
 		ic.IacStatusCode = scanStatus.IacStatusCode
+	}
+	if ic.ServicesStatusCode == nil || (*ic.ServicesStatusCode == 0 && scanStatus.ServicesStatusCode != nil) {
+		ic.ServicesStatusCode = scanStatus.ServicesStatusCode
 	}
 	if ic.SecretsStatusCode == nil || (*ic.SecretsStatusCode == 0 && scanStatus.SecretsStatusCode != nil) {
 		ic.SecretsStatusCode = scanStatus.SecretsStatusCode
@@ -115,6 +128,8 @@ func (ic *ScansIssuesCollection) GetScanStatus(scanType utils.SubScanType) *int 
 		return ic.ScaStatusCode
 	case utils.IacScan:
 		return ic.IacStatusCode
+	case utils.ServicesScan:
+		return ic.ServicesStatusCode
 	case utils.SecretsScan:
 		return ic.SecretsStatusCode
 	case utils.SastScan:
@@ -134,6 +149,9 @@ func (ic *ScansIssuesCollection) HasErrors() bool {
 		return true
 	}
 	if iacStatus := ic.GetScanStatus(utils.IacScan); iacStatus != nil && *iacStatus != 0 {
+		return true
+	}
+	if servicesStatus := ic.GetScanStatus(utils.ServicesScan); servicesStatus != nil && *servicesStatus != 0 {
 		return true
 	}
 	if secretsStatus := ic.GetScanStatus(utils.SecretsScan); secretsStatus != nil && *secretsStatus != 0 {
@@ -175,6 +193,14 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 		if vulnerabilities {
 			jasVulnerabilities = ic.IacVulnerabilities
 		}
+	case utils.ServicesScan:
+		// Count Services issues only if requested
+		if isViolation {
+			jasViolations = ic.ServicesViolations
+		}
+		if vulnerabilities {
+			jasVulnerabilities = ic.ServicesVulnerabilities
+		}
 	case utils.SecretsScan:
 		// Count Secrets issues only if requested
 		if isViolation {
@@ -203,7 +229,7 @@ func (ic *ScansIssuesCollection) GetScanIssuesSeverityCount(scanType utils.SubSc
 }
 
 func (ic *ScansIssuesCollection) IssuesExists(includeSecrets bool) bool {
-	return ic.ScaIssuesExists() || ic.IacIssuesExists() || ic.SastIssuesExists() || (includeSecrets && ic.SecretsIssuesExists())
+	return ic.ScaIssuesExists() || ic.IacIssuesExists() || ic.SastIssuesExists() || ic.ServicesIssuesExists() || (includeSecrets && ic.SecretsIssuesExists())
 }
 
 func (ic *ScansIssuesCollection) ScaIssuesExists() bool {
@@ -212,6 +238,10 @@ func (ic *ScansIssuesCollection) ScaIssuesExists() bool {
 
 func (ic *ScansIssuesCollection) IacIssuesExists() bool {
 	return len(ic.IacVulnerabilities) > 0 || len(ic.IacViolations) > 0
+}
+
+func (ic *ScansIssuesCollection) ServicesIssuesExists() bool {
+	return len(ic.ServicesVulnerabilities) > 0 || len(ic.ServicesViolations) > 0
 }
 
 func (ic *ScansIssuesCollection) SecretsIssuesExists() bool {
@@ -257,6 +287,12 @@ func (ic *ScansIssuesCollection) IsFailPrRuleApplied() bool {
 	for _, secretViolation := range ic.SecretsViolations {
 		if secretViolation.FailPr {
 			log.Debug(fmt.Sprintf(FailPrRuleMessage, secretViolation.ViolationContext.Watch))
+			return true
+		}
+	}
+	for _, servicesViolation := range ic.ServicesViolations {
+		if servicesViolation.FailPr {
+			log.Debug(fmt.Sprintf(FailPrRuleMessage, servicesViolation.ViolationContext.Watch))
 			return true
 		}
 	}
@@ -339,7 +375,7 @@ func (ic *ScansIssuesCollection) GetApplicableEvidences() (evidences []Applicabl
 // Violations
 
 func (ic *ScansIssuesCollection) GetTotalViolations(includeSecrets bool) int {
-	total := ic.GetTotalScaViolations() + len(ic.IacViolations) + len(ic.SastViolations)
+	total := ic.GetTotalScaViolations() + len(ic.IacViolations) + len(ic.SastViolations) + len(ic.ServicesViolations)
 	if includeSecrets {
 		total += len(ic.SecretsViolations)
 	}
@@ -353,7 +389,7 @@ func (ic *ScansIssuesCollection) GetTotalScaViolations() int {
 // Vulnerabilities
 
 func (ic *ScansIssuesCollection) GetTotalVulnerabilities(includeSecrets bool) int {
-	total := len(ic.ScaVulnerabilities) + len(ic.IacVulnerabilities) + len(ic.SastVulnerabilities)
+	total := len(ic.ScaVulnerabilities) + len(ic.IacVulnerabilities) + len(ic.SastVulnerabilities) + len(ic.ServicesVulnerabilities)
 	if includeSecrets {
 		total += len(ic.SecretsVulnerabilities)
 	}

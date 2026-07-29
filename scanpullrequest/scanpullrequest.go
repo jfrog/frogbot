@@ -202,6 +202,7 @@ func filterFailedResultsIfScannersFailuresAreAllowed(targetResults, sourceResult
 		filterScaResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepContextualAnalysis)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSecrets)
+		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepServices)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepIaC)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSast)
 	}
@@ -211,6 +212,7 @@ func filterFailedResultsIfScannersFailuresAreAllowed(targetResults, sourceResult
 		filterScaResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepContextualAnalysis)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSecrets)
+		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepServices)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepIaC)
 		filterJasResultsIfScanFailed(targetSourceResultsPair.target, targetSourceResultsPair.source, results.CmdStepSast)
 	}
@@ -220,6 +222,7 @@ func filterFailedResultsIfScannersFailuresAreAllowed(targetResults, sourceResult
 		filterScaResultsIfScanFailed(nil, sourceResult)
 		filterJasResultsIfScanFailed(nil, sourceResult, results.CmdStepContextualAnalysis)
 		filterJasResultsIfScanFailed(nil, sourceResult, results.CmdStepSecrets)
+		filterJasResultsIfScanFailed(nil, sourceResult, results.CmdStepServices)
 		filterJasResultsIfScanFailed(nil, sourceResult, results.CmdStepIaC)
 		filterJasResultsIfScanFailed(nil, sourceResult, results.CmdStepSast)
 	}
@@ -261,6 +264,12 @@ func filterSpecificScannersViolationsIfScanFailed(sourceResults *results.Securit
 		(targetStatusCodes.SecretsScanStatusCode != nil && *targetStatusCodes.SecretsScanStatusCode != 0) {
 		log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, results.CmdStepSecrets))
 		sourceResults.Violations.Secrets = nil
+	}
+
+	if (sourceStatusCodes.ServicesScanStatusCode != nil && *sourceStatusCodes.ServicesScanStatusCode != 0) ||
+		(targetStatusCodes.ServicesScanStatusCode != nil && *targetStatusCodes.ServicesScanStatusCode != 0) {
+		log.Debug(fmt.Sprintf(violationsFilteringErrorMessage, results.CmdStepServices))
+		sourceResults.Violations.Services = nil
 	}
 
 	if (sourceStatusCodes.IacScanStatusCode != nil && *sourceStatusCodes.IacScanStatusCode != 0) ||
@@ -361,6 +370,10 @@ func filterJasResultsIfScanFailed(targetResult, sourceResult *results.TargetResu
 		if sourceResult.JasResults != nil {
 			sourceResult.JasResults.JasVulnerabilities.SecretsScanResults = nil
 		}
+	case results.CmdStepServices:
+		if sourceResult.JasResults != nil {
+			sourceResult.JasResults.JasVulnerabilities.ServicesScanResults = nil
+		}
 	case results.CmdStepIaC:
 		if sourceResult.JasResults != nil {
 			sourceResult.JasResults.JasVulnerabilities.IacScanResults = nil
@@ -450,6 +463,9 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 		IacVulnerabilities: simpleJsonResults.IacsVulnerabilities,
 		IacViolations:      simpleJsonResults.IacsViolations,
 
+		ServicesVulnerabilities: simpleJsonResults.ServicesVulnerabilities,
+		ServicesViolations:      simpleJsonResults.ServicesViolations,
+
 		SecretsVulnerabilities: simpleJsonResults.SecretsVulnerabilities,
 		SecretsViolations:      simpleJsonResults.SecretsViolations,
 
@@ -489,6 +505,7 @@ func getScanStatus(cmdResults ...formats.SimpleJsonResults) formats.ScanStatus {
 	for _, sourceResults := range cmdResults[1:] {
 		statuses.ScaStatusCode = getWorstScanStatus(statuses.ScaStatusCode, sourceResults.Statuses.ScaStatusCode)
 		statuses.IacStatusCode = getWorstScanStatus(statuses.IacStatusCode, sourceResults.Statuses.IacStatusCode)
+		statuses.ServicesStatusCode = getWorstScanStatus(statuses.ServicesStatusCode, sourceResults.Statuses.ServicesStatusCode)
 		statuses.SecretsStatusCode = getWorstScanStatus(statuses.SecretsStatusCode, sourceResults.Statuses.SecretsStatusCode)
 		statuses.SastStatusCode = getWorstScanStatus(statuses.SastStatusCode, sourceResults.Statuses.SastStatusCode)
 		statuses.ApplicabilityStatusCode = getWorstScanStatus(statuses.ApplicabilityStatusCode, sourceResults.Statuses.ApplicabilityStatusCode)
