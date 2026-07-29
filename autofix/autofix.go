@@ -176,6 +176,8 @@ func newUpdater(tech techutils.Technology) (securitypkgupdaters.PackageUpdater, 
 		return &securitypkgupdaters.GoPackageUpdater{}, nil
 	case techutils.Pip:
 		return &securitypkgupdaters.PythonPackageUpdater{}, nil
+	case techutils.Docker:
+		return &securitypkgupdaters.DockerPackageUpdater{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported technology '%s' for auto-fix", tech)
 	}
@@ -217,8 +219,10 @@ func buildPRBody(componentName, affectedVersion, fixVersion string) string {
 }
 
 func generateAutoFixBranchName(componentName, fixVersion string) string {
-	safe := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-").Replace(componentName)
-	branchName := fmt.Sprintf("%s/%s-%s", autoFixBranchPrefix, safe, fixVersion)
+	replacer := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-")
+	safeName := replacer.Replace(componentName)
+	safeVersion := replacer.Replace(fixVersion)
+	branchName := fmt.Sprintf("%s/%s-%s", autoFixBranchPrefix, safeName, safeVersion)
 	if len(branchName) > autoFixBranchMaxLen {
 		branchName = strings.TrimRight(branchName[:autoFixBranchMaxLen], "-/")
 	}

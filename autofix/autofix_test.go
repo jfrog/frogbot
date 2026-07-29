@@ -87,6 +87,12 @@ func TestGenerateAutoFixBranchName(t *testing.T) {
 			maxLen:        autoFixBranchMaxLen,
 			exactLen:      true,
 		},
+		{
+			name:          "digest fix version sanitized",
+			componentName: "gcr.io/distroless/base-debian12",
+			fixVersion:    "sha256:abcdef",
+			notContains:   []string{":"},
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
