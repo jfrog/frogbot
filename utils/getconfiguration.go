@@ -521,7 +521,7 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 		return
 	}
 	log.Debug(fmt.Sprintf("Searching central configuration associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey); err != nil || configProfile == nil {
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey, ""); err != nil || configProfile == nil {
 		return
 	}
 
