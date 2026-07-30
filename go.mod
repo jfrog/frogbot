@@ -14,7 +14,7 @@ require (
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260728123939-34b27f070f2e
 	github.com/jfrog/jfrog-cli-security v1.31.3
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260728135425-4a7f34efb305
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260729072925-e1104f6b9e00
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -131,7 +131,7 @@ require (
 )
 
 // attiasas:services-sub-scan-source-code
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260729091050-19a015b12436
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260730121053-1ffb8298f1fe
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -140,6 +140,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // orto17:missconfiguration-service
-replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20260728142826-c098e2d936bf
+replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20260729095022-f0072c4ddd4b
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
