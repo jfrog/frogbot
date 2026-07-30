@@ -69,11 +69,11 @@ func (jp *JFrogPlatform) setJfProjectKeyIfExists() (err error) {
 type Git struct {
 	GitProvider vcsutils.VcsProvider
 	vcsclient.VcsInfo
-	RepoOwner                  string
-	RepoName                   string
-	Branches                   []string
-	PullRequestDetails         vcsclient.PullRequestInfo
-	RepositoryCloneUrl         string
+	RepoOwner                    string
+	RepoName                     string
+	Branches                     []string
+	PullRequestDetails           vcsclient.PullRequestInfo
+	RepositoryCloneUrl           string
 	UploadSbomToVcs              *bool
 	UploadPrSecurityResultsToVcs bool
 	GitlabScanResultsOutputDir   string
