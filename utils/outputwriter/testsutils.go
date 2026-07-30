@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -18,7 +19,23 @@ var (
 	testMessagesDir       = filepath.Join("..", TestMessagesDir)
 	testReviewCommentDir  = filepath.Join(testMessagesDir, "reviewcomment")
 	testSummaryCommentDir = filepath.Join(testMessagesDir, "summarycomment")
+
+	// The scan results link embeds a hash of the uploaded results and a timestamped artifact name,
+	// so it changes on every run and cannot be stored in a golden file.
+	// The simplified rendering must be matched first, since it contains the standard one.
+	scanResultsLinkTitlePatterns = []*regexp.Regexp{
+		scanResultsLinkTitlePattern(&SimplifiedOutput{}),
+		scanResultsLinkTitlePattern(&StandardOutput{}),
+	}
 )
+
+// scanResultsLinkTitlePattern matches the scan results link title as the given writer renders it,
+// with any URL.
+func scanResultsLinkTitlePattern(writer OutputWriter) *regexp.Regexp {
+	const urlPlaceholder = "\x00"
+	title := writer.MarkAsTitle(MarkAsLink(scanResultsLinkText, urlPlaceholder), 3)
+	return regexp.MustCompile("\n" + strings.Replace(regexp.QuoteMeta(title), urlPlaceholder, `[^)]*`, 1))
+}
 
 type OutputTestCase struct {
 	name               string
@@ -60,4 +77,22 @@ func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
 	bytes, err := json.Marshal(bodyRes)
 	assert.NoError(t, err)
 	return bytes
+}
+
+// StripScanResultsLinkFromJsonBody removes the scan results platform link title from the body of a
+// comment creation payload, so that the rest of the body can be compared against a golden file.
+// It reports whether such a link was present.
+func StripScanResultsLinkFromJsonBody(t *testing.T, payload []byte) (stripped []byte, found bool) {
+	var bodyRes TestBodyResponse
+	require.NoError(t, json.Unmarshal(payload, &bodyRes))
+	for _, pattern := range scanResultsLinkTitlePatterns {
+		if !pattern.MatchString(bodyRes.Body) {
+			continue
+		}
+		bodyRes.Body = pattern.ReplaceAllString(bodyRes.Body, "")
+		stripped, err := json.Marshal(bodyRes)
+		require.NoError(t, err)
+		return stripped, true
+	}
+	return payload, false
 }

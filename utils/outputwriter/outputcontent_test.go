@@ -1,6 +1,8 @@
 package outputwriter
 
 import (
+	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -211,6 +213,44 @@ func TestGetMainCommentContentWithoutResultsPlatformURL(t *testing.T) {
 	require.Len(t, comments, 1)
 	assert.Contains(t, comments[0], content[0])
 	assert.NotContains(t, comments[0], scanResultsLinkText)
+}
+
+// The integration tests compare the posted comment against a golden file, and rely on stripping the
+// scan results link to restore a body that is byte for byte identical to the one produced without it.
+func TestStripScanResultsLinkFromJsonBodyRestoresBodyWithoutLink(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/scans-list/repositories/frogbot/scan-descendants/source_code_1785235666994.cdx.json?package_id=generic%3A%2F%2Fsha256%3Aabc%2Fsource_code.cdx.json"
+	content := []string{"## 📗 Scan Summary\n- Frogbot scanned for vulnerabilities and found 3 issues"}
+
+	for _, writer := range []OutputWriter{
+		&StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+		&SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+	} {
+		t.Run(fmt.Sprintf("%T", writer), func(t *testing.T) {
+			withLink := GetMainCommentContent(content, true, true, resultsURL, writer)
+			withoutLink := GetMainCommentContent(content, true, true, "", writer)
+			require.Len(t, withLink, 1)
+			require.Len(t, withoutLink, 1)
+
+			payload, err := json.Marshal(TestBodyResponse{Body: withLink[0]})
+			require.NoError(t, err)
+
+			stripped, found := StripScanResultsLinkFromJsonBody(t, payload)
+			assert.True(t, found)
+
+			var strippedBody TestBodyResponse
+			require.NoError(t, json.Unmarshal(stripped, &strippedBody))
+			assert.Equal(t, withoutLink[0], strippedBody.Body)
+		})
+	}
+}
+
+func TestStripScanResultsLinkFromJsonBodyWithoutLink(t *testing.T) {
+	payload, err := json.Marshal(TestBodyResponse{Body: "no link here"})
+	require.NoError(t, err)
+
+	stripped, found := StripScanResultsLinkFromJsonBody(t, payload)
+	assert.False(t, found)
+	assert.Equal(t, payload, stripped)
 }
 
 func TestGetMainCommentContentAddsLinkOnlyToFirstSplitComment(t *testing.T) {

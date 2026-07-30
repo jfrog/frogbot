@@ -1429,7 +1429,9 @@ func createGitLabHandler(t *testing.T, testDir string, params GitServerParams) h
 			default:
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response.md"))
 			}
-			assert.JSONEq(t, string(expectedResponse), buf.String())
+			actualResponse, foundScanResultsLink := outputwriter.StripScanResultsLinkFromJsonBody(t, buf.Bytes())
+			assert.True(t, foundScanResultsLink, "the pull request comment is expected to link to the full scan results in the JFrog Platform")
+			assert.JSONEq(t, string(expectedResponse), string(actualResponse))
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
