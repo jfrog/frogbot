@@ -18,6 +18,8 @@ describe('Frogbot Action Tests', () => {
         delete process.env.GITHUB_API_URL;
         delete process.env.JF_GIT_SERVER_URL;
         delete process.env.GITHUB_SERVER_URL;
+        delete process.env.JF_GIT_WORKSPACE;
+        delete process.env['INPUT_WORKSPACE-NAME'];
     });
 
     describe('Frogbot URL Tests', () => {
@@ -223,6 +225,37 @@ describe('Frogbot Action Tests', () => {
             await Utils.setFrogbotEnv();
             
             expect(process.env['JF_GIT_API_ENDPOINT']).toBe('https://custom.api.com');
+        });
+    });
+
+    describe('Workspace name', () => {
+        afterEach(() => {
+            delete process.env.JF_GIT_WORKSPACE;
+            delete process.env['INPUT_WORKSPACE-NAME'];
+            delete process.env.GITHUB_TOKEN;
+            delete process.env.GITHUB_REPOSITORY_OWNER;
+            delete process.env.GITHUB_REPOSITORY;
+        });
+
+        it('Should export JF_GIT_WORKSPACE when workspace-name input is set', async () => {
+            process.env['INPUT_WORKSPACE-NAME'] = 'my-workspace';
+            process.env['GITHUB_TOKEN'] = 'ghp_test_token';
+            process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+            process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+
+            await Utils.setFrogbotEnv();
+
+            expect(process.env['JF_GIT_WORKSPACE']).toBe('my-workspace');
+        });
+
+        it('Should not export JF_GIT_WORKSPACE when workspace-name input is unset', async () => {
+            process.env['GITHUB_TOKEN'] = 'ghp_test_token';
+            process.env['GITHUB_REPOSITORY_OWNER'] = 'jfrog';
+            process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
+
+            await Utils.setFrogbotEnv();
+
+            expect(process.env['JF_GIT_WORKSPACE']).toBeUndefined();
         });
     });
 

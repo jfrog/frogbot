@@ -60,9 +60,7 @@ func (sc *ScanDetails) SetResultsToCompare(results *results.SecurityCommandResul
 func (sc *ScanDetails) SetResultsContext(httpCloneUrl string, jfrogProjectKey string, includeVulnerabilities bool) *ScanDetails {
 	includeSnippetDetection := strings.ToLower(os.Getenv(plugin.SnippetDetectionEnvVariable)) == "true"
 	sc.ResultContext = audit.CreateAuditResultsContext(sc.ServerDetails, sc.XrayVersion, []string{}, sc.RepoPath, jfrogProjectKey, httpCloneUrl, includeVulnerabilities, true, false, includeSnippetDetection)
-	if sc.Git != nil {
-		sc.ResultContext.WorkspaceName = sc.Git.Workspace
-	}
+	sc.ResultContext.WorkspaceName = sc.Git.Workspace
 	return sc
 }
 

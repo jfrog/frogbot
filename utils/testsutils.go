@@ -154,7 +154,12 @@ func CreateDotGitWithCommit(t *testing.T, wd, port string, repositoriesPath ...s
 	}
 }
 
-func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mockServer *httptest.Server, serverDetails *config.ServerDetails) {
+// CreateXscMockServerForConfigProfile returns a mock XSC server plus a pointer to the last
+// GetRepoConfigurationProfileRequest observed on the /xsc/profile_repos endpoint. Callers can
+// inspect that pointer after the request to assert what was sent (e.g. workspace_name). It stays
+// nil if the endpoint was never hit.
+func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mockServer *httptest.Server, serverDetails *config.ServerDetails, observedProfileByUrlReq *services.GetRepoConfigurationProfileRequest) {
+	observedProfileByUrlReq = &services.GetRepoConfigurationProfileRequest{}
 	mockServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiUrlPart := "api/v1/"
 		var isXrayAfterXscMigration bool
@@ -206,6 +211,7 @@ func CreateXscMockServerForConfigProfile(t *testing.T, xrayVersion string) (mock
 		// Endpoint to profile by URL
 		case strings.Contains(r.RequestURI, "/xsc/profile_repos") && isXrayAfterXscMigration:
 			assert.Equal(t, http.MethodPost, r.Method)
+			assert.NoError(t, json.NewDecoder(r.Body).Decode(observedProfileByUrlReq))
 			content, err := os.ReadFile("../testdata/configprofile/configProfileExample.json")
 			assert.NoError(t, err)
 			var responseProfile services.ConfigProfile

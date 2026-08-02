@@ -101,6 +101,9 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.RepoName = gitParamsFromEnv.RepoName
 	g.GitlabScanResultsOutputDir = gitParamsFromEnv.GitlabScanResultsOutputDir
 	g.Workspace = gitParamsFromEnv.Workspace
+	if g.Workspace != "" {
+		log.Info(fmt.Sprintf("Using JFrog Xray workspace '%s'", g.Workspace))
+	}
 
 	if commandName == ScanPullRequest {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
