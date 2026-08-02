@@ -44,7 +44,9 @@ func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 		return
 	}
 	// Results platform URL
-	ic.ResultsPlatformURL = issues.ResultsPlatformURL
+	if issues.ResultsPlatformURL != "" {
+		ic.ResultsPlatformURL = issues.ResultsPlatformURL
+	}
 	// Status
 	ic.AppendStatus(issues.ScanStatus)
 	// Sca
