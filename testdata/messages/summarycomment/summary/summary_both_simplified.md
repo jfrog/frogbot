@@ -12,4 +12,5 @@
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | 4 Issues Found: 🔴 3 High, 🟡 1 Low |
 | **Secrets** | ✅ Done | - |
+| **Services** | ℹ️ Not Scanned | - |
 | **Infrastructure as Code (IaC)** | ℹ️ Not Scanned | - |

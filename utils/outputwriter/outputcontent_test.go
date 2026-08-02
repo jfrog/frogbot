@@ -1105,6 +1105,84 @@ func TestIacReviewContent(t *testing.T) {
 	}
 }
 
+func TestServicesReviewContent(t *testing.T) {
+	testCases := []struct {
+		name   string
+		issues []formats.SourceCodeRow
+		cases  []OutputTestCase
+	}{
+		{
+			name: "Services review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Medium"},
+				Finding:         "Exposed service endpoint detected",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_review_content_simplified.md")},
+				},
+			},
+		},
+		{
+			name: "Services violation review comment content",
+			issues: []formats.SourceCodeRow{{
+				SeverityDetails: formats.SeverityDetails{Severity: "Medium"},
+				Finding:         "Exposed service endpoint detected",
+				ScannerInfo: formats.ScannerInfo{
+					RuleId:                  "rule-id",
+					ScannerDescription:      "Scanner Description....",
+					ScannerShortDescription: "Scanner Short Description",
+				},
+				ViolationContext: formats.ViolationContext{
+					IssueId:  "services-violation-id",
+					Watch:    "jas-watch",
+					Policies: []string{"policy1", "policy2"},
+				},
+			}},
+			cases: []OutputTestCase{
+				{
+					name:               "Standard output",
+					writer:             &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_violation_review_content_standard.md")},
+				},
+				{
+					name:               "Simplified output",
+					writer:             &SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+					expectedOutputPath: []string{filepath.Join(testReviewCommentDir, "services", "services_violation_review_content_simplified.md")},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		for _, test := range tc.cases {
+			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
+				expectedOutput := GetExpectedTestOutput(t, test)
+				violations := false
+				for _, issue := range tc.issues {
+					if issue.Watch != "" {
+						violations = true
+						break
+					}
+				}
+				assert.Equal(t, expectedOutput, ServicesReviewContent(violations, test.writer, tc.issues...))
+			})
+		}
+	}
+}
+
 func TestSastReviewContent(t *testing.T) {
 	testCases := []struct {
 		name   string

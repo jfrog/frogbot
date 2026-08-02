@@ -8,4 +8,5 @@
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | <details><summary><b>1 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 1 High<br></details> |
 | **Secrets** | ✅ Done | - |
+| **Services** | ℹ️ Not Scanned | - |
 | **Infrastructure as Code (IaC)** | ℹ️ Not Scanned | - |

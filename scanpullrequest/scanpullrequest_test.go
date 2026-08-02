@@ -75,6 +75,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 			ScaScanStatusCode:            securityutils.NewIntPtr(0),
 			ContextualAnalysisStatusCode: securityutils.NewIntPtr(0),
 			IacScanStatusCode:            securityutils.NewIntPtr(0),
+			ServicesScanStatusCode:       securityutils.NewIntPtr(0),
 			SecretsScanStatusCode:        securityutils.NewIntPtr(0),
 			SastScanStatusCode:           securityutils.NewIntPtr(0),
 		},
@@ -104,6 +105,13 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 					sarifutils.CreateRunWithDummyResults(
 						sarifutils.CreateResultWithLocations("Missing auto upgrade was detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.High).String(),
 							sarifutils.CreateLocation("file1", 1, 10, 2, 11, "aws-violation"),
+						),
+					),
+				},
+				ServicesScanResults: []*sarif.Run{
+					sarifutils.CreateRunWithDummyResults(
+						sarifutils.CreateResultWithLocations("Exposed service endpoint detected", "rule", severityutils.SeverityToSarifSeverityLevel(severityutils.Medium).String(),
+							sarifutils.CreateLocation("service.yaml", 1, 10, 2, 11, "services-snippet"),
 						),
 					),
 				},
@@ -166,6 +174,27 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 				},
 			},
 		},
+		ServicesVulnerabilities: []formats.SourceCodeRow{
+			{
+				SeverityDetails: formats.SeverityDetails{
+					Severity:         "Medium",
+					SeverityNumValue: 26,
+				},
+				ScannerInfo: formats.ScannerInfo{
+					ScannerDescription: "rule-msg",
+					RuleId:             "rule",
+				},
+				Finding: "Exposed service endpoint detected",
+				Location: formats.Location{
+					File:        "service.yaml",
+					StartLine:   1,
+					StartColumn: 10,
+					EndLine:     2,
+					EndColumn:   11,
+					Snippet:     "services-snippet",
+				},
+			},
+		},
 		SecretsVulnerabilities: []formats.SourceCodeRow{
 			{
 				SeverityDetails: formats.SeverityDetails{
@@ -215,6 +244,7 @@ func TestScanResultsToIssuesCollection(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.ElementsMatch(t, expectedOutput.ScaVulnerabilities, issuesRows.ScaVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.IacVulnerabilities, issuesRows.IacVulnerabilities)
+		assert.ElementsMatch(t, expectedOutput.ServicesVulnerabilities, issuesRows.ServicesVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.SecretsVulnerabilities, issuesRows.SecretsVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.SastVulnerabilities, issuesRows.SastVulnerabilities)
 		assert.ElementsMatch(t, expectedOutput.LicensesViolations, issuesRows.LicensesViolations)
@@ -585,6 +615,31 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 			hasFailure: true,
 		},
 		{
+			name:    "Services scanner failed - should remove Services vulnerabilities",
+			cmdStep: results.CmdStepServices,
+			targetResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						ServicesScanResults: []*sarif.Run{},
+					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ServicesScanStatusCode: intPtr(0),
+				},
+			},
+			sourceResult: &results.TargetResults{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						ServicesScanResults: []*sarif.Run{},
+					},
+				},
+				ResultsStatus: results.ResultsStatus{
+					ServicesScanStatusCode: intPtr(1),
+				},
+			},
+			hasFailure: true,
+		},
+		{
 			name:    "SAST scanner failed - should remove SAST vulnerabilities",
 			cmdStep: results.CmdStepSast,
 			targetResult: &results.TargetResults{
@@ -699,6 +754,8 @@ func TestFilterJasResultsIfScanFailed(t *testing.T) {
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SecretsScanResults, "Secrets vulnerability scan results should be removed when scan failed")
 				case results.CmdStepIaC:
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.IacScanResults, "IaC vulnerability scan results should be removed when scan failed")
+				case results.CmdStepServices:
+					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.ServicesScanResults, "Services vulnerability scan results should be removed when scan failed")
 				case results.CmdStepSast:
 					assert.Nil(t, test.sourceResult.JasResults.JasVulnerabilities.SastScanResults, "SAST vulnerability scan results should be removed when scan failed")
 				}
@@ -1138,6 +1195,7 @@ func TestFilterViolationsResults(t *testing.T) {
 		shouldRemoveSca           bool
 		shouldRemoveSecrets       bool
 		shouldRemoveIac           bool
+		shouldRemoveServices      bool
 		shouldRemoveSast          bool
 		shouldRemoveAllViolations bool
 	}{
@@ -1170,6 +1228,20 @@ func TestFilterViolationsResults(t *testing.T) {
 			sourceResults:   createSecurityCommandResultsForTest("test-target", "", false, false, false, false, false, true, 0, 0, 0, 1, 0, 0),
 			targetResults:   createSecurityCommandResultsForTest("test-target", "", false, false, false, false, false, false, 0, 0, 0, 1, 0, 0),
 			shouldRemoveIac: true,
+		},
+		{
+			name: "Violations scan succeeded, Services scan failed in source - should remove only Services violations",
+			sourceResults: func() *results.SecurityCommandResults {
+				result := createSecurityCommandResultsForTest("test-target", "", false, false, false, false, false, true, 0, 0, 0, 0, 0, 0)
+				result.Targets[0].ResultsStatus.ServicesScanStatusCode = intPtr(1)
+				return result
+			}(),
+			targetResults: func() *results.SecurityCommandResults {
+				result := createSecurityCommandResultsForTest("test-target", "", false, false, false, false, false, false, 0, 0, 0, 0, 0, 0)
+				result.Targets[0].ResultsStatus.ServicesScanStatusCode = intPtr(0)
+				return result
+			}(),
+			shouldRemoveServices: true,
 		},
 		{
 			name:             "Violations scan succeeded, SAST scan failed in source - should remove only SAST violations",
@@ -1228,6 +1300,12 @@ func TestFilterViolationsResults(t *testing.T) {
 					assert.Nil(t, test.sourceResults.Violations.Iac, "IaC violations should be removed")
 				} else {
 					assert.NotNil(t, test.sourceResults.Violations.Iac, "IaC violations should NOT be removed")
+				}
+
+				if test.shouldRemoveServices {
+					assert.Nil(t, test.sourceResults.Violations.Services, "Services violations should be removed")
+				} else {
+					assert.NotNil(t, test.sourceResults.Violations.Services, "Services violations should NOT be removed")
 				}
 
 				if test.shouldRemoveSast {
@@ -1314,6 +1392,21 @@ func TestIsScanFailedInSourceOrTarget(t *testing.T) {
 			targetResult: nil,
 			step:         results.CmdStepIaC,
 			expected:     true,
+		},
+		{
+			name: "Services scan failed in source - should return true",
+			sourceResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					ServicesScanStatusCode: intPtr(1),
+				},
+			},
+			targetResult: &results.TargetResults{
+				ResultsStatus: results.ResultsStatus{
+					ServicesScanStatusCode: intPtr(0),
+				},
+			},
+			step:     results.CmdStepServices,
+			expected: true,
 		},
 		{
 			name:         "Both are nil - should return false",
@@ -1496,10 +1589,11 @@ func createSecurityCommandResultsForTest(targetLocation string, targetName strin
 
 	if withViolations {
 		result.Violations = &violationutils.Violations{
-			Sca:     []violationutils.CveViolation{{}},
-			Secrets: []violationutils.JasViolation{{}},
-			Iac:     []violationutils.JasViolation{{}},
-			Sast:    []violationutils.JasViolation{{}},
+			Sca:      []violationutils.CveViolation{{}},
+			Secrets:  []violationutils.JasViolation{{}},
+			Iac:      []violationutils.JasViolation{{}},
+			Services: []violationutils.JasViolation{{}},
+			Sast:     []violationutils.JasViolation{{}},
 		}
 	}
 

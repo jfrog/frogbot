@@ -370,6 +370,7 @@ func ConvertSarifPathsToRelative(issues *issues.ScansIssuesCollection, workingDi
 	convertSarifPathsInSast(issues.SastVulnerabilities, workingDirs...)
 	convertSarifPathsInCveApplicability(issues.ScaViolations, workingDirs...)
 	convertSarifPathsInIacs(issues.IacViolations, workingDirs...)
+	convertSarifPathsInServices(issues.ServicesViolations, workingDirs...)
 	convertSarifPathsInSecrets(issues.SecretsViolations, workingDirs...)
 	convertSarifPathsInSast(issues.SastViolations, workingDirs...)
 }
