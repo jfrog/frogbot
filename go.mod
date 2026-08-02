@@ -13,7 +13,7 @@ require (
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260728123939-34b27f070f2e
-	github.com/jfrog/jfrog-cli-security v1.32.1-0.20260730101838-04edd1ee35e6
+	github.com/jfrog/jfrog-cli-security v1.32.0
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260729072925-e1104f6b9e00
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -26,8 +26,6 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
-	github.com/VividCortex/ewma v1.2.0 // indirect
-	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/beevik/etree v1.7.0 // indirect
 	github.com/buger/jsonparser v1.3.0 // indirect
@@ -52,7 +50,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/go-github/v56 v56.0.0 // indirect
 	github.com/google/go-github/v74 v74.0.0 // indirect
 	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -67,7 +64,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.8.3 // indirect
 	github.com/jfrog/archiver/v3 v3.6.3 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260728121041-2227ac7420a0 // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260801102623-d512ca031f85 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -106,8 +103,6 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
 	github.com/urfave/cli v1.22.17 // indirect
-	github.com/vbauerster/cupwriter v0.0.4 // indirect
-	github.com/vbauerster/mpb/v8 v8.14.0 // indirect
 	github.com/virtuald/go-ordered-json v0.0.0-20170621173500-b18e6e673d74 // indirect
 	github.com/xanzy/go-gitlab v0.115.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
