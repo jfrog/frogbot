@@ -94,10 +94,6 @@ class Utils {
                 core.exportVariable('JF_GIT_REPO', owner.substring(owner.indexOf('/') + 1));
             }
             core.exportVariable('JF_GIT_PULL_REQUEST_ID', github_1.context.issue.number);
-            const workspaceName = core.getInput('workspace-name');
-            if (workspaceName) {
-                core.exportVariable('JF_GIT_WORKSPACE', workspaceName);
-            }
             if (!process.env.JF_GIT_TOKEN) {
                 const gitToken = process.env.GITHUB_TOKEN;
                 if (!gitToken) {
