@@ -49,6 +49,7 @@ const (
 	GitPullRequestIDEnv           = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv             = "JF_GIT_API_ENDPOINT"
 	GitlabScanResultsOutputDirEnv = "JF_SCAN_RESULTS_OUTPUT_DIR"
+	GitWorkspaceEnv               = "JF_GIT_WORKSPACE"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"
