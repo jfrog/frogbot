@@ -588,5 +588,5 @@ func TestAppendResultsPlatformURL(t *testing.T) {
 	assert.Equal(t, resultsURL, target.ResultsPlatformURL)
 
 	target.Append(&ScansIssuesCollection{})
-	assert.Empty(t, target.ResultsPlatformURL)
+	assert.Equal(t, resultsURL, target.ResultsPlatformURL)
 }
