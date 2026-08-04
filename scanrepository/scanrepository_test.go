@@ -796,8 +796,8 @@ func TestPreparePullRequestDetails(t *testing.T) {
 			SuggestedFixedVersion: "1.0.0",
 		},
 	}
-	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, vulnerabilities...)
+	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -815,20 +815,31 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
-	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+	assert.ElementsMatch(t, expectedExtraComments, extraComments)
+
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), resultsURL, cfp.OutputWriter)
+	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, resultsURL, vulnerabilities...)
+	assert.NoError(t, err)
+	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+	assert.Contains(t, prBody, resultsURL)
+	assert.Contains(t, prBody, "View full scan results in JFrog Platform")
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 }
 
