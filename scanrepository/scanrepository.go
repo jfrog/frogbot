@@ -176,7 +176,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (sca
 		log.Info(fmt.Sprintf("Didn't find any vulnerable dependencies with existing fix versions or that are currently supported for fixing, for %s", sr.scanDetails.RepoName))
 		return scanResults, nil
 	}
-	return scanResults, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
+	return scanResults, sr.fixVulnerablePackages(repository, scanResults.ResultsPlatformUrl, vulnerabilitiesByPathMap)
 }
 
 func (sr *ScanRepositoryCmd) uploadGitLabScanResultsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
