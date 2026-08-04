@@ -79,6 +79,18 @@ func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
 	return bytes
 }
 
+// NormalizeJsonBodyLineEndings rewrites CRLF to LF in the body of a comment creation payload.
+// Issue descriptions served by the platform sometimes carry CRLF, while the golden files they are
+// compared against are read through GetOutputFromFile, which normalizes them away.
+func NormalizeJsonBodyLineEndings(t *testing.T, payload []byte) []byte {
+	var bodyRes TestBodyResponse
+	require.NoError(t, json.Unmarshal(payload, &bodyRes))
+	bodyRes.Body = strings.ReplaceAll(bodyRes.Body, "\r\n", "\n")
+	normalized, err := json.Marshal(bodyRes)
+	require.NoError(t, err)
+	return normalized
+}
+
 // StripScanResultsLinkFromJsonBody removes the scan results platform link title from the body of a
 // comment creation payload, so that the rest of the body can be compared against a golden file.
 // It reports whether such a link was present.
