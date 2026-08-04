@@ -9,12 +9,12 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20260728083052-16a97012811d
+	github.com/jfrog/build-info-go v1.13.1-0.20260803032325-7865244a87b5
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260728123939-34b27f070f2e
 	github.com/jfrog/jfrog-cli-security v1.32.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260729072925-e1104f6b9e00
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260803094922-a87c05639195
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -130,7 +130,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
+replace github.com/jfrog/jfrog-cli-security => github.com/eranturgeman/jfrog-cli-security v0.0.0-20260804082620-d99a9429e18b
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
