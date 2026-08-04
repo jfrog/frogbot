@@ -131,10 +131,18 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 		err = fmt.Errorf("failed to download source branch code. Error: %s", err.Error())
 		return
 	}
+	if err = utils.CreateSyntheticHeadCommit(sourceBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for source branch: " + err.Error())
+		err = nil
+	}
 	target := repoConfig.Params.Git.PullRequestDetails.Target
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
+	}
+	if err = utils.CreateSyntheticHeadCommit(targetBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for target branch: " + err.Error())
+		err = nil
 	}
 	return
 }
