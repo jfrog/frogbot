@@ -217,7 +217,7 @@ func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
 	return auditResults, nil
 }
 
-func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
+func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, resultsPlatformURL string, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
 	var err error
 	if repository.FrogbotConfig.AggregateFixes {
 		aggregatedFixBranchName, e := sr.gitManager.GenerateAggregatedFixBranchName(sr.scanDetails.BaseBranch(), sr.projectTech)
@@ -228,9 +228,9 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 		if e != nil {
 			return e
 		}
-		err = sr.aggregateFixAndOpenPullRequest(repository, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
+		err = sr.aggregateFixAndOpenPullRequest(repository, resultsPlatformURL, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
 	} else {
-		if e := sr.fixProjectVulnerabilities(repository, vulnerabilitiesMap); e != nil {
+		if e := sr.fixProjectVulnerabilities(repository, resultsPlatformURL, vulnerabilitiesMap); e != nil {
 			err = fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%v", sr.scanDetails.BaseBranch(), e)
 		}
 	}
@@ -240,10 +240,10 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 	return nil
 }
 
-func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, resultsPlatformURL string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
-		if e := sr.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
+		if e := sr.fixSinglePackageAndCreatePR(repository, resultsPlatformURL, vulnerability); e != nil {
 			err = errors.Join(err, sr.handleUpdatePackageErrors(e))
 		}
 		// Checkout back to the base branch after each fix so the next fix branch is created
@@ -288,7 +288,7 @@ func (sr *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, resultsPlatformURL string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
 	fixBranchName, err := sr.gitManager.GenerateFixBranchName(sr.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
@@ -322,14 +322,14 @@ func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repos
 	if err = sr.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
-	if err = sr.openFixingPullRequest(repository, fixBranchName, vulnDetails); err != nil {
+	if err = sr.openFixingPullRequest(repository, fixBranchName, resultsPlatformURL, vulnDetails); err != nil {
 		return errors.Join(fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion), err)
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 	return
 }
 
-func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository, fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository, fixBranchName string, resultsPlatformURL string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	log.Debug("Checking if there are changes to commit")
 	isClean, err := sr.gitManager.IsClean()
 	if err != nil {
@@ -349,11 +349,11 @@ func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository,
 	if err = sr.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	return sr.handleFixPullRequestContent(repository, fixBranchName, nil, vulnDetails)
+	return sr.handleFixPullRequestContent(repository, fixBranchName, nil, resultsPlatformURL, vulnDetails)
 }
 
-func (sr *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
-	pullRequestTitle, prBody, extraComments, err := sr.preparePullRequestDetails(repository.FrogbotConfig.AggregateFixes, vulnerabilities...)
+func (sr *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, resultsPlatformURL string, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
+	pullRequestTitle, prBody, extraComments, err := sr.preparePullRequestDetails(repository.FrogbotConfig.AggregateFixes, resultsPlatformURL, vulnerabilities...)
 	if err != nil {
 		return
 	}
@@ -390,7 +390,7 @@ func (sr *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Reposit
 
 // Handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
-func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, resultsPlatformURL string, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := sr.gitManager.GenerateAggregatedCommitMessage(sr.projectTech)
 	if err = sr.cleanNewFilesMissingInRemote(); err != nil {
 		return
@@ -401,7 +401,7 @@ func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposit
 	if err = sr.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	return sr.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
+	return sr.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, resultsPlatformURL, vulnerabilities...)
 }
 
 func (sr *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
@@ -436,14 +436,14 @@ func (sr *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 	return err
 }
 
-func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
+func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, resultsPlatformURL string, vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
 	if sr.dryRun && aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
 		return sr.gitManager.GenerateAggregatedPullRequestTitle(sr.projectTech), "", []string{}, nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
 
-	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, sr.OutputWriter)
+	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, resultsPlatformURL, sr.OutputWriter)
 
 	if aggregateFixes {
 		var scanHash string
@@ -617,7 +617,7 @@ func (sr *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string)
 	return
 }
 
-func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
+func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Repository, resultsPlatformURL string, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 
@@ -650,7 +650,7 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 		return
 	}
 	if len(fixedVulnerabilities) > 0 {
-		if e = sr.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
+		if e = sr.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, resultsPlatformURL, fixedVulnerabilities); e != nil {
 			err = errors.Join(err, fmt.Errorf("failed while creating aggregated pull request. Error: \n%s", e.Error()))
 		}
 	}

@@ -434,6 +434,8 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 		return nil, err
 	}
 	issuesCollection = &issues.ScansIssuesCollection{
+		ResultsPlatformURL: scanResults.ResultsPlatformUrl,
+
 		ScanStatus:         simpleJsonResults.Statuses,
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,

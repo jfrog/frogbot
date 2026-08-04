@@ -547,7 +547,12 @@ func PrintScanResultsTable(scanResults *results.SecurityCommandResults) {
 	if scanResults == nil {
 		return
 	}
+	extraMessages := []string{}
+	if scanResults.ResultsPlatformUrl != "" {
+		extraMessages = append(extraMessages, output.GetCommandResultsPlatformUrlMessage(scanResults, true))
+	}
 	if err := output.NewResultsWriter(scanResults).
+		SetExtraMessages(extraMessages).
 		SetOutputFormat(format.Table).
 		PrintScanResults(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to print scan results table: %s", err.Error()))

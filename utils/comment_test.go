@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/xsc/services"
 	"github.com/stretchr/testify/assert"
@@ -1007,4 +1009,99 @@ func TestGenerateSnippetReviewComment(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateFixPullRequestDetailsResultsPlatformURL(t *testing.T) {
+	const (
+		resultsURL          = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+		scanResultsLinkText = "View full scan results in JFrog Platform"
+	)
+	vulnerabilities := []formats.VulnerabilityOrViolationRow{{
+		IssueId: "XRAY-1234",
+		ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+			SeverityDetails:           formats.SeverityDetails{Severity: "High"},
+			ImpactedDependencyName:    "example-package",
+			ImpactedDependencyVersion: "1.0.0",
+		},
+	}}
+
+	t.Run("includes link when URL provided", func(t *testing.T) {
+		description, extraComments := GenerateFixPullRequestDetails(vulnerabilities, resultsURL, &outputwriter.StandardOutput{})
+
+		require.NotEmpty(t, description)
+		assert.Contains(t, description, "XRAY-1234")
+		assert.Contains(t, description, resultsURL)
+		assert.Contains(t, description, scanResultsLinkText)
+		for _, comment := range extraComments {
+			assert.NotContains(t, comment, resultsURL)
+		}
+	})
+
+	t.Run("omits link when URL empty", func(t *testing.T) {
+		description, extraComments := GenerateFixPullRequestDetails(vulnerabilities, "", &outputwriter.StandardOutput{})
+
+		require.NotEmpty(t, description)
+		assert.Contains(t, description, "XRAY-1234")
+		assert.NotContains(t, description, scanResultsLinkText)
+		for _, comment := range extraComments {
+			assert.NotContains(t, comment, scanResultsLinkText)
+		}
+	})
+}
+
+func TestGeneratePullRequestSummaryCommentResultsPlatformURL(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	writer := &outputwriter.SimplifiedOutput{}
+
+	t.Run("successful scan includes link", func(t *testing.T) {
+		comments := generatePullRequestSummaryComment(
+			issues.ScansIssuesCollection{},
+			results.ResultContext{},
+			false,
+			resultsURL,
+			writer,
+		)
+
+		require.Len(t, comments, 1)
+		assert.Contains(t, comments[0], resultsURL)
+	})
+
+	t.Run("findings scan includes link before summary", func(t *testing.T) {
+		scanIssues := issues.ScansIssuesCollection{
+			ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{{
+				ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+					SeverityDetails:        formats.SeverityDetails{Severity: "High"},
+					ImpactedDependencyName: "example:1.0.0",
+				},
+			}},
+		}
+		comments := generatePullRequestSummaryComment(
+			scanIssues,
+			results.ResultContext{IncludeVulnerabilities: true},
+			false,
+			resultsURL,
+			writer,
+		)
+
+		require.NotEmpty(t, comments)
+		assert.Contains(t, comments[0], resultsURL)
+		assert.Less(
+			t,
+			strings.Index(comments[0], resultsURL),
+			strings.Index(comments[0], "Frogbot scanned for"),
+		)
+	})
+
+	t.Run("empty URL preserves current comment", func(t *testing.T) {
+		comments := generatePullRequestSummaryComment(
+			issues.ScansIssuesCollection{},
+			results.ResultContext{},
+			false,
+			"",
+			writer,
+		)
+
+		require.Len(t, comments, 1)
+		assert.NotContains(t, comments[0], "View full scan results")
+	})
 }
