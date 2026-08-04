@@ -9,12 +9,12 @@ require (
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20260728083052-16a97012811d
+	github.com/jfrog/build-info-go v1.13.1-0.20260803032325-7865244a87b5
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260728123939-34b27f070f2e
-	github.com/jfrog/jfrog-cli-security v1.31.3
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260729072925-e1104f6b9e00
+	github.com/jfrog/jfrog-cli-security v1.32.0
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20260803094922-a87c05639195
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -64,7 +64,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.8.3 // indirect
 	github.com/jfrog/archiver/v3 v3.6.3 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260728121041-2227ac7420a0 // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260801102623-d512ca031f85 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -131,7 +131,7 @@ require (
 )
 
 // attiasas:services-sub-scan-source-code
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260730121053-1ffb8298f1fe
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260804072033-ce9bdd5d38a3
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
@@ -140,6 +140,6 @@ replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-sec
 // replace github.com/jfrog/build-info-go => github.com/jfrog/build-info-go dev
 
 // orto17:missconfiguration-service
-replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20260729095022-f0072c4ddd4b
+replace github.com/jfrog/jfrog-client-go => github.com/orto17/jfrog-client-go v0.0.0-20260803124813-bb92d09fecf2
 
 // replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
