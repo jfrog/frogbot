@@ -91,7 +91,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		repoConfig.Params.JFrogPlatform.JFrogProjectKey,
 	)
 	defer func() {
-		xsc.SendScanEndedEvent(scanDetails.ServerDetails, scanResults)
+		xsc.SendScanEndedWithResults(scanDetails.ServerDetails, scanResults)
 	}()
 	issuesCollection, scanResults, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	return

@@ -108,7 +108,7 @@ func (sr *ScanRepositoryCmd) prepareEnvAndScanBranch(repository *utils.Repositor
 
 	var scanResults *results.SecurityCommandResults
 	defer func() {
-		xsc.SendScanEndedEvent(sr.scanDetails.ServerDetails, scanResults)
+		xsc.SendScanEndedWithResults(sr.scanDetails.ServerDetails, scanResults)
 	}()
 	scanResults, err = sr.scanAndFixBranch(repository)
 	return
