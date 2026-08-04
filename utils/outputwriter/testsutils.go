@@ -85,7 +85,7 @@ func GetJsonBodyOutputFromFile(t *testing.T, filePath string) []byte {
 func NormalizeJsonBodyLineEndings(t *testing.T, payload []byte) []byte {
 	var bodyRes TestBodyResponse
 	require.NoError(t, json.Unmarshal(payload, &bodyRes))
-	bodyRes.Body = strings.ReplaceAll(bodyRes.Body, "\r\n", "\n")
+	bodyRes.Body = strings.ReplaceAll(strings.ReplaceAll(bodyRes.Body, "\r\n", "\n"), "\r", "\n")
 	normalized, err := json.Marshal(bodyRes)
 	require.NoError(t, err)
 	return normalized
