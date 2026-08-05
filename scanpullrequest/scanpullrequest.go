@@ -227,11 +227,16 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 	)
 	defer func() {
 		if issuesCollection != nil {
+			var scanTypesExecuted []string
+			if scanResults != nil {
+				scanTypesExecuted = scanResults.GetStatusCodes().GetExecutedScanTypes()
+			}
 			xsc.SendScanEndedEvent(
 				scanDetails.XrayVersion,
 				scanDetails.XscVersion,
 				scanDetails.ServerDetails,
-				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err,
+				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true),
+				&scanDetails.ResultContext, scanTypesExecuted, "", err,
 			)
 		}
 	}()

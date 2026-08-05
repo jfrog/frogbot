@@ -61,6 +61,10 @@ github.com/elazarl/goproxy v1.7.2 h1:Y2o6urb7Eule09PjlhQRGNsqRfPmYI3KKQLFpCAV3+o
 github.com/elazarl/goproxy v1.7.2/go.mod h1:82vkLNir0ALaW14Rc399OTTjyNREgmdL2cVoIbS6XaE=
 github.com/emirpasic/gods v1.18.1 h1:FXtiHYKDGKCW2KzwZKx0iC0PQmdlorYgdFG9jPXJ1Bc=
 github.com/emirpasic/gods v1.18.1/go.mod h1:8tpGGwCnJ5H4r6BWwaV6OrWmMoPhUl5jm/FMNAnJvWQ=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20260805131822-76e038fc880e h1:+4vtmt7R/S7F1PzELXZqYGqf9KU1z3wsKpkr6n+Y8MM=
+github.com/eranturgeman/jfrog-cli-security v0.0.0-20260805131822-76e038fc880e/go.mod h1:yhqUs0uEWeMccs3y+h4uAmBkJiyqtbcNMBzWaDr/Akw=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20260805120611-78f489a08753 h1:yC/pOIJda5I8VE9sMgSF2FLH3uew+yJJNsyrdYDvwXA=
+github.com/eranturgeman/jfrog-client-go v0.0.0-20260805120611-78f489a08753/go.mod h1:FHpjN1nTDoj96xd6obe27EOgGErqzU0rQgC96L3Ch9E=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
@@ -152,10 +156,6 @@ github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260804124646-1a5e6a2d3caf h1:H
 github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260804124646-1a5e6a2d3caf/go.mod h1:UkVDiTbSgtk+7N2ePOsPvjPsgO8r8rJtUchjcnAk08w=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260804120604-edaa34435a80 h1:V8wTPQAO/9MMxYFMM5qD08E8QRCmV3EtS8Gh+7SmJzU=
 github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260804120604-edaa34435a80/go.mod h1:MygQx8pekgPCXyXnejIAVG9S4ImGcDFmcfRPUug/0d0=
-github.com/jfrog/jfrog-cli-security v1.32.1 h1:GQ89waCbRZSL6fEpFwGWpIeiy2c8SNUTzccyec2QC1Y=
-github.com/jfrog/jfrog-cli-security v1.32.1/go.mod h1:BKhIR0RkW0KMIdAeJbufG4rl44wZbpn+5bfE2jEN338=
-github.com/jfrog/jfrog-client-go v1.55.1-0.20260803094922-a87c05639195 h1:1h6qSM8fanMsy9xT7zrRn/lrAMclzQzT5OJt4a9X4Qo=
-github.com/jfrog/jfrog-client-go v1.55.1-0.20260803094922-a87c05639195/go.mod h1:FHpjN1nTDoj96xd6obe27EOgGErqzU0rQgC96L3Ch9E=
 github.com/jhump/protoreflect v1.15.1 h1:HUMERORf3I3ZdX05WaQ6MIpd/NJ434hTp5YiKgfCL6c=
 github.com/jhump/protoreflect v1.15.1/go.mod h1:jD/2GMKKE6OqX8qTjhADU1e6DShO+gavG9e0Q693nKo=
 github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible h1:jdpOPRN1zP63Td1hDQbZW73xKmzDvZHzVdNYxhnTMDA=
