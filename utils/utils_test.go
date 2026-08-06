@@ -1,8 +1,8 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
-	"github.com/jfrog/jfrog-client-go/xray/services"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -18,6 +18,8 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
+	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
@@ -698,6 +700,52 @@ func TestPrintScanResultsTable(t *testing.T) {
 			assert.NotPanics(t, func() {
 				PrintScanResultsTable(test.scanResults)
 			})
+		})
+	}
+}
+
+func TestPrintScanResultsTableResultsPlatformURL(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() {
+		log.SetLogger(originalLogger)
+	})
+
+	testCases := []struct {
+		name               string
+		resultsPlatformURL string
+		expectURL          bool
+	}{
+		{
+			name:               "prints available URL",
+			resultsPlatformURL: resultsURL,
+			expectURL:          true,
+		},
+		{
+			name:      "omits unavailable URL",
+			expectURL: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			var output bytes.Buffer
+			log.SetLogger(log.NewLogger(log.INFO, &output))
+			scanResults := &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					ResultsPlatformUrl: testCase.resultsPlatformURL,
+				},
+				Targets: []*results.TargetResults{},
+			}
+
+			PrintScanResultsTable(scanResults)
+
+			if testCase.expectURL {
+				assert.Contains(t, output.String(), resultsURL)
+				assert.Contains(t, output.String(), "You may view the scan results in the JFrog platform")
+			} else {
+				assert.NotContains(t, output.String(), "You may view the scan results in the JFrog platform")
+			}
 		})
 	}
 }

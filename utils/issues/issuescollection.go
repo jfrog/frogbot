@@ -16,6 +16,7 @@ const FailPrRuleMessage = "one or more violations incurred by '%s' watch, which 
 
 // Group issues by scan type
 type ScansIssuesCollection struct {
+	ResultsPlatformURL string
 	formats.ScanStatus
 
 	LicensesViolations []formats.LicenseViolationRow
@@ -44,6 +45,10 @@ type ScansIssuesCollection struct {
 func (ic *ScansIssuesCollection) Append(issues *ScansIssuesCollection) {
 	if issues == nil {
 		return
+	}
+	// Results platform URL
+	if issues.ResultsPlatformURL != "" {
+		ic.ResultsPlatformURL = issues.ResultsPlatformURL
 	}
 	// Status
 	ic.AppendStatus(issues.ScanStatus)

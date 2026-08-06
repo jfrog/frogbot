@@ -91,14 +91,7 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 		repoConfig.Params.JFrogPlatform.JFrogProjectKey,
 	)
 	defer func() {
-		if issuesCollection != nil {
-			xsc.SendScanEndedEvent(
-				scanDetails.XrayVersion,
-				scanDetails.XscVersion,
-				scanDetails.ServerDetails,
-				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err,
-			)
-		}
+		xsc.SendScanEndedWithResults(scanDetails.ServerDetails, scanResults)
 	}()
 	issuesCollection, scanResults, err = auditPullRequestCode(repoConfig, scanDetails, sourceBranchWd, targetBranchWd)
 	return
@@ -144,7 +137,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 	log.Debug("Scanning target branch code...")
 	if targetScanResults, e := auditPullRequestTargetCode(scanDetails, targetBranchWd); e != nil {
 		issuesCollection.AppendStatus(getResultScanStatues(targetScanResults))
-		return issuesCollection, nil, fmt.Errorf("failed to audit target branch. Error: %s", e.Error())
+		return issuesCollection, targetScanResults, fmt.Errorf("failed to audit target branch. Error: %s", e.Error())
 	} else {
 		scanDetails.SetResultsToCompare(targetScanResults)
 	}
@@ -155,7 +148,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 			// Scan error, report the scan status
 			issuesCollection.AppendStatus(pullRequestIssues.ScanStatus)
 		}
-		return issuesCollection, nil, fmt.Errorf("failed to audit source branch code. Error: %s", e.Error())
+		return issuesCollection, sourceScanResults, fmt.Errorf("failed to audit source branch code. Error: %s", e.Error())
 	}
 	issuesCollection.Append(pullRequestIssues)
 	scanResults = sourceScanResults
@@ -454,6 +447,8 @@ func scanResultsToIssuesCollection(scanResults *results.SecurityCommandResults, 
 		return nil, err
 	}
 	issuesCollection = &issues.ScansIssuesCollection{
+		ResultsPlatformURL: scanResults.ResultsPlatformUrl,
+
 		ScanStatus:         simpleJsonResults.Statuses,
 		ScaVulnerabilities: simpleJsonResults.Vulnerabilities,
 		ScaViolations:      simpleJsonResults.SecurityViolations,

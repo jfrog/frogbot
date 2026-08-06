@@ -40,6 +40,8 @@ const (
 	iacTitle                = "🛠️ Infrastructure as Code"
 	sastTitle               = "🎯 Static Application Security Testing (SAST)"
 	snippetsTitle           = "📜 Public Code Snippet"
+
+	scanResultsLinkText = "View full scan results in JFrog Platform"
 )
 
 var (
@@ -75,10 +77,10 @@ func getFallbackCommentLocationDescription(location formats.Location) string {
 }
 
 // Summary comment, including banner, footer wrapping the content with a decorator
-func GetMainCommentContent(contentForComments []string, issuesExists, isComment bool, writer OutputWriter) (comments []string) {
+func GetMainCommentContent(contentForComments []string, issuesExists, isComment bool, resultsPlatformURL string, writer OutputWriter) (comments []string) {
 	return ConvertContentToComments(contentForComments, writer, func(commentCount int, content string) string {
 		if commentCount == 0 {
-			content = GetPRSummaryMainCommentDecorator(issuesExists, isComment, writer)(commentCount, content)
+			content = getMainCommentDecorator(issuesExists, isComment, resultsPlatformURL, writer)(commentCount, content)
 		}
 		return GetFrogbotCommentBaseDecorator(writer)(commentCount, content)
 	})
@@ -94,14 +96,17 @@ func GetFrogbotCommentBaseDecorator(writer OutputWriter) CommentDecorator {
 	}
 }
 
-// Adding a banner and custom title to the content
-func GetPRSummaryMainCommentDecorator(issuesExists, isComment bool, writer OutputWriter) CommentDecorator {
+// Adding a banner, custom title and results platform URL to the content
+func getMainCommentDecorator(issuesExists, isComment bool, resultsPlatformURL string, writer OutputWriter) CommentDecorator {
 	return func(_ int, content string) string {
 		comment := strings.Builder{}
 		comment.WriteString(writer.Image(getPRSummaryBanner(issuesExists, isComment, writer.VcsProvider())))
 		customCommentTitle := writer.PullRequestCommentTitle()
 		if customCommentTitle != "" {
 			WriteContent(&comment, writer.MarkAsTitle(MarkAsBold(customCommentTitle), 2))
+		}
+		if resultsPlatformURL != "" {
+			WriteContent(&comment, writer.MarkAsTitle(MarkAsLink(scanResultsLinkText, resultsPlatformURL), 3))
 		}
 		if issuesExists {
 			WriteContent(&comment, content)

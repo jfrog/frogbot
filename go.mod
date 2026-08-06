@@ -13,7 +13,7 @@ require (
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260728123939-34b27f070f2e
-	github.com/jfrog/jfrog-cli-security v1.32.0
+	github.com/jfrog/jfrog-cli-security v1.32.1
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260803094922-a87c05639195
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -131,7 +131,7 @@ require (
 )
 
 // attiasas:services-sub-scan-source-code
-replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260804130156-5d073d1958ca
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260806060325-9a4c41b4285b
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

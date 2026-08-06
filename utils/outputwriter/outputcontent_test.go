@@ -1,7 +1,10 @@
 package outputwriter
 
 import (
+	"encoding/json"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -12,6 +15,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
 	xrayApi "github.com/jfrog/jfrog-client-go/xray/services/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v3/utils/issues"
 )
@@ -125,11 +129,149 @@ func TestGetMainCommentContent(t *testing.T) {
 		for _, test := range tc.cases {
 			t.Run(tc.name+"_"+test.name, func(t *testing.T) {
 				expectedOutput := GetExpectedTestOutput(t, test)
-				output := GetMainCommentContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, test.writer)
+				output := GetMainCommentContent([]string{MarkAsCodeSnippet("some content")}, tc.issuesExists, tc.isComment, "", test.writer)
 				assert.Len(t, output, 1)
 				assert.Equal(t, expectedOutput, output[0])
 			})
 		}
+	}
+}
+
+func TestGetMainCommentContentWithResultsPlatformURL(t *testing.T) {
+	const (
+		resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+		content    = "scan findings"
+	)
+	link := MarkAsLink(scanResultsLinkText, resultsURL)
+
+	testCases := []struct {
+		name         string
+		writer       OutputWriter
+		issuesExist  bool
+		isComment    bool
+		content      []string
+		expectDetail bool
+	}{
+		{
+			name:         "PR summary findings standard output",
+			writer:       &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist:  true,
+			isComment:    true,
+			content:      []string{content},
+			expectDetail: true,
+		},
+		{
+			name:         "PR summary findings simplified output",
+			writer:       &SimplifiedOutput{},
+			issuesExist:  true,
+			isComment:    true,
+			content:      []string{content},
+			expectDetail: true,
+		},
+		{
+			name:        "successful PR scan",
+			writer:      &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist: false,
+			isComment:   true,
+		},
+		{
+			name:         "fix PR details include link",
+			writer:       &StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+			issuesExist:  true,
+			isComment:    false,
+			content:      []string{content},
+			expectDetail: true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			comments := GetMainCommentContent(
+				testCase.content,
+				testCase.issuesExist,
+				testCase.isComment,
+				resultsURL,
+				testCase.writer,
+			)
+
+			require.Len(t, comments, 1)
+			assert.Contains(t, comments[0], link)
+			assert.Contains(t, comments[0], testCase.writer.MarkAsTitle(link, 3))
+			if testCase.expectDetail {
+				assert.Less(t, strings.Index(comments[0], link), strings.Index(comments[0], content))
+			}
+		})
+	}
+}
+
+func TestGetMainCommentContentWithoutResultsPlatformURL(t *testing.T) {
+	writer := &StandardOutput{MarkdownOutput{hasInternetConnection: true}}
+	content := []string{"scan findings"}
+
+	comments := GetMainCommentContent(content, true, true, "", writer)
+
+	require.Len(t, comments, 1)
+	assert.Contains(t, comments[0], content[0])
+	assert.NotContains(t, comments[0], scanResultsLinkText)
+}
+
+// The integration tests compare the posted comment against a golden file, and rely on stripping the
+// scan results link to restore a body that is byte for byte identical to the one produced without it.
+func TestStripScanResultsLinkFromJsonBodyRestoresBodyWithoutLink(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/scans-list/repositories/frogbot/scan-descendants/source_code_1785235666994.cdx.json?package_id=generic%3A%2F%2Fsha256%3Aabc%2Fsource_code.cdx.json"
+	content := []string{"## 📗 Scan Summary\n- Frogbot scanned for vulnerabilities and found 3 issues"}
+
+	for _, writer := range []OutputWriter{
+		&StandardOutput{MarkdownOutput{hasInternetConnection: true}},
+		&SimplifiedOutput{MarkdownOutput{hasInternetConnection: true}},
+	} {
+		t.Run(fmt.Sprintf("%T", writer), func(t *testing.T) {
+			withLink := GetMainCommentContent(content, true, true, resultsURL, writer)
+			withoutLink := GetMainCommentContent(content, true, true, "", writer)
+			require.Len(t, withLink, 1)
+			require.Len(t, withoutLink, 1)
+
+			payload, err := json.Marshal(TestBodyResponse{Body: withLink[0]})
+			require.NoError(t, err)
+
+			stripped, found := StripScanResultsLinkFromJsonBody(t, payload)
+			assert.True(t, found)
+
+			var strippedBody TestBodyResponse
+			require.NoError(t, json.Unmarshal(stripped, &strippedBody))
+			assert.Equal(t, withoutLink[0], strippedBody.Body)
+		})
+	}
+}
+
+func TestStripScanResultsLinkFromJsonBodyWithoutLink(t *testing.T) {
+	payload, err := json.Marshal(TestBodyResponse{Body: "no link here"})
+	require.NoError(t, err)
+
+	stripped, found := StripScanResultsLinkFromJsonBody(t, payload)
+	assert.False(t, found)
+	assert.Equal(t, payload, stripped)
+}
+
+func TestGetMainCommentContentAddsLinkOnlyToFirstSplitComment(t *testing.T) {
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	writer := &SimplifiedOutput{MarkdownOutput{
+		descriptionSizeLimit: 1200,
+		commentSizeLimit:     1200,
+	}}
+
+	comments := GetMainCommentContent(
+		[]string{strings.Repeat("a", 800), strings.Repeat("b", 800)},
+		true,
+		true,
+		resultsURL,
+		writer,
+	)
+
+	require.Greater(t, len(comments), 1)
+	assert.Contains(t, comments[0], resultsURL)
+	for _, comment := range comments[1:] {
+		assert.NotContains(t, comment, resultsURL)
 	}
 }
 
