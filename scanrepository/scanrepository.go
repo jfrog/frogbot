@@ -17,6 +17,7 @@ import (
 	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-security/policy"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -117,10 +118,10 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (ha
 	)
 
 	totalFindings := 0
-	scanTypesExecuted := datastructures.MakeSet[string]()
+	scanTypesExecuted := datastructures.MakeSet[securityutils.SubScanType]()
 
 	defer func() {
-		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, scanTypesExecuted.ToSlice(), "", err)
+		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, securityutils.SubScanTypesToStrings(scanTypesExecuted.ToSlice()), "", err)
 	}()
 
 	for i := range repository.Projects {
@@ -180,7 +181,7 @@ func getWorkingDirs(baseDir string, projectWorkingDirs []string) []string {
 	return projectWorkingDirs
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository, scanTypesExecuted *datastructures.Set[string]) (bool, int, error) {
+func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository, scanTypesExecuted *datastructures.Set[securityutils.SubScanType]) (bool, int, error) {
 	var isFixNeeded bool
 	shouldFailBuild := false
 	totalFindings := 0
