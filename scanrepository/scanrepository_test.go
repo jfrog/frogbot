@@ -638,116 +638,6 @@ func loadTestSBOM(t *testing.T, filename string) *cyclonedx.BOM {
 	return bom
 }
 
-func TestGetTotalFindingsFromScanResults(t *testing.T) {
-	testCases := []struct {
-		name          string
-		scanResults   *results.SecurityCommandResults
-		expectedCount int
-	}{
-		{
-			name:          "Nil scan results",
-			scanResults:   nil,
-			expectedCount: 0,
-		},
-		{
-			name: "No violations or vulnerabilities",
-			scanResults: &results.SecurityCommandResults{Targets: []*results.TargetResults{{
-				ScanTarget: results.ScanTarget{Target: "target1"},
-			}}},
-			expectedCount: 0,
-		},
-		{
-			name: "Vulnerabilities only",
-			scanResults: &results.SecurityCommandResults{
-				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{IncludeVulnerabilities: true}},
-				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
-					ScaResults: &results.ScaScanResults{
-						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
-					},
-				}},
-			},
-			expectedCount: 4,
-		},
-		{
-			name: "Violations only",
-			scanResults: &results.SecurityCommandResults{
-				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{Watches: []string{"w1"}}},
-				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
-				}},
-				Violations: &violationutils.Violations{
-					Sca: []violationutils.CveViolation{
-						{
-							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: &cyclonedx.Component{
-									BOMRef:     "pkg:npm/viol1@1.0.0",
-									PackageURL: "pkg:npm/viol1@1.0.0",
-								},
-							},
-							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
-						},
-						{
-							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: &cyclonedx.Component{
-									BOMRef:     "pkg:npm/viol2@2.0.0",
-									PackageURL: "pkg:npm/viol2@2.0.0",
-								},
-							},
-							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
-						},
-					},
-				},
-			},
-			expectedCount: 2,
-		},
-		{
-			name: "Violations take precedence over vulnerabilities",
-			scanResults: &results.SecurityCommandResults{
-				ResultsMetaData: results.ResultsMetaData{
-					ResultContext: results.ResultContext{IncludeVulnerabilities: true, Watches: []string{"w1"}}},
-				Targets: []*results.TargetResults{{
-					ScanTarget: results.ScanTarget{Target: "target1", Technologies: []techutils.Technology{techutils.Npm}},
-					ScaResults: &results.ScaScanResults{
-						Sbom: loadTestSBOM(t, "sbom_with_vulnerabilities.json"),
-					},
-				}},
-				Violations: &violationutils.Violations{
-					Sca: []violationutils.CveViolation{
-						{
-							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: &cyclonedx.Component{
-									BOMRef:     "pkg:npm/viol1@1.0.0",
-									PackageURL: "pkg:npm/viol1@1.0.0",
-								},
-							},
-							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2023-1234"},
-						},
-						{
-							ScaViolation: violationutils.ScaViolation{
-								ImpactedComponent: &cyclonedx.Component{
-									BOMRef:     "pkg:npm/viol2@2.0.0",
-									PackageURL: "pkg:npm/viol2@2.0.0",
-								},
-							},
-							CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2022-1234"},
-						},
-					},
-				},
-			},
-			expectedCount: 2,
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			assert.Equal(t, testCase.expectedCount, getTotalFindingsFromScanResults(testCase.scanResults))
-		})
-	}
-}
-
 // Verifies unsupported packages return specific error
 // Other logic is implemented inside each package-handler.
 func TestUpdatePackageToFixedVersion(t *testing.T) {
@@ -796,8 +686,8 @@ func TestPreparePullRequestDetails(t *testing.T) {
 			SuggestedFixedVersion: "1.0.0",
 		},
 	}
-	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
-	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, vulnerabilities...)
+	expectedPrBody, expectedExtraComments := utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
+	prTitle, prBody, extraComments, err := cfp.preparePullRequestDetails(false, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, "[🐸 Frogbot] Update version of package1 to 1.0.0", prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
@@ -815,20 +705,31 @@ func TestPreparePullRequestDetails(t *testing.T) {
 		},
 		SuggestedFixedVersion: "2.0.0",
 	})
-	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 	cfp.OutputWriter = &outputwriter.SimplifiedOutput{}
-	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), cfp.OutputWriter)
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), "", cfp.OutputWriter)
 	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
-	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, vulnerabilities...)
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, "", vulnerabilities...)
 	assert.NoError(t, err)
 	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
 	assert.Equal(t, expectedPrBody, prBody)
+	assert.ElementsMatch(t, expectedExtraComments, extraComments)
+
+	const resultsURL = "https://example.jfrog.io/ui/xray/scans-list/git-repositories/test"
+	expectedPrBody, expectedExtraComments = utils.GenerateFixPullRequestDetails(utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilities), resultsURL, cfp.OutputWriter)
+	expectedPrBody += outputwriter.MarkdownComment("Checksum: bec823edaceb5d0478b789798e819bde")
+	prTitle, prBody, extraComments, err = cfp.preparePullRequestDetails(true, resultsURL, vulnerabilities...)
+	assert.NoError(t, err)
+	assert.Equal(t, cfp.gitManager.GenerateAggregatedPullRequestTitle([]techutils.Technology{}), prTitle)
+	assert.Equal(t, expectedPrBody, prBody)
+	assert.Contains(t, prBody, resultsURL)
+	assert.Contains(t, prBody, "View full scan results in JFrog Platform")
 	assert.ElementsMatch(t, expectedExtraComments, extraComments)
 }
 

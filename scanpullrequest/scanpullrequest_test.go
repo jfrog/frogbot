@@ -1429,7 +1429,11 @@ func createGitLabHandler(t *testing.T, testDir string, params GitServerParams) h
 			default:
 				expectedResponse = outputwriter.GetJsonBodyOutputFromFile(t, filepath.Join(testDir, "expected_response.md"))
 			}
-			assert.JSONEq(t, string(expectedResponse), buf.String())
+			// The link is only rendered when the platform returns a results URL, which the mocked VCS
+			// server cannot provide, so its presence is asserted by the outputwriter unit tests instead.
+			actualResponse, _ := outputwriter.StripScanResultsLinkFromJsonBody(t, buf.Bytes())
+			actualResponse = outputwriter.NormalizeJsonBodyLineEndings(t, actualResponse)
+			assert.JSONEq(t, string(expectedResponse), string(actualResponse))
 
 			w.WriteHeader(http.StatusOK)
 			_, err = w.Write([]byte("{}"))
