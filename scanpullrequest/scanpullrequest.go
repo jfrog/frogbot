@@ -124,19 +124,12 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 		err = fmt.Errorf("failed to download source branch code. Error: %s", err.Error())
 		return
 	}
-	if err = utils.CreateSyntheticHeadCommit(sourceBranchWd); err != nil {
-		log.Warn("Failed to create synthetic HEAD commit for source branch: " + err.Error())
-		err = nil
-	}
 	target := repoConfig.Params.Git.PullRequestDetails.Target
 	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
-	if err = utils.CreateSyntheticHeadCommit(targetBranchWd); err != nil {
-		log.Warn("Failed to create synthetic HEAD commit for target branch: " + err.Error())
-		err = nil
-	}
+	createSyntheticHeadCommitInSourceAndTarget(sourceBranchWd, targetBranchWd)
 	return
 }
 
@@ -514,4 +507,18 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 		return targetStatus
 	}
 	return sourceStatus
+}
+
+// This func creates a synthetic commit in a .git repo to avoid 'NoHeadException' error in case where a commit is needed for customer's scripts unrelated to frogbot
+// Order matters: a target-side failure must skip the source attempt too, otherwise a
+// source-has-commit/target-has-none split makes every dependency in source look newly
+// added (target's SBOM generation silently yields zero dependencies, not a caught scan error).
+func createSyntheticHeadCommitInSourceAndTarget(sourceBranchWd, targetBranchWd string) {
+	if err := utils.CreateSyntheticHeadCommit(targetBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for target branch: " + err.Error())
+		return
+	}
+	if err := utils.CreateSyntheticHeadCommit(sourceBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for source branch: " + err.Error())
+	}
 }
