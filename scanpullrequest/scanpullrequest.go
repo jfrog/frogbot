@@ -510,9 +510,6 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 }
 
 // This func creates a synthetic commit in a .git repo to avoid 'NoHeadException' error in case where a commit is needed for customer's scripts unrelated to frogbot
-// Order matters: a target-side failure must skip the source attempt too, otherwise a
-// source-has-commit/target-has-none split makes every dependency in source look newly
-// added (target's SBOM generation silently yields zero dependencies, not a caught scan error).
 func createSyntheticHeadCommitInSourceAndTarget(sourceBranchWd, targetBranchWd string) {
 	if err := utils.CreateSyntheticHeadCommit(targetBranchWd); err != nil {
 		log.Warn("Failed to create synthetic HEAD commit for target branch: " + err.Error())
