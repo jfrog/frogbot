@@ -167,7 +167,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
 	}
-	utils.PrintScanResultsTable(scanResults)
+	utils.PrintScanResultsTable(scanResults, repoConfig.FrogbotConfig.ShowSecretsAsPrComment)
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.Entitlements.Jas, scanResults.HasJasScansResults(jasutils.Applicability))
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
