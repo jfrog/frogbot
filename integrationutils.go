@@ -206,10 +206,12 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
 	defer unsetEnvs()
 
+	gitManager := buildGitManager(t, testDetails)
+	defer cleanupLeftoverFrogbotPRs(t, client, testDetails, gitManager)
+
 	err = Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
 	require.NoError(t, err)
 
-	gitManager := buildGitManager(t, testDetails)
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
 	expectedBranches := []string{
@@ -225,7 +227,6 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 			assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranch))
 		}
 	}
-	cleanupLeftoverFrogbotPRs(t, client, testDetails, gitManager)
 }
 
 func cleanupLeftoverFrogbotPRs(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, gitManager *utils.GitManager) {
