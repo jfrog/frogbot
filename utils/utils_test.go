@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http/httptest"
 	"os"
 	"path"
@@ -16,11 +17,15 @@ import (
 	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/sarifutils"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	"github.com/jfrog/jfrog-client-go/xray/services"
+	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
 	"github.com/jfrog/frogbot/v3/utils/outputwriter"
@@ -640,24 +645,31 @@ func TestWriteScanResultsToGitlabDir(t *testing.T) {
 }
 
 func TestPrintScanResultsTable(t *testing.T) {
+	const secretSnippet = "my-snippet-1234"
+
 	tests := []struct {
-		name        string
-		scanResults *results.SecurityCommandResults
+		name                 string
+		scanResults          *results.SecurityCommandResults
+		showSecrets          bool
+		expectSecretInOutput bool
 	}{
 		{
 			name:        "nil scan results should not panic",
 			scanResults: nil,
+			showSecrets: true,
 		},
 		{
 			name: "empty scan results should not panic",
 			scanResults: &results.SecurityCommandResults{
 				Targets: []*results.TargetResults{},
 			},
+			showSecrets: true,
 		},
 		{
-			name: "scan results with vulnerabilities should print without error",
+			name: "scan results should print without error",
 			scanResults: &results.SecurityCommandResults{
 				ResultsMetaData: results.ResultsMetaData{
+					Entitlements:  results.Entitlements{Jas: true},
 					ResultContext: results.ResultContext{IncludeVulnerabilities: true},
 				},
 				Targets: []*results.TargetResults{{
@@ -673,18 +685,100 @@ func TestPrintScanResultsTable(t *testing.T) {
 							},
 						}},
 					},
+					JasResults: &results.JasScansResults{
+						JasVulnerabilities: results.JasScanResults{
+							SecretsScanResults: []*sarif.Run{
+								sarifutils.CreateRunWithDummyResultAndRuleInformation(
+									sarifutils.CreateResultWithLocations("Secret", "rule", "error",
+										sarifutils.CreateLocation("index.js", 5, 6, 7, 8, secretSnippet),
+									), "", "", nil, nil),
+							},
+						},
+					},
 				}},
 			},
+			showSecrets:          true,
+			expectSecretInOutput: true,
+		},
+		{
+			name: "secrets are hidden when not allowed",
+			scanResults: &results.SecurityCommandResults{
+				ResultsMetaData: results.ResultsMetaData{
+					Entitlements:  results.Entitlements{Jas: true},
+					ResultContext: results.ResultContext{IncludeVulnerabilities: true},
+				},
+				Targets: []*results.TargetResults{{
+					ScanTarget: results.ScanTarget{Target: "test-target"},
+					JasResults: &results.JasScansResults{
+						JasVulnerabilities: results.JasScanResults{
+							SecretsScanResults: []*sarif.Run{
+								sarifutils.CreateRunWithDummyResultAndRuleInformation(
+									sarifutils.CreateResultWithLocations("Secret", "rule", "error",
+										sarifutils.CreateLocation("index.js", 5, 6, 7, 8, secretSnippet),
+									), "", "", nil, nil),
+							},
+						},
+					},
+				}},
+			},
+			showSecrets:          false,
+			expectSecretInOutput: false,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			originalStdout := os.Stdout
+			r, w, err := os.Pipe()
+			require.NoError(t, err)
+			os.Stdout = w
+
 			assert.NotPanics(t, func() {
-				PrintScanResultsTable(test.scanResults)
+				PrintScanResultsTable(test.scanResults, test.showSecrets)
 			})
+
+			require.NoError(t, w.Close())
+			os.Stdout = originalStdout
+			capturedOutput, err := io.ReadAll(r)
+			require.NoError(t, err)
+
+			if test.expectSecretInOutput {
+				assert.Contains(t, string(capturedOutput), secretSnippet)
+			} else {
+				assert.NotContains(t, string(capturedOutput), secretSnippet)
+			}
 		})
 	}
+}
+
+func TestHideSecretsForPrinting(t *testing.T) {
+	secretRun := &sarif.Run{}
+	violationSecret := violationutils.JasViolation{}
+
+	scanResults := &results.SecurityCommandResults{
+		Targets: []*results.TargetResults{
+			{
+				JasResults: &results.JasScansResults{
+					JasVulnerabilities: results.JasScanResults{
+						SecretsScanResults: []*sarif.Run{secretRun},
+					},
+				},
+			},
+			// Target without JAS results, to make sure it is skipped without panicking.
+			{},
+		},
+		Violations: &violationutils.Violations{
+			Secrets: []violationutils.JasViolation{violationSecret},
+		},
+	}
+
+	restore := hideSecretsForPrinting(scanResults)
+	assert.Nil(t, scanResults.Targets[0].JasResults.JasVulnerabilities.SecretsScanResults)
+	assert.Nil(t, scanResults.Violations.Secrets)
+
+	restore()
+	assert.Equal(t, []*sarif.Run{secretRun}, scanResults.Targets[0].JasResults.JasVulnerabilities.SecretsScanResults)
+	assert.Equal(t, []violationutils.JasViolation{violationSecret}, scanResults.Violations.Secrets)
 }
 
 func TestPrintScanResultsTableResultsPlatformURL(t *testing.T) {
@@ -721,7 +815,7 @@ func TestPrintScanResultsTableResultsPlatformURL(t *testing.T) {
 				Targets: []*results.TargetResults{},
 			}
 
-			PrintScanResultsTable(scanResults)
+			PrintScanResultsTable(scanResults, true)
 
 			if testCase.expectURL {
 				assert.Contains(t, output.String(), resultsURL)
