@@ -14,8 +14,10 @@ import (
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
+	"github.com/jfrog/gofrog/datastructures"
 	"github.com/jfrog/gofrog/version"
 	"github.com/jfrog/jfrog-cli-security/policy"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -116,20 +118,21 @@ func (cfp *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (ha
 	)
 
 	totalFindings := 0
+	scanTypesExecuted := datastructures.MakeSet[securityutils.SubScanType]()
 
 	defer func() {
-		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, err)
+		xsc.SendScanEndedEvent(cfp.scanDetails.XrayVersion, cfp.scanDetails.XscVersion, cfp.scanDetails.ServerDetails, cfp.scanDetails.MultiScanId, cfp.scanDetails.StartTime, totalFindings, &cfp.scanDetails.ResultContext, securityutils.SubScanTypesToStrings(scanTypesExecuted.ToSlice()), "", err)
 	}()
 
 	for i := range repository.Projects {
 		cfp.scanDetails.Project = &repository.Projects[i]
 		cfp.projectTech = []techutils.Technology{}
-		if hasFailBuildInProject, findings, e := cfp.scanAndFixProject(repository); e != nil {
+		hasFailBuildInProject, findings, e := cfp.scanAndFixProject(repository, scanTypesExecuted)
+		if e != nil {
 			return false, e
-		} else {
-			totalFindings += findings
-			hasFailBuild = hasFailBuild || hasFailBuildInProject
 		}
+		totalFindings += findings
+		hasFailBuild = hasFailBuild || hasFailBuildInProject
 	}
 
 	return
@@ -178,7 +181,7 @@ func getWorkingDirs(baseDir string, projectWorkingDirs []string) []string {
 	return projectWorkingDirs
 }
 
-func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (bool, int, error) {
+func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository, scanTypesExecuted *datastructures.Set[securityutils.SubScanType]) (bool, int, error) {
 	var isFixNeeded bool
 	shouldFailBuild := false
 	totalFindings := 0
@@ -196,6 +199,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository) (b
 		}
 		utils.PrintScanResultsTable(scanResults, repository.AddSecretsComments)
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
+		scanTypesExecuted.AddElements(scanResults.GetStatusCodes().GetExecutedScanTypes()...)
 		if resolvedViolations := issues.ResolveViolations(scanResults); resolvedViolations != nil && resolvedViolations.ShouldFailBuild() {
 			issues.LogFailingPolicyRulesForBuild(resolvedViolations)
 			shouldFailBuild = true

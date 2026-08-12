@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -227,11 +228,16 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 	)
 	defer func() {
 		if issuesCollection != nil {
+			var scanTypesExecuted []securityutils.SubScanType
+			if scanResults != nil {
+				scanTypesExecuted = scanResults.GetStatusCodes().GetExecutedScanTypes()
+			}
 			xsc.SendScanEndedEvent(
 				scanDetails.XrayVersion,
 				scanDetails.XscVersion,
 				scanDetails.ServerDetails,
-				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err,
+				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true),
+				&scanDetails.ResultContext, securityutils.SubScanTypesToStrings(scanTypesExecuted), "", err,
 			)
 		}
 	}()
