@@ -197,7 +197,7 @@ func (cfp *ScanRepositoryCmd) scanAndFixProject(repository *utils.Repository, sc
 			}
 			continue
 		}
-		utils.PrintScanResultsTable(scanResults)
+		utils.PrintScanResultsTable(scanResults, repository.AddSecretsComments)
 		totalFindings += getTotalFindingsFromScanResults(scanResults)
 		scanTypesExecuted.AddElements(scanResults.GetStatusCodes().GetExecutedScanTypes()...)
 		if resolvedViolations := issues.ResolveViolations(scanResults); resolvedViolations != nil && resolvedViolations.ShouldFailBuild() {
