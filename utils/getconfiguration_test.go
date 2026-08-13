@@ -169,14 +169,14 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	_, err = extractGitParamsFromEnvs()
 	assert.EqualError(t, err, "'JF_GIT_TOKEN' environment variable is missing")
 
-	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "token123"})
+	SetEnvAndAssert(t, map[string]string{GitTokenEnv: "myValue"})
 	gitParams, err := extractGitParamsFromEnvs()
 	assert.NoError(t, err)
 
 	assert.Equal(t, "frogbot", gitParams.RepoName)
 	assert.Equal(t, vcsutils.GitHub, gitParams.GitProvider)
 	assert.Equal(t, "jfrog", gitParams.RepoOwner)
-	assert.Equal(t, "token123", gitParams.Token)
+	assert.Equal(t, "myValue", gitParams.Token)
 	assert.Empty(t, gitParams.Workspace)
 
 	SetEnvAndAssert(t, map[string]string{GitWorkspaceEnv: "my-workspace"})
