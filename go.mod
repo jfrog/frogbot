@@ -12,7 +12,7 @@ require (
 	github.com/jfrog/build-info-go v1.13.1-0.20260811071930-3b99d4a6c84b
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.6
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260813123937-e7fa28b75506
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260814125750-77deb9f6259c
 	github.com/jfrog/jfrog-cli-security v1.34.0
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20260813100550-0f2168d02558
 	github.com/owenrumney/go-sarif/v3 v3.2.3
@@ -130,7 +130,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-// replace github.com/jfrog/jfrog-cli-security => github.com/jfog/jfrog-cli-security dev
+// attiasas:services-sub-scan-source-code
+replace github.com/jfrog/jfrog-cli-security => github.com/attiasas/jfrog-cli-security v0.0.0-20260816064120-8154f9a8c77c
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 

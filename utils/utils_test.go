@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v3/utils/gitlabreport"
+	"github.com/jfrog/frogbot/v3/utils/issues"
 	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
@@ -38,6 +39,22 @@ const (
 	dependencySubmissionTestWorkflow = "test-workflow"
 	dependencySubmissionTestSha      = "abc123def456"
 )
+
+func TestConvertSarifPathsToRelativeServices(t *testing.T) {
+	issuesCollection := &issues.ScansIssuesCollection{
+		ServicesVulnerabilities: []formats.SourceCodeRow{{
+			Location: formats.Location{File: filepath.Join("tmp", "wd", "service.yaml")},
+		}},
+		ServicesViolations: []formats.SourceCodeRow{{
+			Location: formats.Location{File: filepath.Join("tmp", "wd", "api.yaml")},
+		}},
+	}
+
+	ConvertSarifPathsToRelative(issuesCollection, filepath.Join("tmp", "wd"))
+
+	assert.Equal(t, "service.yaml", issuesCollection.ServicesVulnerabilities[0].Location.File)
+	assert.Equal(t, "api.yaml", issuesCollection.ServicesViolations[0].Location.File)
+}
 
 func TestChdir(t *testing.T) {
 	originCwd, err := os.Getwd()

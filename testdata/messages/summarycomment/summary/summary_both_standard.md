@@ -1,6 +1,6 @@
 
 ## 📗 Scan Summary
-- Frogbot scanned for violations and vulnerabilities and found 13 issues
+- Frogbot scanned for violations and vulnerabilities and found 16 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
@@ -8,4 +8,5 @@
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | <details><summary><b>4 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 3 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> 1 Low<br></details> |
 | **Secrets** | ✅ Done | - |
+| **Services** | ✅ Done | <details><summary><b>3 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 1 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 2 Medium<br></details> |
 | **Infrastructure as Code (IaC)** | ℹ️ Not Scanned | - |

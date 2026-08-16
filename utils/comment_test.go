@@ -573,6 +573,26 @@ func TestGetNewReviewComments(t *testing.T) {
 						},
 					},
 				},
+				ServicesVulnerabilities: []formats.SourceCodeRow{
+					{
+						SeverityDetails: formats.SeverityDetails{
+							Severity:         "Medium",
+							SeverityNumValue: 10,
+						},
+						ScannerInfo: formats.ScannerInfo{
+							RuleId: "services-rule",
+						},
+						Finding: "Exposed service endpoint detected",
+						Location: formats.Location{
+							File:        "file1",
+							StartLine:   1,
+							StartColumn: 10,
+							EndLine:     2,
+							EndColumn:   11,
+							Snippet:     "services-snippet",
+						},
+					},
+				},
 				SastVulnerabilities: []formats.SourceCodeRow{
 					{
 						SeverityDetails: formats.SeverityDetails{
@@ -647,6 +667,43 @@ func TestGetNewReviewComments(t *testing.T) {
 									RuleId: "aws-violation",
 								},
 								Finding: "Missing auto upgrade was detected",
+							}), writer),
+						},
+						PullRequestDiff: vcsclient.PullRequestDiff{
+							OriginalFilePath:    "file1",
+							OriginalStartLine:   1,
+							OriginalStartColumn: 10,
+							OriginalEndLine:     2,
+							OriginalEndColumn:   11,
+							NewFilePath:         "file1",
+							NewStartLine:        1,
+							NewStartColumn:      10,
+							NewEndLine:          2,
+							NewEndColumn:        11,
+						},
+					},
+				},
+				{
+					Location: formats.Location{
+						File:        "file1",
+						StartLine:   1,
+						StartColumn: 10,
+						EndLine:     2,
+						EndColumn:   11,
+						Snippet:     "services-snippet",
+					},
+					Type: ServicesComment,
+					CommentInfo: vcsclient.PullRequestComment{
+						CommentInfo: vcsclient.CommentInfo{
+							Content: outputwriter.GenerateReviewCommentContent(outputwriter.ServicesReviewContent(false, writer, formats.SourceCodeRow{
+								SeverityDetails: formats.SeverityDetails{
+									Severity:         "Medium",
+									SeverityNumValue: 10,
+								},
+								ScannerInfo: formats.ScannerInfo{
+									RuleId: "services-rule",
+								},
+								Finding: "Exposed service endpoint detected",
 							}), writer),
 						},
 						PullRequestDiff: vcsclient.PullRequestDiff{

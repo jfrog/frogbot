@@ -35,6 +35,7 @@ const (
 
 	//#nosec G101 -- not a secret
 	secretsTitle            = "🤫 Secret"
+	servicesTitle           = "🔌 Services"
 	contextualAnalysisTitle = "📦🔍 Contextual Analysis CVE"
 	iacTitle                = "🛠️ Infrastructure as Code"
 	sastTitle               = "🎯 Static Application Security Testing (SAST)"
@@ -186,6 +187,7 @@ func ScanSummaryContent(issues issues.ScansIssuesCollection, context results.Res
 	table.AddRow(MarkAsBold("Contextual Analysis"), getSubScanResultStatus(issues.GetScanStatus(utils.ContextualAnalysisScan)), "")
 	table.AddRow(MarkAsBold("Static Application Security Testing (SAST)"), getSubScanResultStatus(issues.GetScanStatus(utils.SastScan)), getScanSecurityIssuesDetails(issues, context, utils.SastScan, writer))
 	table.AddRow(MarkAsBold("Secrets"), getSubScanResultStatus(issues.GetScanStatus(utils.SecretsScan)), secretsDetails)
+	table.AddRow(MarkAsBold("Services"), getSubScanResultStatus(issues.GetScanStatus(utils.ServicesScan)), getScanSecurityIssuesDetails(issues, context, utils.ServicesScan, writer))
 	table.AddRow(MarkAsBold("Infrastructure as Code (IaC)"), getSubScanResultStatus(issues.GetScanStatus(utils.IacScan)), getScanSecurityIssuesDetails(issues, context, utils.IacScan, writer))
 	WriteContent(&contentBuilder, table.Build())
 	return contentBuilder.String()
@@ -232,6 +234,8 @@ func getScanSecurityIssuesDetails(issues issues.ScansIssuesCollection, context r
 		severityCountMap = issues.GetScanIssuesSeverityCount(utils.SecretsScan, countVulnerabilities, countViolations)
 	case utils.IacScan:
 		severityCountMap = issues.GetScanIssuesSeverityCount(utils.IacScan, countVulnerabilities, countViolations)
+	case utils.ServicesScan:
+		severityCountMap = issues.GetScanIssuesSeverityCount(utils.ServicesScan, countVulnerabilities, countViolations)
 	}
 	totalIssues := getTotalIssues(severityCountMap)
 	if totalIssues == 0 {
@@ -500,6 +504,22 @@ func IacReviewContent(violation bool, writer OutputWriter, issues ...formats.Sou
 		getJasFullDescription(violation, writer, getBaseJasDetailsTable, issues...),
 	)
 	return contentBuilder.String()
+}
+
+func ServicesReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
+	var contentBuilder strings.Builder
+	WriteContent(&contentBuilder,
+		writer.MarkAsTitle(fmt.Sprintf("%s %s", servicesTitle, getIssueType(violation)), 2),
+		writer.MarkInCenter(getJasIssueDescriptionTable(writer, issues...)),
+		getJasFullDescription(violation, writer, getServicesRuleFullDescriptionTable, issues...),
+	)
+	return contentBuilder.String()
+}
+
+func getServicesRuleFullDescriptionTable(info formats.ScannerInfo, writer OutputWriter) *MarkdownTableBuilder {
+	table := getBaseJasDetailsTable(info, writer)
+	table.AddRow(MarkAsBold("Rule ID:"), info.RuleId)
+	return table
 }
 
 func SastReviewContent(violation bool, writer OutputWriter, issues ...formats.SourceCodeRow) string {
