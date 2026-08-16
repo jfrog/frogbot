@@ -281,6 +281,7 @@ func TestScanSummaryContent(t *testing.T) {
 		ApplicabilityStatusCode: utils.NewIntPtr(0),
 		SastStatusCode:          utils.NewIntPtr(0),
 		SecretsStatusCode:       utils.NewIntPtr(0),
+		ServicesStatusCode:      utils.NewIntPtr(0),
 	}
 	testIssues := issues.ScansIssuesCollection{
 		ScaVulnerabilities: []formats.VulnerabilityOrViolationRow{
@@ -308,6 +309,11 @@ func TestScanSummaryContent(t *testing.T) {
 			{SeverityDetails: formats.SeverityDetails{Severity: "Low"}},
 		},
 		SastViolations: []formats.SourceCodeRow{{SeverityDetails: formats.SeverityDetails{Severity: "High"}}},
+		ServicesVulnerabilities: []formats.SourceCodeRow{
+			{SeverityDetails: formats.SeverityDetails{Severity: "High"}},
+			{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}},
+		},
+		ServicesViolations: []formats.SourceCodeRow{{SeverityDetails: formats.SeverityDetails{Severity: "Medium"}}},
 	}
 
 	testCases := []struct {
