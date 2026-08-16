@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/jfrog/gofrog/datastructures"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
+
+	"github.com/jfrog/gofrog/datastructures"
 
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
@@ -15,6 +18,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-cli-security/utils/xsc"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
@@ -28,6 +32,15 @@ const (
 	analyticsScanPrScanType              = "PR"
 	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
+	noGitHubEnvErr                       = "frogbot did not scan this pull request, because a GitHub Environment named 'frogbot' does not exist. " +
+		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
+		"Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvReviewersErr = "frogbot did not scan this pull request, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. " +
+		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
+		"Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvInWorkflowErr = "frogbot did not scan this pull request, because the workflow file does not set 'environment: frogbot'. " +
+		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
+		"Please refer to the Frogbot documentation for instructions on how to configure the Environment"
 )
 
 // targetPair represents a matched pair of source and target scan results
@@ -102,12 +115,106 @@ func createBaseScanDetails(repoConfig *utils.Repository, client vcsclient.VcsCli
 	if err != nil {
 		return
 	}
-	return utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
+	scanDetails = utils.NewScanDetails(client, &repoConfig.Server, &repoConfig.Params.Git).
 		SetJfrogVersions(repoConfig.Params.XrayVersion, repoConfig.Params.XscVersion).
 		SetResultsContext(repositoryCloneUrl, repoConfig.Params.JFrogPlatform.JFrogProjectKey, false).
 		SetConfigProfile(repoConfig.Params.ConfigProfile).
 		SetDiffScan(true).
-		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails), nil
+		SetXscPRGitInfoContext(repoConfig.Params.Git.Project, client, repoConfig.Params.Git.PullRequestDetails)
+	if repoConfig.Params.Git.GitProvider == vcsutils.GitHub {
+		scanDetails.SetRiskyTechEnvironmentGuard(blockRiskyTechsWithoutEnvironmentGuard(client, repoConfig))
+	}
+	return scanDetails, nil
+}
+
+func blockRiskyTechsWithoutEnvironmentGuard(client vcsclient.VcsClient, repoConfig *utils.Repository) func(detectedTechnologies []techutils.Technology) error {
+	return func(detectedTechnologies []techutils.Technology) error {
+		if !slices.Contains(detectedTechnologies, techutils.Maven) && !slices.Contains(detectedTechnologies, techutils.Gradle) {
+			return nil
+		}
+		return verifyGitHubFrogbotEnvironment(client, repoConfig)
+	}
+}
+
+// Verify that the 'frogbot' GitHub environment was properly configured on the repository
+func verifyGitHubFrogbotEnvironment(client vcsclient.VcsClient, repoConfig *utils.Repository) error {
+	if repoConfig.Params.Git.APIEndpoint != "" && repoConfig.Params.Git.APIEndpoint != "https://api.github.com" {
+		// Don't verify 'frogbot' environment on GitHub on-prem
+		return nil
+	}
+	if _, exist := os.LookupEnv(utils.GitHubActionsEnv); !exist {
+		// Don't verify 'frogbot' environment on non GitHub Actions CI
+		return nil
+	}
+
+	// If the repository is not public, using 'frogbot' environment is not mandatory
+	repoInfo, err := client.GetRepositoryInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName)
+	if err != nil {
+		return err
+	}
+	if repoInfo.RepositoryVisibility != vcsclient.Public {
+		return nil
+	}
+
+	// Get the 'frogbot' environment info and make sure it exists and includes reviewers
+	repoEnvInfo, err := client.GetRepositoryEnvironmentInfo(context.Background(), repoConfig.Params.Git.RepoOwner, repoConfig.Params.Git.RepoName, "frogbot")
+	if err != nil {
+		return errors.New(err.Error() + "\n" + noGitHubEnvErr)
+	}
+	if len(repoEnvInfo.Reviewers) == 0 {
+		return errors.New(noGitHubEnvReviewersErr)
+	}
+
+	return verifyWorkflowContainsFrogbotEnvironment(client)
+}
+
+// Fetches the workflow file that triggered Frogbot (via GITHUB_WORKFLOW_REF) and verifies it contains 'environment: frogbot'.
+func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error {
+	workflowRef := os.Getenv(utils.GitHubWorkflowRefEnv)
+	if workflowRef == "" {
+		return nil
+	}
+
+	// GITHUB_WORKFLOW_REF format: {owner}/{repo}/{path}@{ref}
+	// e.g. eranturgeman/jfrog-security-test-app/.github/workflows/frogbot-scan-pull-request.yml@refs/heads/main
+	// Note: the owner/repo here is the workflow's repo, which may differ from the scanned repo.
+	atIdx := strings.LastIndex(workflowRef, "@")
+	if atIdx == -1 {
+		return nil
+	}
+	pathPart := workflowRef[:atIdx]
+	ref := workflowRef[atIdx+1:]
+
+	// Parse owner, repo, and file path from "{owner}/{repo}/{path}"
+	parts := strings.SplitN(pathPart, "/", 3)
+	if len(parts) < 3 {
+		return nil
+	}
+	owner, repo, filePath := parts[0], parts[1], parts[2]
+
+	// Extract branch name from ref (e.g. "refs/heads/main" → "main")
+	branch := ref
+	if b, ok := strings.CutPrefix(ref, "refs/heads/"); ok {
+		branch = b
+	} else if b, ok := strings.CutPrefix(ref, "refs/tags/"); ok {
+		branch = b
+	}
+
+	fileContent, _, err := client.DownloadFileFromRepo(context.Background(), owner, repo, branch, filePath)
+	if err != nil {
+		// Can't fetch the file — skip this check rather than blocking the scan
+		log.Warn(fmt.Sprintf("Failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error()))
+		return nil
+	}
+
+	matched, err := regexp.MatchString(`\n\s*environment\s*:\s*frogbot`, string(fileContent))
+	if err != nil {
+		return err
+	}
+	if !matched {
+		return errors.New(noGitHubEnvInWorkflowErr)
+	}
+	return nil
 }
 
 func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {

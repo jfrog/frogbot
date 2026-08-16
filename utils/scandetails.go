@@ -15,6 +15,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/sca/bom/xrayplugin/plugin"
 	"github.com/jfrog/jfrog-cli-security/sca/scan/enrich"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
+	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 	xscservices "github.com/jfrog/jfrog-client-go/xsc/services"
 )
@@ -29,6 +30,8 @@ type ScanDetails struct {
 	diffScan         bool
 	ResultsToCompare *results.SecurityCommandResults
 	ConfigProfile    *xscservices.ConfigProfile
+	// Optional PR-scan-only guard, invoked with the technologies detected once per Audit() call. Set only for GitHub PR scans, nil everywhere else.
+	riskyTechEnvironmentGuard func(detectedTechnologies []techutils.Technology) error
 
 	results.ResultContext
 	MultiScanId string
@@ -74,6 +77,11 @@ func (sc *ScanDetails) SetConfigProfile(configProfile *xscservices.ConfigProfile
 	return sc
 }
 
+func (sc *ScanDetails) SetRiskyTechEnvironmentGuard(guard func(detectedTechnologies []techutils.Technology) error) *ScanDetails {
+	sc.riskyTechEnvironmentGuard = guard
+	return sc
+}
+
 func (sc *ScanDetails) Client() vcsclient.VcsClient {
 	return sc.client
 }
@@ -116,7 +124,8 @@ func (sc *ScanDetails) Audit(baseDir string) (auditResults *results.SecurityComm
 		SetMultiScanId(sc.MultiScanId).
 		SetThreads(MaxConcurrentScanners).
 		SetStartTime(sc.StartTime).
-		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator())
+		SetViolationGenerator(enforcer.NewPolicyEnforcerViolationGenerator()).
+		SetDetectedTechnologiesGuardCallback(sc.riskyTechEnvironmentGuard)
 
 	return audit.RunAudit(auditParams)
 }
