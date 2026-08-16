@@ -158,7 +158,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (sca
 			err = errors.Join(err, policyErr)
 		}
 	}()
-	utils.PrintScanResultsTable(scanResults)
+	utils.PrintScanResultsTable(scanResults, repository.FrogbotConfig.ShowSecretsAsPrComment)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 	sr.uploadGitLabScanResultsIfNeeded(repository, scanResults)
 

@@ -82,6 +82,31 @@ func (gm *GitManager) SetAuth(username, token string) *GitManager {
 	return gm
 }
 
+// CreateSyntheticHeadCommit creates an empty commit in an existing .git directory so that
+// jgit-based tools (e.g. Gradle versioning plugins) can resolve HEAD without a real clone.
+func CreateSyntheticHeadCommit(repoPath string) error {
+	repo, err := git.PlainOpen(repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to open git repository at '%s': %s", repoPath, err.Error())
+	}
+	w, err := repo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree at '%s': %s", repoPath, err.Error())
+	}
+	_, err = w.Commit("init", &git.CommitOptions{
+		AllowEmptyCommits: true,
+		Author: &object.Signature{
+			Name:  "frogbot",
+			Email: "frogbot@jfrog.com",
+			When:  time.Now(),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create synthetic HEAD commit at '%s': %s", repoPath, err.Error())
+	}
+	return nil
+}
+
 func (gm *GitManager) SetRemoteGitUrl(remoteHttpsGitUrl string) (*GitManager, error) {
 	// Check if the .git directory exists
 	dotGitExists, err := fileutils.IsDirExists(git.GitDirName, false)

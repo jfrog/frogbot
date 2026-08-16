@@ -129,6 +129,7 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
+	createSyntheticHeadCommitInSourceAndTarget(sourceBranchWd, targetBranchWd)
 	return
 }
 
@@ -167,7 +168,7 @@ func auditPullRequestSourceCode(repoConfig *utils.Repository, scanDetails *utils
 		issuesCollection = &issues.ScansIssuesCollection{ScanStatus: getResultScanStatues(scanResults)}
 		return
 	}
-	utils.PrintScanResultsTable(scanResults)
+	utils.PrintScanResultsTable(scanResults, repoConfig.FrogbotConfig.ShowSecretsAsPrComment)
 	// Set JAS output flags based on the scan results
 	repoConfig.OutputWriter.SetJasOutputFlags(scanResults.Entitlements.Jas, scanResults.HasJasScansResults(jasutils.Applicability))
 	filterFailedResultsIfScannersFailuresAreAllowed(scanDetails.ResultsToCompare, scanResults, repoConfig.Params.ConfigProfile.GeneralConfig.FailUponAnyScannerError, sourceBranchWd, targetBranchWd)
@@ -523,4 +524,15 @@ func getWorstScanStatus(targetStatus, sourceStatus *int) *int {
 		return targetStatus
 	}
 	return sourceStatus
+}
+
+// This func creates a synthetic commit in a .git repo to avoid 'NoHeadException' error in case where a commit is needed for customer's scripts unrelated to frogbot
+func createSyntheticHeadCommitInSourceAndTarget(sourceBranchWd, targetBranchWd string) {
+	if err := utils.CreateSyntheticHeadCommit(targetBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for target branch: " + err.Error())
+		return
+	}
+	if err := utils.CreateSyntheticHeadCommit(sourceBranchWd); err != nil {
+		log.Warn("Failed to create synthetic HEAD commit for source branch: " + err.Error())
+	}
 }
