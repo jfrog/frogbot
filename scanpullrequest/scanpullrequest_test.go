@@ -303,6 +303,50 @@ func TestVerifyWorkflowContainsFrogbotEnvironment(t *testing.T) {
 			wantErrContains: noGitHubEnvInWorkflowErr,
 		},
 		{
+			testName:       "environment field with a different name is rejected, not treated as a prefix match",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: frogbot-staging\n"), 200, nil)
+			},
+			wantErrContains: noGitHubEnvInWorkflowErr,
+		},
+		{
+			testName:       "environment field double-quoted",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte(`jobs:
+  scan:
+    environment: "frogbot"
+`), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field single-quoted",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: 'frogbot'\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field with trailing comment",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: frogbot # requires approval\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field in object form with name on the next line",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment:\n      name: frogbot\n"), 200, nil)
+			},
+		},
+		{
 			testName:       "workflow ref not set",
 			workflowRefEnv: "",
 		},

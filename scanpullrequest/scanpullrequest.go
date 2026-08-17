@@ -35,6 +35,15 @@ const (
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
 )
 
+var (
+	// Matches the inline string form: environment: frogbot / environment: "frogbot" / environment: 'frogbot'
+	frogbotInlineEnvPattern = regexp.MustCompile(`(?m)^\s*environment\s*:\s*['"]?frogbot['"]?\s*(#.*)?$`)
+	// Matches the object form, when 'name' is the line immediately following 'environment:':
+	//   environment:
+	//     name: frogbot
+	frogbotObjectEnvPattern = regexp.MustCompile(`(?m)^\s*environment\s*:\s*(#.*)?\n\s*name\s*:\s*['"]?frogbot['"]?\s*(#.*)?$`)
+)
+
 type ScanPullRequestCmd struct{}
 
 // targetPair represents a matched pair of source and target scan results
@@ -132,14 +141,10 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 		return fmt.Errorf("failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error())
 	}
 
-	matched, err := regexp.MatchString(`\n\s*environment\s*:\s*frogbot`, string(fileContent))
-	if err != nil {
-		return err
-	}
-	if !matched {
+	content := string(fileContent)
+	if !frogbotInlineEnvPattern.MatchString(content) && !frogbotObjectEnvPattern.MatchString(content) {
 		return errors.New(noGitHubEnvInWorkflowErr)
 	}
-
 	return nil
 }
 
