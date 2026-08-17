@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -199,7 +200,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
 	if failFlagSet {
 		// If the fail flag is set to true (JF_FAIL), we check if any security ISSUE exists (not just violations), and if so, we fail the build.
-		return issues.IssuesExists(repo.PullRequestSecretComments)
+		return issues.IssuesExists(repo.AddSecretsComments)
 	} else {
 		// When fail flag is set to false, we check for fail-pr rule in existing VIOLATIONS. If one exists, we fail the build as well.
 		return issues.IsFailPrRuleApplied()
@@ -230,11 +231,16 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 	)
 	defer func() {
 		if issuesCollection != nil {
+			var scanTypesExecuted []securityutils.SubScanType
+			if scanResults != nil {
+				scanTypesExecuted = scanResults.GetStatusCodes().GetExecutedScanTypes()
+			}
 			xsc.SendScanEndedEvent(
 				scanDetails.XrayVersion,
 				scanDetails.XscVersion,
 				scanDetails.ServerDetails,
-				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err,
+				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true),
+				&scanDetails.ResultContext, securityutils.SubScanTypesToStrings(scanTypesExecuted), "", err,
 			)
 		}
 	}()
@@ -329,7 +335,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		scanResults = aggregatedScanResults
 	}
 
-	utils.PrintScanResultsTable(scanResults)
+	utils.PrintScanResultsTable(scanResults, repoConfig.AddSecretsComments)
 	return
 }
 

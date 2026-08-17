@@ -740,7 +740,7 @@ func TestToFailTaskStatus(t *testing.T) {
 						FailOnSecurityIssues: &failFlag,
 					},
 					Git: utils.Git{
-						PullRequestSecretComments: false,
+						AddSecretsComments: false,
 					},
 				},
 			}
