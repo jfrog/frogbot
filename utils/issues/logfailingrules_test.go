@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/CycloneDX/cyclonedx-go"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/config"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/severityutils"
@@ -418,13 +419,15 @@ func TestCollectFailingIssuesForBuild(t *testing.T) {
 }
 
 func TestLogFailingPolicyRulesForPrDoesNotPanic(t *testing.T) {
-	LogFailingPolicyRulesForPr(nil)
-	LogFailingPolicyRulesForPr(&violationutils.Violations{})
+	server := &config.ServerDetails{Url: "https://myserver.com/"}
+	LogFailingPolicyRulesForPr(nil, server, violationUiLinkMinXrayVersion)
+	LogFailingPolicyRulesForPr(&violationutils.Violations{}, server, violationUiLinkMinXrayVersion)
 }
 
 func TestLogFailingPolicyRulesForBuildDoesNotPanic(t *testing.T) {
-	LogFailingPolicyRulesForBuild(nil)
-	LogFailingPolicyRulesForBuild(&violationutils.Violations{})
+	server := &config.ServerDetails{Url: "https://myserver.com/"}
+	LogFailingPolicyRulesForBuild(nil, server, violationUiLinkMinXrayVersion)
+	LogFailingPolicyRulesForBuild(&violationutils.Violations{}, server, violationUiLinkMinXrayVersion)
 }
 
 func TestShouldSkipCvePolicy(t *testing.T) {
@@ -494,8 +497,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "security-watch",
-								Policies: []violationutils.Policy{{PolicyName: "critical-cves", Rule: "block-critical-severity", FailBuild: true}},
+								ViolationId: "2074859048208711680",
+								Watch:       "security-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "critical-cves", Rule: "block-critical-severity", FailBuild: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "lodash", Version: "4.17.20"},
 						},
@@ -506,8 +510,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "license-watch",
-								Policies: []violationutils.Policy{{PolicyName: "banned-licenses", Rule: "block-copyleft", FailBuild: true}},
+								ViolationId: "2074859048464564224",
+								Watch:       "license-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "banned-licenses", Rule: "block-copyleft", FailBuild: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "requests", Version: "2.25.1"},
 						},
@@ -518,8 +523,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "oprisk-watch",
-								Policies: []violationutils.Policy{{PolicyName: "eol-policy", Rule: "block-eol", FailBuild: true}},
+								ViolationId: "2075221495290396672",
+								Watch:       "oprisk-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "eol-policy", Rule: "block-eol", FailBuild: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "old-lib", Version: "0.1.0"},
 						},
@@ -527,13 +533,13 @@ func TestRenderedFailingIssues(t *testing.T) {
 					},
 				},
 				Secrets: []violationutils.JasViolation{
-					jasFindingFixture("appsec-watch", "no-secrets", "block-any-secret", "generic-api-key", "secrets/api_secrets/tokens", 1, 9),
+					jasFindingFixture("appsec-watch", "no-secrets", "block-any-secret", "generic-api-key", "secrets/api_secrets/tokens", 1, 9, "2075221495307173888"),
 				},
 				Iac: []violationutils.JasViolation{
-					jasFindingFixture("appsec-watch", "iac-hardening", "block-medium-iac", "gcp-private-endpoint", "iac/gcp/k8s-oss/module.tf", 19, 1),
+					jasFindingFixture("appsec-watch", "iac-hardening", "block-medium-iac", "gcp-private-endpoint", "iac/gcp/k8s-oss/module.tf", 19, 1, "2075221495319756800"),
 				},
 				Sast: []violationutils.JasViolation{
-					jasFindingFixture("appsec-watch", "sast-medium", "block-medium-sast", "cleartext-connection", "sast/flask_webgoat/__init__.py", 29, 12),
+					jasFindingFixture("appsec-watch", "sast-medium", "block-medium-sast", "cleartext-connection", "sast/flask_webgoat/__init__.py", 29, 12, "2075221495323951104"),
 				},
 			},
 			action:       failActionBuild,
@@ -546,8 +552,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "pr-security-watch",
-								Policies: []violationutils.Policy{{PolicyName: "high-cves", Rule: "block-high-severity", FailPullRequest: true}},
+								ViolationId: "2078174694150950912",
+								Watch:       "pr-security-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "high-cves", Rule: "block-high-severity", FailPullRequest: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "snyk", Version: "1.995.0"},
 						},
@@ -558,8 +565,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "pr-license-watch",
-								Policies: []violationutils.Policy{{PolicyName: "strict-oss-policy", Rule: "block-non-permissive", FailPullRequest: true}},
+								ViolationId: "2078174694180311040",
+								Watch:       "pr-license-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "strict-oss-policy", Rule: "block-non-permissive", FailPullRequest: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "some-lib", Version: "1.0.0"},
 						},
@@ -570,8 +578,9 @@ func TestRenderedFailingIssues(t *testing.T) {
 					{
 						ScaViolation: violationutils.ScaViolation{
 							Violation: violationutils.Violation{
-								Watch:    "pr-oprisk-watch",
-								Policies: []violationutils.Policy{{PolicyName: "deprecated-policy", Rule: "block-deprecated", FailPullRequest: true}},
+								ViolationId: "2078174694192893952",
+								Watch:       "pr-oprisk-watch",
+								Policies:    []violationutils.Policy{{PolicyName: "deprecated-policy", Rule: "block-deprecated", FailPullRequest: true}},
 							},
 							ImpactedComponent: &cyclonedx.Component{Name: "old-pkg", Version: "0.9.0"},
 						},
@@ -579,13 +588,13 @@ func TestRenderedFailingIssues(t *testing.T) {
 					},
 				},
 				Secrets: []violationutils.JasViolation{
-					jasFindingFixture("pr-appsec-watch", "no-secrets-pr", "block-any-secret-pr", "generic-secret", "secrets/secret_generic/gibberish", 1, 1),
+					jasFindingFixture("pr-appsec-watch", "no-secrets-pr", "block-any-secret-pr", "generic-secret", "secrets/secret_generic/gibberish", 1, 1, "2078175401000226816"),
 				},
 				Iac: []violationutils.JasViolation{
-					jasFindingFixture("pr-appsec-watch", "iac-hardening-pr", "block-medium-iac-pr", "missing-auto-upgrade", "iac/gcp/k8s-pipelines-bp/module.tf", 105, 1),
+					jasFindingFixture("pr-appsec-watch", "iac-hardening-pr", "block-medium-iac-pr", "missing-auto-upgrade", "iac/gcp/k8s-pipelines-bp/module.tf", 105, 1, "2078175401017004032"),
 				},
 				Sast: []violationutils.JasViolation{
-					jasFindingFixture("pr-appsec-watch", "sast-low-pr", "block-low-sast-pr", "info-leak", "sast/flask_webgoat/ui.py", 25, 9),
+					jasFindingFixture("pr-appsec-watch", "sast-low-pr", "block-low-sast-pr", "info-leak", "sast/flask_webgoat/ui.py", 25, 9, "2078179035133956096"),
 				},
 			},
 			action:       failActionPr,
@@ -599,16 +608,109 @@ func TestRenderedFailingIssues(t *testing.T) {
 			require.NoError(t, err)
 			// Normalization for Windows
 			expectedText := strings.ReplaceAll(string(expected), "\r\n", "\n")
-			assert.Equal(t, expectedText, renderFailingIssues(issuesFound, tc.action))
+			assert.Equal(t, expectedText, renderFailingIssues(issuesFound, tc.action, "https://myserver.com"))
 		})
 	}
 }
 
-func jasFindingFixture(watch, policy, rule, ruleId, file string, line, column int) violationutils.JasViolation {
+func TestCollectFailingIssuesCapturesViolationId(t *testing.T) {
+	violations := &violationutils.Violations{
+		Sca: []violationutils.CveViolation{
+			{
+				ScaViolation: violationutils.ScaViolation{
+					Violation: violationutils.Violation{
+						ViolationId: "2077479737771958272",
+						Watch:       "security-watch",
+						Policies:    []violationutils.Policy{{PolicyName: "critical-cves", Rule: "block-critical-severity", FailPullRequest: true}},
+					},
+					ImpactedComponent: &cyclonedx.Component{Name: "lodash", Version: "4.17.20"},
+				},
+				CveVulnerability: cyclonedx.Vulnerability{BOMRef: "CVE-2026-4800"},
+			},
+		},
+	}
+	result := collectFailingIssues(violations, failActionPr)
+	require.Len(t, result, 1)
+	assert.Equal(t, "2077479737771958272", result[0].violationId)
+}
+
+func TestViolationUiLink(t *testing.T) {
+	testCases := []struct {
+		name        string
+		baseUrl     string
+		violationId string
+		expected    string
+	}{
+		{name: "Empty base url", baseUrl: "", violationId: "123", expected: ""},
+		{name: "Empty violation id", baseUrl: "https://myserver.com", violationId: "", expected: ""},
+		{name: "Builds link", baseUrl: "https://myserver.com", violationId: "123", expected: "https://myserver.com/ui/violations/123"},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, violationUiLink(tc.baseUrl, tc.violationId))
+		})
+	}
+}
+
+func TestViolationUiBaseUrl(t *testing.T) {
+	testCases := []struct {
+		name        string
+		server      config.ServerDetails
+		xrayVersion string
+		expected    string
+	}{
+		{
+			name:        "Platform url set",
+			server:      config.ServerDetails{Url: "https://myserver.com/"},
+			xrayVersion: violationUiLinkMinXrayVersion,
+			expected:    "https://myserver.com",
+		},
+		{
+			name:        "Derived from xray url",
+			server:      config.ServerDetails{XrayUrl: "https://myserver.com/xray/"},
+			xrayVersion: "3.151.0",
+			expected:    "https://myserver.com",
+		},
+		{
+			name:        "No urls configured",
+			server:      config.ServerDetails{},
+			xrayVersion: "3.151.0",
+			expected:    "",
+		},
+		{
+			name:        "Xray version below the permalink endpoint",
+			server:      config.ServerDetails{Url: "https://myserver.com/"},
+			xrayVersion: "3.150.2",
+			expected:    "",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expected, violationUiBaseUrl(&tc.server, tc.xrayVersion))
+		})
+	}
+}
+
+func TestRenderFailingIssuesOmitsLinkWhenViolationIdMissing(t *testing.T) {
+	issuesFound := []failingIssue{
+		{
+			description: "CVE-2026-4800 (lodash@4.17.20)",
+			triggers:    []violationTrigger{{watch: "security-watch", policy: "critical-cves", rule: "block-critical-severity"}},
+		},
+	}
+	expected := "The following findings triggered a policy rule configured to fail the pull request:\n" +
+		"  - CVE-2026-4800 (lodash@4.17.20)\n" +
+		"      Triggered:\n" +
+		"        - Watch: 'security-watch', Policy: 'critical-cves', Rule: 'block-critical-severity'"
+	assert.Equal(t, expected, renderFailingIssues(issuesFound, failActionPr, "https://myserver.com"))
+}
+
+func jasFindingFixture(watch, policy, rule, ruleId, file string, line, column int, violationId string) violationutils.JasViolation {
 	return violationutils.JasViolation{
 		Violation: violationutils.Violation{
-			Watch:    watch,
-			Policies: []violationutils.Policy{{PolicyName: policy, Rule: rule, FailBuild: true, FailPullRequest: true}},
+			ViolationId: violationId,
+			Watch:       watch,
+			Policies:    []violationutils.Policy{{PolicyName: policy, Rule: rule, FailBuild: true, FailPullRequest: true}},
 		},
 		Rule: sarif.NewReportingDescriptor().WithID(ruleId),
 		Location: sarif.NewLocation().WithPhysicalLocation(

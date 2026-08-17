@@ -1,19 +1,25 @@
 The following findings triggered a policy rule configured to fail the build:
   - CVE-2026-4800 (lodash@4.17.20)
+      Violation: https://myserver.com/ui/violations/2074859048208711680
       Triggered:
         - Watch: 'security-watch', Policy: 'critical-cves', Rule: 'block-critical-severity'
   - License: GPL-3.0-only (requests@2.25.1)
+      Violation: https://myserver.com/ui/violations/2074859048464564224
       Triggered:
         - Watch: 'license-watch', Policy: 'banned-licenses', Rule: 'block-copyleft'
   - Operational Risk: EOL (old-lib@0.1.0)
+      Violation: https://myserver.com/ui/violations/2075221495290396672
       Triggered:
         - Watch: 'oprisk-watch', Policy: 'eol-policy', Rule: 'block-eol'
   - iac/gcp/k8s-oss/module.tf:19:1 [rule: gcp-private-endpoint]
+      Violation: https://myserver.com/ui/violations/2075221495319756800
       Triggered:
         - Watch: 'appsec-watch', Policy: 'iac-hardening', Rule: 'block-medium-iac'
   - sast/flask_webgoat/__init__.py:29:12 [rule: cleartext-connection]
+      Violation: https://myserver.com/ui/violations/2075221495323951104
       Triggered:
         - Watch: 'appsec-watch', Policy: 'sast-medium', Rule: 'block-medium-sast'
   - secrets/api_secrets/tokens:1:9 [rule: generic-api-key]
+      Violation: https://myserver.com/ui/violations/2075221495307173888
       Triggered:
         - Watch: 'appsec-watch', Policy: 'no-secrets', Rule: 'block-any-secret'

@@ -80,7 +80,7 @@ func (pr *ScanPullRequestCmd) Run(repository utils.Repository, client vcsclient.
 		}
 	}
 	if pullRequestIssues.IsFailPrRuleApplied() {
-		issues.LogFailingPolicyRulesForPr(pullRequestIssues.Violations)
+		issues.LogFailingPolicyRulesForPr(pullRequestIssues.Violations, &repository.Server, repository.Params.JFrogPlatform.XrayVersion)
 		err = errors.New(SecurityIssueFoundErr)
 		return
 	}

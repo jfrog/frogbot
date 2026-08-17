@@ -154,7 +154,7 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (sca
 	defer func() {
 		// Always check policy even if an error occurred during the scan
 		if policyErr := policy.CheckPolicyFailBuildError(scanResults); policyErr != nil {
-			issues.LogFailingPolicyRulesForBuild(scanResults.Violations)
+			issues.LogFailingPolicyRulesForBuild(scanResults.Violations, &repository.Server, repository.Params.JFrogPlatform.XrayVersion)
 			err = errors.Join(err, policyErr)
 		}
 	}()
