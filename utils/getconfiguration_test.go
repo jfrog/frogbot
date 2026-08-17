@@ -26,16 +26,57 @@ var (
 )
 
 func TestExtractJFrogCredentialsFromEnvs(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
 	SetEnvAndAssert(t, map[string]string{
-		JFrogUrlEnv:   "",
-		JFrogTokenEnv: "",
+		JFrogUrlEnv:      "",
+		JFrogTokenEnv:    "",
+		JFrogUserEnv:     "",
+		JFrogPasswordEnv: "",
 	})
+	// No platform URL
 	_, err := extractJFrogCredentialsFromEnvs()
 	assert.EqualError(t, err, "JF_URL or JF_XRAY_URL and JF_ARTIFACTORY_URL environment variables are missing")
 
 	SetEnvAndAssert(t, map[string]string{JFrogUrlEnv: "http://127.0.0.1:8081"})
+	// No any authentication method
 	_, err = extractJFrogCredentialsFromEnvs()
-	assert.EqualError(t, err, "JF_ACCESS_TOKEN environment variable is missing")
+	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
+
+	// Access token only, no username and password
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogUserEnv:     "",
+		JFrogPasswordEnv: "",
+		JFrogTokenEnv:    "token",
+	})
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	assert.Equal(t, "token", server.AccessToken)
+	assert.Empty(t, server.User)
+	assert.Empty(t, server.Password)
+
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:   "http://127.0.0.1:8081",
+		JFrogUserEnv:  "admin",
+		JFrogTokenEnv: "",
+	})
+	// Username with no password
+	_, err = extractJFrogCredentialsFromEnvs()
+	assert.EqualError(t, err, "JF_USER and JF_PASSWORD or JF_ACCESS_TOKEN environment variables are missing")
+
+	// Username and password
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogUserEnv:     "admin",
+		JFrogPasswordEnv: "password",
+	})
+	server, err = extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	assert.Equal(t, "admin", server.User)
+	assert.Equal(t, "password", server.Password)
+	assert.Empty(t, server.AccessToken)
 }
 
 // Test extraction of env params in ScanPullRequest command
@@ -98,6 +139,34 @@ func TestExtractParamsFromEnvToken(t *testing.T) {
 		GitBitBucketUsernameEnv: "bbuser",
 	})
 	extractAndAssertParamsFromEnv(t, true, ScanRepository)
+}
+
+func TestExtractParamsFromEnvBasicAuth(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:             "http://127.0.0.1:8081",
+		JFrogUserEnv:            "admin",
+		JFrogPasswordEnv:        "password",
+		GitProvider:             string(BitbucketServer),
+		GitRepoOwnerEnv:         "jfrog",
+		GitRepoEnv:              "frogbot",
+		GitTokenEnv:             "123456789",
+		GitBaseBranchEnv:        "dev",
+		GitBitBucketUsernameEnv: "bbuser",
+	})
+
+	server, err := extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	gitParams, err := extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+	_, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, gitParams, server, ScanRepository)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "admin", server.User)
+	assert.Equal(t, "password", server.Password)
+	assert.Empty(t, server.AccessToken)
 }
 
 func TestExtractVcsProviderFromEnv(t *testing.T) {
@@ -202,7 +271,6 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName s
 	}
 	assert.Equal(t, "http://127.0.0.1:8081/artifactory/", configServer.ArtifactoryUrl)
 	assert.Equal(t, "http://127.0.0.1:8081/xray/", configServer.XrayUrl)
-	// TODO when basic auth (username + password) if fixed, make sure to add a check for it here and in the tests
 	assert.Equal(t, "token", configServer.AccessToken)
 
 	assert.Equal(t, vcsutils.BitbucketServer, configFile.GitProvider)
