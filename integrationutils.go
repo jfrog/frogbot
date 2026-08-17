@@ -206,10 +206,12 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 	unsetEnvs := setIntegrationTestEnvs(t, testDetails)
 	defer unsetEnvs()
 
+	gitManager := buildGitManager(t, testDetails)
+	defer cleanupLeftoverFrogbotPRs(t, client, testDetails, gitManager)
+
 	err = Exec(&scanrepository.ScanRepositoryCmd{}, utils.ScanRepository)
 	require.NoError(t, err)
 
-	gitManager := buildGitManager(t, testDetails)
 	pullRequests := getOpenPullRequests(t, client, testDetails)
 
 	expectedBranches := []string{
@@ -225,7 +227,6 @@ func runScanRepositoryCmd(t *testing.T, client vcsclient.VcsClient, testDetails 
 			assert.NoError(t, gitManager.RemoveRemoteBranch(expectedBranch))
 		}
 	}
-	cleanupLeftoverFrogbotPRs(t, client, testDetails, gitManager)
 }
 
 func cleanupLeftoverFrogbotPRs(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails, gitManager *utils.GitManager) {
@@ -238,6 +239,34 @@ func cleanupLeftoverFrogbotPRs(t *testing.T, client vcsclient.VcsClient, testDet
 				t.Logf("Warning: failed to remove leftover branch %s: %v", pr.Source.Name, err)
 			}
 		}
+	}
+}
+
+// cleanupIntegrationArtifacts is a safety-net sweep, run as a separate CI step regardless of test outcome.
+// It removes every branch and closes every open PR in the test repo except the default branch and the
+// 'issues-branch' baseline, catching leftovers that a crashed/timed-out test's own deferred cleanup missed.
+func cleanupIntegrationArtifacts(t *testing.T, client vcsclient.VcsClient, testDetails *IntegrationTestDetails) {
+	ctx := context.Background()
+	gitManager := buildGitManager(t, testDetails)
+
+	branches, err := client.ListBranches(ctx, testDetails.RepoOwner, testDetails.RepoName)
+	require.NoError(t, err)
+	for _, branch := range branches {
+		if branch == mainBranch || branch == issuesBranch {
+			continue
+		}
+		t.Logf("Cleanup: removing leftover branch %s", branch)
+		if err := gitManager.RemoveRemoteBranch(branch); err != nil {
+			t.Logf("Warning: failed to remove leftover branch %s: %v", branch, err)
+		}
+	}
+
+	for _, pr := range getOpenPullRequests(t, client, testDetails) {
+		if pr.Source.Name == issuesBranch {
+			continue
+		}
+		t.Logf("Cleanup: closing leftover PR %s (ID: %d)", pr.Source.Name, pr.ID)
+		closePullRequest(t, client, testDetails, int(pr.ID))
 	}
 }
 

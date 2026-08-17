@@ -226,6 +226,37 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
           FROGBOT_V3_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITHUB_TOKEN }}
 
+  github-integration-cleanup:
+    name: Cleanup GitHub Integration Test Artifacts
+    needs: github-integration
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsGitHub github_test.go integrationutils.go commands.go -v
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V3_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITHUB_TOKEN }}
+
   azure-integration:
     name: Azure Integration Tests
     needs: Pretest
@@ -271,6 +302,37 @@ jobs:
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
           FROGBOT_V3_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_AZURE_TOKEN }}
 
+  azure-integration-cleanup:
+    name: Cleanup Azure Integration Test Artifacts
+    needs: azure-integration
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsAzureRepos azure_test.go integrationutils.go commands.go -v
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V3_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_AZURE_TOKEN }}
+
   gitlab-integration:
     name: GitLab Integration Tests
     needs: Pretest
@@ -311,6 +373,37 @@ jobs:
 
       - name: Run Tests
         run: go test -tags integration gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V3_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V3_TESTS_GITLAB_TOKEN }}
+
+  gitlab-integration-cleanup:
+    name: Cleanup GitLab Integration Test Artifacts
+    needs: gitlab-integration
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsGitLab gitlab_test.go integrationutils.go commands.go -v
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
