@@ -107,7 +107,7 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 	// Note: the owner/repo here is the workflow's repo, which may differ from the scanned repo.
 	atIdx := strings.LastIndex(workflowRef, "@")
 	if atIdx == -1 {
-		return nil
+		return fmt.Errorf("failed verifying environment in workflow file: unexpected GITHUB_WORKFLOW_REF format, missing '@' separator: '%s'", workflowRef)
 	}
 	pathPart := workflowRef[:atIdx]
 	ref := workflowRef[atIdx+1:]
@@ -115,7 +115,7 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 	// Parse owner, repo, and file path from "{owner}/{repo}/{path}"
 	parts := strings.SplitN(pathPart, "/", 3)
 	if len(parts) < 3 {
-		return nil
+		return fmt.Errorf("failed verifying environment in workflow file: unexpected GITHUB_WORKFLOW_REF format, expected '{owner}/{repo}/{path}' but got '%s'", pathPart)
 	}
 	owner, repo, filePath := parts[0], parts[1], parts[2]
 
@@ -129,9 +129,7 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 
 	fileContent, _, err := client.DownloadFileFromRepo(context.Background(), owner, repo, branch, filePath)
 	if err != nil {
-		// Can't fetch the file — skip this check rather than blocking the scan
-		log.Warn(fmt.Sprintf("Failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error()))
-		return nil
+		return fmt.Errorf("failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error())
 	}
 
 	matched, err := regexp.MatchString(`\n\s*environment\s*:\s*frogbot`, string(fileContent))
