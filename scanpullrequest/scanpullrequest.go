@@ -32,15 +32,10 @@ const (
 	analyticsScanPrScanType              = "PR"
 	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
-	noGitHubEnvErr                       = "frogbot did not scan this pull request, because a GitHub Environment named 'frogbot' does not exist. " +
-		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
-		"Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	noGitHubEnvReviewersErr = "frogbot did not scan this pull request, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. " +
-		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
-		"Please refer to the Frogbot documentation for instructions on how to create the Environment"
-	noGitHubEnvInWorkflowErr = "frogbot did not scan this pull request, because the workflow file does not set 'environment: frogbot'. " +
-		"This repository requires it because it uses Maven and/or Gradle, whose dependency-tree resolution plugins execute build-tool code from the pull request before it can be scanned. " +
-		"Please refer to the Frogbot documentation for instructions on how to configure the Environment"
+	// Errors below are only surfaced when Maven or Gradle is detected (see blockRiskyTechsWithoutEnvironmentGuard)
+	noGitHubEnvErr           = "frogbot did not scan this PR, because a GitHub Environment named 'frogbot' does not exist. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvReviewersErr  = "frogbot did not scan this PR, because the existing GitHub Environment named 'frogbot' doesn't have reviewers selected. Please refer to the Frogbot documentation for instructions on how to create the Environment"
+	noGitHubEnvInWorkflowErr = "frogbot did not scan this PR, because the workflow file does not set 'environment: frogbot'. Please refer to the Frogbot documentation for instructions on how to configure the Environment"
 )
 
 // targetPair represents a matched pair of source and target scan results
