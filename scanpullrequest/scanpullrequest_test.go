@@ -31,6 +31,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/xray/services"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/jfrog/frogbot/v2/testdata"
 	"github.com/jfrog/frogbot/v2/utils"
 	"github.com/jfrog/frogbot/v2/utils/issues"
 	"github.com/jfrog/frogbot/v2/utils/outputwriter"
@@ -277,27 +278,111 @@ func TestVerifyGitHubFrogbotEnvironment(t *testing.T) {
 
 func TestVerifyWorkflowContainsFrogbotEnvironment(t *testing.T) {
 	workflowRef := "jfrog/frogbot/.github/workflows/frogbot.yml@refs/heads/main"
-	workflowContent := []byte("jobs:\n  scan:\n    environment: frogbot\n")
 
-	t.Run("environment field present", func(t *testing.T) {
-		client := CreateMockVcsClient(t)
-		client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").Return(workflowContent, 200, nil)
-		assert.NoError(t, os.Setenv(utils.GitHubWorkflowRefEnv, workflowRef))
-		assert.NoError(t, verifyWorkflowContainsFrogbotEnvironment(client))
-	})
+	tests := []struct {
+		testName        string
+		workflowRefEnv  string
+		setupMock       func(client *testdata.MockVcsClient)
+		wantErrContains string
+	}{
+		{
+			testName:       "environment field present",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: frogbot\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field missing",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    runs-on: ubuntu-latest\n"), 200, nil)
+			},
+			wantErrContains: noGitHubEnvInWorkflowErr,
+		},
+		{
+			testName:       "environment field with a different name is rejected, not treated as a prefix match",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: frogbot-staging\n"), 200, nil)
+			},
+			wantErrContains: noGitHubEnvInWorkflowErr,
+		},
+		{
+			testName:       "environment field double-quoted",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte(`jobs:
+  scan:
+    environment: "frogbot"
+`), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field single-quoted",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: 'frogbot'\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field with trailing comment",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment: frogbot # requires approval\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "environment field in object form with name on the next line",
+			workflowRefEnv: workflowRef,
+			setupMock: func(client *testdata.MockVcsClient) {
+				client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").
+					Return([]byte("jobs:\n  scan:\n    environment:\n      name: frogbot\n"), 200, nil)
+			},
+		},
+		{
+			testName:       "workflow ref not set",
+			workflowRefEnv: "",
+		},
+		{
+			testName:        "workflow ref missing '@' separator - fails closed",
+			workflowRefEnv:  "jfrog/frogbot/.github/workflows/frogbot.yml",
+			wantErrContains: "failed verifying environment in workflow file",
+		},
+		{
+			testName:        "workflow ref missing owner/repo/path segments - fails closed",
+			workflowRefEnv:  "frogbot@refs/heads/main",
+			wantErrContains: "failed verifying environment in workflow file",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			// When setupMock is nil, no .EXPECT() is set on the mock: any VCS call fails the test,
+			// proving these ref formats are rejected before any file is fetched.
+			client := CreateMockVcsClient(t)
+			if test.setupMock != nil {
+				test.setupMock(client)
+			}
+			if test.workflowRefEnv == "" {
+				assert.NoError(t, os.Unsetenv(utils.GitHubWorkflowRefEnv))
+			} else {
+				assert.NoError(t, os.Setenv(utils.GitHubWorkflowRefEnv, test.workflowRefEnv))
+			}
 
-	t.Run("environment field missing", func(t *testing.T) {
-		client := CreateMockVcsClient(t)
-		client.EXPECT().DownloadFileFromRepo(context.Background(), "jfrog", "frogbot", "main", ".github/workflows/frogbot.yml").Return([]byte("jobs:\n  scan:\n    runs-on: ubuntu-latest\n"), 200, nil)
-		assert.NoError(t, os.Setenv(utils.GitHubWorkflowRefEnv, workflowRef))
-		assert.ErrorContains(t, verifyWorkflowContainsFrogbotEnvironment(client), noGitHubEnvInWorkflowErr)
-	})
-
-	t.Run("workflow ref not set", func(t *testing.T) {
-		client := CreateMockVcsClient(t)
-		assert.NoError(t, os.Unsetenv(utils.GitHubWorkflowRefEnv))
-		assert.NoError(t, verifyWorkflowContainsFrogbotEnvironment(client))
-	})
+			err := verifyWorkflowContainsFrogbotEnvironment(client)
+			if test.wantErrContains != "" {
+				assert.ErrorContains(t, err, test.wantErrContains)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestVerifyGitHubFrogbotEnvironmentNoEnv(t *testing.T) {
