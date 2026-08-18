@@ -77,6 +77,7 @@ type Git struct {
 	UploadSbomToVcs              *bool
 	UploadPrSecurityResultsToVcs bool
 	GitlabScanResultsOutputDir   string
+	Workspace                    string
 }
 
 func (g *Git) GetRepositoryHttpsCloneUrl(gitClient vcsclient.VcsClient) (string, error) {
@@ -99,6 +100,10 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 	g.PullRequestDetails = gitParamsFromEnv.PullRequestDetails
 	g.RepoName = gitParamsFromEnv.RepoName
 	g.GitlabScanResultsOutputDir = gitParamsFromEnv.GitlabScanResultsOutputDir
+	g.Workspace = gitParamsFromEnv.Workspace
+	if g.Workspace != "" {
+		log.Info(fmt.Sprintf("Using JFrog Xray workspace '%s'", g.Workspace))
+	}
 
 	if commandName == ScanPullRequest {
 		if gitParamsFromEnv.PullRequestDetails.ID == 0 {
@@ -436,6 +441,7 @@ func extractGitParamsFromEnvs() (*Git, error) {
 	}
 
 	gitEnvParams.GitlabScanResultsOutputDir = getTrimmedEnv(GitlabScanResultsOutputDirEnv)
+	gitEnvParams.Workspace = getTrimmedEnv(GitWorkspaceEnv)
 
 	return gitEnvParams, nil
 }
@@ -521,7 +527,7 @@ func getConfigurationProfile(xrayVersion string, jfrogServer *coreconfig.ServerD
 		return
 	}
 	log.Debug(fmt.Sprintf("Searching central configuration associated to repository '%s'", jfrogServer.Url))
-	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey); err != nil || configProfile == nil {
+	if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey, gitParams.Workspace); err != nil || configProfile == nil {
 		return
 	}
 

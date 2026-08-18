@@ -177,6 +177,12 @@ func TestExtractGitParamsFromEnvs(t *testing.T) {
 	assert.Equal(t, vcsutils.GitHub, gitParams.GitProvider)
 	assert.Equal(t, "jfrog", gitParams.RepoOwner)
 	assert.Equal(t, "token123", gitParams.Token)
+	assert.Empty(t, gitParams.Workspace)
+
+	SetEnvAndAssert(t, map[string]string{GitWorkspaceEnv: "my-workspace"})
+	gitParams, err = extractGitParamsFromEnvs()
+	assert.NoError(t, err)
+	assert.Equal(t, "my-workspace", gitParams.Workspace)
 }
 
 func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName string) {
@@ -306,11 +312,13 @@ func TestVerifyValidApiEndpoint(t *testing.T) {
 
 func TestGetConfigurationProfile(t *testing.T) {
 	testcases := []struct {
-		name            string
-		xrayVersion     string
-		failureExpected bool
-		profileWithRepo bool
-		mockRepoInfoErr bool
+		name              string
+		xrayVersion       string
+		failureExpected   bool
+		profileWithRepo   bool
+		mockRepoInfoErr   bool
+		workspace         string
+		expectedWorkspace string
 	}{
 		{
 			name:            "Deprecated Server - Xray version is too low",
@@ -330,11 +338,19 @@ func TestGetConfigurationProfile(t *testing.T) {
 			profileWithRepo: true,
 			mockRepoInfoErr: true,
 		},
+		{
+			name:              "Profile by URL - Workspace forwarded to XSC",
+			xrayVersion:       services.ConfigProfileNewSchemaMinXrayVersion,
+			failureExpected:   false,
+			profileWithRepo:   true,
+			workspace:         "my-workspace",
+			expectedWorkspace: "my-workspace",
+		},
 	}
 
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
-			mockServer, serverDetails := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
+			mockServer, serverDetails, observedProfileByUrlReq := CreateXscMockServerForConfigProfile(t, testcase.xrayVersion)
 			defer mockServer.Close()
 
 			var mockVcsClient *testdata.MockVcsClient
@@ -344,6 +360,7 @@ func TestGetConfigurationProfile(t *testing.T) {
 				mockGitParams = &Git{
 					RepoOwner: "myUser",
 					RepoName:  "my-repo",
+					Workspace: testcase.workspace,
 				}
 			}
 
@@ -356,6 +373,7 @@ func TestGetConfigurationProfile(t *testing.T) {
 
 			require.NotNil(t, configProfile)
 			assert.NoError(t, err)
+			assert.Equal(t, testcase.expectedWorkspace, observedProfileByUrlReq.WorkspaceName)
 			if testcase.profileWithRepo {
 				assert.NotEmpty(t, repoCloneUrl)
 			}

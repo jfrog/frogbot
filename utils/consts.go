@@ -49,6 +49,12 @@ const (
 	GitPullRequestIDEnv           = "JF_GIT_PULL_REQUEST_ID"
 	GitApiEndpointEnv             = "JF_GIT_API_ENDPOINT"
 	GitlabScanResultsOutputDirEnv = "JF_SCAN_RESULTS_OUTPUT_DIR"
+	GitWorkspaceEnv               = "JF_GIT_WORKSPACE"
+
+	// The 'GITHUB_ACTIONS' environment variable exists when the CI is GitHub Actions
+	GitHubActionsEnv = "GITHUB_ACTIONS"
+	// The 'GITHUB_WORKFLOW_REF' environment variable contains the ref path to the workflow file, e.g. owner/repo/.github/workflows/frogbot.yml@refs/heads/main
+	GitHubWorkflowRefEnv = "GITHUB_WORKFLOW_REF"
 
 	// Placeholders for templates
 	PackagePlaceHolder    = "{IMPACTED_PACKAGE}"

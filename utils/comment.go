@@ -53,7 +53,7 @@ func HandlePullRequestCommentsAfterScan(issues *issues.ScansIssuesCollection, re
 
 	// Add summary scan comment
 	if issues.IssuesExists(repo.FrogbotConfig.ShowSecretsAsPrComment) || !repo.FrogbotConfig.HideSuccessBannerForNoIssues {
-		comments := generatePullRequestSummaryComment(*issues, resultContext, repo.FrogbotConfig.ShowSecretsAsPrComment, repo.OutputWriter)
+		comments := generatePullRequestSummaryComment(*issues, resultContext, repo.FrogbotConfig.ShowSecretsAsPrComment, issues.ResultsPlatformURL, repo.OutputWriter)
 		if repo.OutputWriter.VcsProvider() == vcsutils.BitbucketCloud {
 			// Bitbucket Cloud Activity feed displays comments newest-first, so post in reverse to keep summary on top.
 			slices.Reverse(comments)
@@ -102,8 +102,8 @@ func DeleteExistingPullRequestComments(repository *Repository, client vcsclient.
 	return err
 }
 
-func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, writer outputwriter.OutputWriter) (description string, extraComments []string) {
-	content := outputwriter.GetMainCommentContent(outputwriter.GetVulnerabilitiesContent(vulnerabilities, writer), true, false, writer)
+func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViolationRow, resultsPlatformURL string, writer outputwriter.OutputWriter) (description string, extraComments []string) {
+	content := outputwriter.GetMainCommentContent(outputwriter.GetVulnerabilitiesContent(vulnerabilities, writer), true, false, resultsPlatformURL, writer)
 	if len(content) == 1 {
 		// Limit is not reached, use the entire content as the description
 		description = content[0]
@@ -120,9 +120,9 @@ func GenerateFixPullRequestDetails(vulnerabilities []formats.VulnerabilityOrViol
 	return
 }
 
-func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, resultContext results.ResultContext, includeSecrets bool, writer outputwriter.OutputWriter) []string {
+func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollection, resultContext results.ResultContext, includeSecrets bool, resultsPlatformURL string, writer outputwriter.OutputWriter) []string {
 	if !issuesCollection.IssuesExists(includeSecrets) {
-		return outputwriter.GetMainCommentContent([]string{}, false, true, writer)
+		return outputwriter.GetMainCommentContent([]string{}, false, true, resultsPlatformURL, writer)
 	}
 	// Summary
 	content := []string{outputwriter.ScanSummaryContent(issuesCollection, resultContext, includeSecrets, writer)}
@@ -134,7 +134,7 @@ func generatePullRequestSummaryComment(issuesCollection issues.ScansIssuesCollec
 	if vulnerabilitiesContent := outputwriter.GetVulnerabilitiesContent(issuesCollection.ScaVulnerabilities, writer); len(vulnerabilitiesContent) > 0 {
 		content = append(content, vulnerabilitiesContent...)
 	}
-	return outputwriter.GetMainCommentContent(content, true, true, writer)
+	return outputwriter.GetMainCommentContent(content, true, true, resultsPlatformURL, writer)
 }
 
 func GetSortedPullRequestComments(client vcsclient.VcsClient, repoOwner, repoName string, prID int) ([]vcsclient.CommentInfo, error) {

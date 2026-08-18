@@ -106,11 +106,11 @@ func (sr *ScanRepositoryCmd) prepareEnvAndScanBranch(repository *utils.Repositor
 		repository.Params.JFrogPlatform.JFrogProjectKey,
 	)
 
-	findings := 0
+	var scanResults *results.SecurityCommandResults
 	defer func() {
-		xsc.SendScanEndedEvent(sr.scanDetails.XrayVersion, sr.scanDetails.XscVersion, sr.scanDetails.ServerDetails, sr.scanDetails.MultiScanId, sr.scanDetails.StartTime, findings, &sr.scanDetails.ResultContext, err)
+		xsc.SendScanEndedWithResults(sr.scanDetails.ServerDetails, scanResults)
 	}()
-	findings, err = sr.scanAndFixBranch(repository)
+	scanResults, err = sr.scanAndFixBranch(repository)
 	return
 }
 
@@ -143,19 +143,13 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 	return
 }
 
-func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (totalFindings int, err error) {
-	scanResults, err := sr.scan()
+func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (scanResults *results.SecurityCommandResults, err error) {
+	scanResults, err = sr.scan()
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Fixes will be skipped for this branch", sr.scanDetails.BaseBranch()), err); err != nil {
-			return 0, err
+			return scanResults, err
 		}
-	}
-	if scanResults == nil {
-		err = fmt.Errorf("scan returned empty results for branch '%s'", sr.scanDetails.BaseBranch())
-		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred during Audit execution for '%s' branch. Downstream processing will be skipped", sr.scanDetails.BaseBranch()), err); err != nil {
-			return 0, err
-		}
-		return 0, nil
+		return scanResults, nil
 	}
 	defer func() {
 		// Always check policy even if an error occurred during the scan
@@ -164,43 +158,25 @@ func (sr *ScanRepositoryCmd) scanAndFixBranch(repository *utils.Repository) (tot
 			err = errors.Join(err, policyErr)
 		}
 	}()
-	utils.PrintScanResultsTable(scanResults)
-	totalFindings = getTotalFindingsFromScanResults(scanResults)
+	utils.PrintScanResultsTable(scanResults, repository.FrogbotConfig.ShowSecretsAsPrComment)
 	sr.uploadResultsToGithubDashboardsIfNeeded(repository, scanResults)
 	sr.uploadGitLabScanResultsIfNeeded(repository, scanResults)
 
 	if !repository.Params.FrogbotConfig.CreateAutoFixPr {
 		log.Info(fmt.Sprintf("This command is running in detection mode only. To enable automatic fixing of issues, set the '%s' flag under the repository's configuration settings in Jfrog platform", createAutoFixPrConfigNameInProfile))
-		return totalFindings, nil
+		return scanResults, nil
 	}
 	vulnerabilitiesByPathMap, err := sr.createVulnerabilitiesMap(repository.GeneralConfig.FailUponAnyScannerError, scanResults)
 	if err != nil {
 		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, fmt.Sprintf("An error occurred while preparing the vulnerabilities map for branch '%s'.", sr.scanDetails.BaseBranch()), err); err != nil {
-			return 0, err
+			return scanResults, err
 		}
 	}
 	if len(vulnerabilitiesByPathMap) == 0 {
 		log.Info(fmt.Sprintf("Didn't find any vulnerable dependencies with existing fix versions or that are currently supported for fixing, for %s", sr.scanDetails.RepoName))
-		return totalFindings, nil
+		return scanResults, nil
 	}
-	return totalFindings, sr.fixVulnerablePackages(repository, vulnerabilitiesByPathMap)
-}
-
-func getTotalFindingsFromScanResults(scanResults *results.SecurityCommandResults) int {
-	if scanResults == nil {
-		return 0
-	}
-
-	summary, err := conversion.NewCommandResultsConvertor(conversion.ResultConvertParams{IncludeVulnerabilities: scanResults.IncludesVulnerabilities(), HasViolationContext: scanResults.HasViolationContext()}).ConvertToSummary(scanResults)
-	if err != nil {
-		log.Error("Failed to extract findings summary from scan results:", err)
-		return 0
-	}
-	findingCount := summary.GetTotalViolations()
-	if findingCount == 0 {
-		findingCount = summary.GetTotalVulnerabilities()
-	}
-	return findingCount
+	return scanResults, sr.fixVulnerablePackages(repository, scanResults.ResultsPlatformUrl, vulnerabilitiesByPathMap)
 }
 
 func (sr *ScanRepositoryCmd) uploadGitLabScanResultsIfNeeded(repository *utils.Repository, scanResults *results.SecurityCommandResults) {
@@ -233,7 +209,7 @@ func (sr *ScanRepositoryCmd) uploadResultsToGithubDashboardsIfNeeded(repository 
 func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
 	auditResults := sr.scanDetails.Audit(sr.baseWd)
 	if err := auditResults.GetErrors(); err != nil {
-		return nil, err
+		return auditResults, err
 	}
 	log.Info("Xray scan completed")
 	sr.OutputWriter.SetJasOutputFlags(auditResults.Entitlements.Jas, auditResults.HasJasScansResults(jasutils.Applicability))
@@ -241,7 +217,7 @@ func (sr *ScanRepositoryCmd) scan() (*results.SecurityCommandResults, error) {
 	return auditResults, nil
 }
 
-func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
+func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository, resultsPlatformURL string, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails) error {
 	var err error
 	if repository.FrogbotConfig.AggregateFixes {
 		aggregatedFixBranchName, e := sr.gitManager.GenerateAggregatedFixBranchName(sr.scanDetails.BaseBranch(), sr.projectTech)
@@ -252,9 +228,9 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 		if e != nil {
 			return e
 		}
-		err = sr.aggregateFixAndOpenPullRequest(repository, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
+		err = sr.aggregateFixAndOpenPullRequest(repository, resultsPlatformURL, vulnerabilitiesMap, aggregatedFixBranchName, existingPullRequestDetails)
 	} else {
-		if e := sr.fixProjectVulnerabilities(repository, vulnerabilitiesMap); e != nil {
+		if e := sr.fixProjectVulnerabilities(repository, resultsPlatformURL, vulnerabilitiesMap); e != nil {
 			err = fmt.Errorf("the following errors occured while fixing vulnerabilities in '%s':\n%v", sr.scanDetails.BaseBranch(), e)
 		}
 	}
@@ -264,10 +240,10 @@ func (sr *ScanRepositoryCmd) fixVulnerablePackages(repository *utils.Repository,
 	return nil
 }
 
-func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) fixProjectVulnerabilities(repository *utils.Repository, resultsPlatformURL string, vulnerabilities map[string]*utils.VulnerabilityDetails) (err error) {
 	// Fix every vulnerability in a separate pull request and branch
 	for _, vulnerability := range vulnerabilities {
-		if e := sr.fixSinglePackageAndCreatePR(repository, vulnerability); e != nil {
+		if e := sr.fixSinglePackageAndCreatePR(repository, resultsPlatformURL, vulnerability); e != nil {
 			err = errors.Join(err, sr.handleUpdatePackageErrors(e))
 		}
 		// Checkout back to the base branch after each fix so the next fix branch is created
@@ -312,7 +288,7 @@ func (sr *ScanRepositoryCmd) handleUpdatePackageErrors(err error) error {
 
 // Creates a branch for the fixed package and open pull request against the target branch.
 // In case a branch already exists on remote, we skip it.
-func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repository, resultsPlatformURL string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	fixVersion := vulnDetails.SuggestedFixedVersion
 	log.Debug("Attempting to fix", fmt.Sprintf("%s:%s", vulnDetails.ImpactedDependencyName, vulnDetails.ImpactedDependencyVersion), "with", fixVersion)
 	fixBranchName, err := sr.gitManager.GenerateFixBranchName(sr.scanDetails.BaseBranch(), vulnDetails.ImpactedDependencyName, fixVersion)
@@ -346,14 +322,14 @@ func (sr *ScanRepositoryCmd) fixSinglePackageAndCreatePR(repository *utils.Repos
 	if err = sr.updatePackageToFixedVersion(vulnDetails); err != nil {
 		return
 	}
-	if err = sr.openFixingPullRequest(repository, fixBranchName, vulnDetails); err != nil {
+	if err = sr.openFixingPullRequest(repository, fixBranchName, resultsPlatformURL, vulnDetails); err != nil {
 		return errors.Join(fmt.Errorf("failed while creating a fixing pull request for: %s with version: %s with error: ", vulnDetails.ImpactedDependencyName, fixVersion), err)
 	}
 	log.Info(fmt.Sprintf("Created Pull Request updating dependency '%s' to version '%s'", vulnDetails.ImpactedDependencyName, vulnDetails.SuggestedFixedVersion))
 	return
 }
 
-func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository, fixBranchName string, vulnDetails *utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository, fixBranchName string, resultsPlatformURL string, vulnDetails *utils.VulnerabilityDetails) (err error) {
 	log.Debug("Checking if there are changes to commit")
 	isClean, err := sr.gitManager.IsClean()
 	if err != nil {
@@ -373,11 +349,11 @@ func (sr *ScanRepositoryCmd) openFixingPullRequest(repository *utils.Repository,
 	if err = sr.gitManager.Push(false, fixBranchName); err != nil {
 		return
 	}
-	return sr.handleFixPullRequestContent(repository, fixBranchName, nil, vulnDetails)
+	return sr.handleFixPullRequestContent(repository, fixBranchName, nil, resultsPlatformURL, vulnDetails)
 }
 
-func (sr *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
-	pullRequestTitle, prBody, extraComments, err := sr.preparePullRequestDetails(repository.FrogbotConfig.AggregateFixes, vulnerabilities...)
+func (sr *ScanRepositoryCmd) handleFixPullRequestContent(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, resultsPlatformURL string, vulnerabilities ...*utils.VulnerabilityDetails) (err error) {
+	pullRequestTitle, prBody, extraComments, err := sr.preparePullRequestDetails(repository.FrogbotConfig.AggregateFixes, resultsPlatformURL, vulnerabilities...)
 	if err != nil {
 		return
 	}
@@ -414,7 +390,7 @@ func (sr *ScanRepositoryCmd) createOrUpdatePullRequest(repository *utils.Reposit
 
 // Handles the opening or updating of a pull request when the aggregate mode is active.
 // If a pull request is already open, Frogbot will update the branch and the pull request body.
-func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
+func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Repository, fixBranchName string, pullRequestInfo *vcsclient.PullRequestInfo, resultsPlatformURL string, vulnerabilities []*utils.VulnerabilityDetails) (err error) {
 	commitMessage := sr.gitManager.GenerateAggregatedCommitMessage(sr.projectTech)
 	if err = sr.cleanNewFilesMissingInRemote(); err != nil {
 		return
@@ -425,7 +401,7 @@ func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposit
 	if err = sr.gitManager.Push(true, fixBranchName); err != nil {
 		return
 	}
-	return sr.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, vulnerabilities...)
+	return sr.handleFixPullRequestContent(repository, fixBranchName, pullRequestInfo, resultsPlatformURL, vulnerabilities...)
 }
 
 func (sr *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
@@ -460,14 +436,14 @@ func (sr *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
 	return err
 }
 
-func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
+func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, resultsPlatformURL string, vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {
 	if sr.dryRun && aggregateFixes {
 		// For testings, don't compare pull request body as scan results order may change.
 		return sr.gitManager.GenerateAggregatedPullRequestTitle(sr.projectTech), "", []string{}, nil
 	}
 	vulnerabilitiesRows := utils.ExtractVulnerabilitiesDetailsToRows(vulnerabilitiesDetails)
 
-	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, sr.OutputWriter)
+	prBody, extraComments := utils.GenerateFixPullRequestDetails(vulnerabilitiesRows, resultsPlatformURL, sr.OutputWriter)
 
 	if aggregateFixes {
 		var scanHash string
@@ -641,7 +617,7 @@ func (sr *ScanRepositoryCmd) getOpenPullRequestBySourceBranch(branchName string)
 	return
 }
 
-func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Repository, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
+func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Repository, resultsPlatformURL string, vulnerabilitiesMap map[string]*utils.VulnerabilityDetails, aggregatedFixBranchName string, existingPullRequestInfo *vcsclient.PullRequestInfo) (err error) {
 	log.Info("-----------------------------------------------------------------")
 	log.Info("Starting aggregated dependencies fix")
 
@@ -674,7 +650,7 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 		return
 	}
 	if len(fixedVulnerabilities) > 0 {
-		if e = sr.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, fixedVulnerabilities); e != nil {
+		if e = sr.openAggregatedPullRequest(repository, aggregatedFixBranchName, existingPullRequestInfo, resultsPlatformURL, fixedVulnerabilities); e != nil {
 			err = errors.Join(err, fmt.Errorf("failed while creating aggregated pull request. Error: \n%s", e.Error()))
 		}
 	}
@@ -686,7 +662,7 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 // Determines whether an update is necessary:
 // First, checks if the working tree is clean. If so, no update is required.
 // Second, checks if there is an already open pull request for the fix. If so, no update is needed.
-// Lastly, performs a comparison of Xray scan result hashes between an existing pull request's remote source branch and the current source branch to identify any differences.
+// Lastly, performs a comparison of Xray scans result hashes between an existing pull request's remote source branch and the current source branch to identify any differences.
 func (sr *ScanRepositoryCmd) isUpdateRequired(fixedVulnerabilities []*utils.VulnerabilityDetails, prInfo *vcsclient.PullRequestInfo) (updateRequired bool, err error) {
 	isClean, err := sr.gitManager.IsClean()
 	if err != nil {
