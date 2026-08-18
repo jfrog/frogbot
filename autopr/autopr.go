@@ -1,4 +1,4 @@
-package autofix
+package autopr
 
 import (
 	"context"
@@ -17,17 +17,17 @@ import (
 )
 
 const (
-	componentNameEnv    = "JF_COMPONENT_NAME"
-	affectedVersionEnv  = "JF_AFFECTED_VERSION"
-	fixVersionEnv       = "JF_FIX_VERSION"
-	commitHashEnv       = "JF_COMMIT_HASH"
-	autoFixBranchPrefix = "jfrog-auto-fix"
-	autoFixBranchMaxLen = 255
+	componentNameEnv   = "JF_COMPONENT_NAME"
+	affectedVersionEnv = "JF_AFFECTED_VERSION"
+	fixVersionEnv      = "JF_FIX_VERSION"
+	commitHashEnv      = "JF_COMMIT_HASH"
+	autoPrBranchPrefix = "jfrog-auto-pr"
+	autoPrBranchMaxLen = 255
 )
 
-type AutoFixCmd struct{}
+type AutoPrCmd struct{}
 
-func (a *AutoFixCmd) Run(repository utils.Repository, client vcsclient.VcsClient) error {
+func (a *AutoPrCmd) Run(repository utils.Repository, client vcsclient.VcsClient) error {
 	componentName := os.Getenv(componentNameEnv)
 	affectedVersion := os.Getenv(affectedVersionEnv)
 	fixVersion := os.Getenv(fixVersionEnv)
@@ -36,7 +36,7 @@ func (a *AutoFixCmd) Run(repository utils.Repository, client vcsclient.VcsClient
 		return err
 	}
 
-	log.Info(fmt.Sprintf("Starting auto-fix for component '%s' (%s → %s) in %s/%s",
+	log.Info(fmt.Sprintf("Starting auto-pr for component '%s' (%s → %s) in %s/%s",
 		componentName, affectedVersion, fixVersion,
 		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName))
 
@@ -63,7 +63,7 @@ func fixDependency(componentName, affectedVersion, fixVersion string) (bool, err
 		return false, err
 	}
 	if len(descriptorPaths) == 0 {
-		log.Info(fmt.Sprintf("Component '%s@%s' was not found in the project dependency tree; skipping auto-fix", componentName, affectedVersion))
+		log.Info(fmt.Sprintf("Component '%s@%s' was not found in the project dependency tree; skipping auto-pr", componentName, affectedVersion))
 		return false, nil
 	}
 	if tech == techutils.NoTech {
@@ -93,7 +93,7 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 	}
 	gitManager = gitManager.SetGitParams(&repository.Params.Git)
 
-	fixBranchName := generateAutoFixBranchName(componentName, fixVersion)
+	fixBranchName := generateAutoPrBranchName(componentName, fixVersion)
 
 	existsInRemote, err := gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
@@ -128,7 +128,7 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 	if err != nil {
 		return err
 	}
-	prTitle := fmt.Sprintf("[Auto-Fix] Update %s to %s", componentName, fixVersion)
+	prTitle := fmt.Sprintf("[Auto-PR] Update %s to %s", componentName, fixVersion)
 	log.Info(fmt.Sprintf("Creating pull request from '%s' to '%s'", fixBranchName, baseBranch))
 	if err = client.CreatePullRequest(context.Background(),
 		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName,
@@ -179,7 +179,7 @@ func newUpdater(tech techutils.Technology) (securitypkgupdaters.PackageUpdater, 
 	case techutils.Docker:
 		return &securitypkgupdaters.DockerPackageUpdater{}, nil
 	default:
-		return nil, fmt.Errorf("unsupported technology '%s' for auto-fix", tech)
+		return nil, fmt.Errorf("unsupported technology '%s' for auto-pr", tech)
 	}
 }
 
@@ -206,7 +206,7 @@ func buildFixDetails(componentName, affectedVersion, fixVersion string, tech tec
 
 func buildPRBody(componentName, affectedVersion, fixVersion string) string {
 	body := fmt.Sprintf(
-		"This PR was automatically created by JFrog Frogbot auto-fix.\n\n"+
+		"This PR was automatically created by JFrog Frogbot auto-pr.\n\n"+
 			"**Component:** `%s`\n"+
 			"**Affected version:** `%s`\n"+
 			"**Fix version:** `%s`\n",
@@ -218,13 +218,13 @@ func buildPRBody(componentName, affectedVersion, fixVersion string) string {
 	return body
 }
 
-func generateAutoFixBranchName(componentName, fixVersion string) string {
+func generateAutoPrBranchName(componentName, fixVersion string) string {
 	replacer := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-")
 	safeName := replacer.Replace(componentName)
 	safeVersion := replacer.Replace(fixVersion)
-	branchName := fmt.Sprintf("%s/%s-%s", autoFixBranchPrefix, safeName, safeVersion)
-	if len(branchName) > autoFixBranchMaxLen {
-		branchName = strings.TrimRight(branchName[:autoFixBranchMaxLen], "-/")
+	branchName := fmt.Sprintf("%s/%s-%s", autoPrBranchPrefix, safeName, safeVersion)
+	if len(branchName) > autoPrBranchMaxLen {
+		branchName = strings.TrimRight(branchName[:autoPrBranchMaxLen], "-/")
 	}
 	return branchName
 }

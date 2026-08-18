@@ -1,4 +1,4 @@
-package autofix
+package autopr
 
 import (
 	"testing"

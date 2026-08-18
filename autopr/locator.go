@@ -1,4 +1,4 @@
-package autofix
+package autopr
 
 import (
 	"fmt"
@@ -83,7 +83,7 @@ func extractDescriptorPaths(sbom *cyclonedx.BOM, componentName, affectedVersion 
 }
 
 // technologyFromPurlType maps a PURL type to a package manager.
-// Ambiguous types like "pypi" default to Pip for auto-fix purposes.
+// Ambiguous types like "pypi" default to Pip for auto-pr purposes.
 func technologyFromPurlType(purlType string) techutils.Technology {
 	if tech := techutils.ToTechnology(purlType); tech != techutils.NoTech {
 		return tech

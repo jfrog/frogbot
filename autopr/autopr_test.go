@@ -1,4 +1,4 @@
-package autofix
+package autopr
 
 import (
 	"strings"
@@ -59,7 +59,7 @@ func TestValidateInputs(t *testing.T) {
 	}
 }
 
-func TestGenerateAutoFixBranchName(t *testing.T) {
+func TestGenerateAutoPrBranchName(t *testing.T) {
 	tests := []struct {
 		name          string
 		componentName string
@@ -84,7 +84,7 @@ func TestGenerateAutoFixBranchName(t *testing.T) {
 			name:          "long name truncated",
 			componentName: strings.Repeat("a", 300),
 			fixVersion:    "1.0.0",
-			maxLen:        autoFixBranchMaxLen,
+			maxLen:        autoPrBranchMaxLen,
 			exactLen:      true,
 		},
 		{
@@ -96,8 +96,8 @@ func TestGenerateAutoFixBranchName(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			name := generateAutoFixBranchName(tc.componentName, tc.fixVersion)
-			assert.True(t, strings.HasPrefix(name, autoFixBranchPrefix+"/"))
+			name := generateAutoPrBranchName(tc.componentName, tc.fixVersion)
+			assert.True(t, strings.HasPrefix(name, autoPrBranchPrefix+"/"))
 			assert.False(t, strings.HasSuffix(name, "-"))
 			assert.False(t, strings.HasSuffix(name, "/"))
 			for _, s := range tc.notContains {

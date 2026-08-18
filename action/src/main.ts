@@ -9,8 +9,8 @@ async function main() {
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
 
-        if (core.getInput('command') === 'auto-fix') {
-            await Utils.execAutoFix();
+        if (core.getInput('command') === 'auto-pr') {
+            await Utils.execAutoPr();
             return;
         }
 

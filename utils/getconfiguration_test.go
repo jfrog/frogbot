@@ -203,8 +203,8 @@ func extractAndAssertParamsFromEnv(t *testing.T, platformUrl bool, commandName s
 	assert.Equal(t, "jfrog", configFile.RepoOwner)
 	assert.Equal(t, "frogbot", configFile.RepoName)
 	assert.Equal(t, "123456789", configFile.Token)
-	// ScanRepository / AutoFix command context
-	if commandName == ScanRepository || commandName == AutoFix {
+	// ScanRepository / AutoPr command context
+	if commandName == ScanRepository || commandName == AutoPr {
 		assert.Equal(t, "dev", configFile.Branches[0])
 		assert.Equal(t, int64(0), configFile.PullRequestDetails.ID)
 	} else {
@@ -247,9 +247,9 @@ func TestBuildRepositoryFromEnv(t *testing.T) {
 	assert.NoError(t, err)
 	validateBuildRepo(t, &repo, &gitParams, &server, ScanRepository)
 
-	repo, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, AutoFix)
+	repo, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, AutoPr)
 	assert.NoError(t, err)
-	validateBuildRepo(t, &repo, &gitParams, &server, AutoFix)
+	validateBuildRepo(t, &repo, &gitParams, &server, AutoPr)
 
 	repo, err = BuildRepositoryFromEnv("xrayVersion", "xscVersion", nil, &gitParams, &server, ScanPullRequest)
 	assert.NoError(t, err)
@@ -271,7 +271,7 @@ func validateBuildRepo(t *testing.T, repo *Repository, gitParams *Git, server *c
 	assert.Equal(t, server.User, repo.Server.User)
 	assert.Equal(t, server.Password, repo.Server.Password)
 
-	if commandName == ScanRepository || commandName == AutoFix {
+	if commandName == ScanRepository || commandName == AutoPr {
 		assert.ElementsMatch(t, gitParams.Branches, repo.Branches)
 	}
 

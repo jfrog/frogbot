@@ -10,7 +10,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
-	"github.com/jfrog/frogbot/v3/autofix"
+	"github.com/jfrog/frogbot/v3/autopr"
 	"github.com/jfrog/frogbot/v3/scanpullrequest"
 	"github.com/jfrog/frogbot/v3/scanrepository"
 	"github.com/jfrog/frogbot/v3/utils"
@@ -44,11 +44,11 @@ func GetCommands() []*clitool.Command {
 			Flags: []clitool.Flag{},
 		},
 		{
-			Name:    utils.AutoFix,
+			Name:    utils.AutoPr,
 			Aliases: []string{"af"},
 			Usage:   "Fix a known vulnerable dependency and open a pull request with the fix",
 			Action: func(ctx *clitool.Context) error {
-				return Exec(&autofix.AutoFixCmd{}, ctx.Command.Name)
+				return Exec(&autopr.AutoPrCmd{}, ctx.Command.Name)
 			},
 			Flags: []clitool.Flag{},
 		},

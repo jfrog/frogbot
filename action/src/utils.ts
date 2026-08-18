@@ -126,9 +126,9 @@ export class Utils {
     }
 
     /**
-     * Execute frogbot auto-fix command.
+     * Execute frogbot auto-pr command.
      */
-    public static async execAutoFix() {
+    public static async execAutoPr() {
         core.exportVariable('JF_COMPONENT_NAME', core.getInput('component-name'));
         core.exportVariable('JF_AFFECTED_VERSION', core.getInput('affected-version'));
         core.exportVariable('JF_FIX_VERSION', core.getInput('fix-version'));
@@ -151,7 +151,7 @@ export class Utils {
             }
         }
 
-        const res: number = await exec(Utils.getExecutableName(), ['auto-fix']);
+        const res: number = await exec(Utils.getExecutableName(), ['auto-pr']);
         if (res !== core.ExitCode.Success) {
             throw new Error('Frogbot exited with exit code ' + res);
         }

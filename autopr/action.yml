@@ -1,4 +1,4 @@
-name: "Frogbot Auto-Fix by JFrog"
+name: "Frogbot Auto-PR by JFrog"
 description: "Automatically creates a fix PR for a known vulnerable dependency using JFrog Frogbot."
 author: "JFrog"
 inputs:
@@ -19,7 +19,7 @@ inputs:
     required: false
   command:
     description: "Frogbot command to run."
-    default: "auto-fix"
+    default: "auto-pr"
     required: false
   version:
     description: "Frogbot version to use."

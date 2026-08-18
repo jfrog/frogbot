@@ -150,9 +150,9 @@ class Utils {
         });
     }
     /**
-     * Execute frogbot auto-fix command.
+     * Execute frogbot auto-pr command.
      */
-    static execAutoFix() {
+    static execAutoPr() {
         return __awaiter(this, void 0, void 0, function* () {
             core.exportVariable('JF_COMPONENT_NAME', core.getInput('component-name'));
             core.exportVariable('JF_AFFECTED_VERSION', core.getInput('affected-version'));
@@ -175,7 +175,7 @@ class Utils {
                     throw new Error('Error getting current branch from the .git folder: ' + error);
                 }
             }
-            const res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['auto-fix']);
+            const res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['auto-pr']);
             if (res !== core.ExitCode.Success) {
                 throw new Error('Frogbot exited with exit code ' + res);
             }
