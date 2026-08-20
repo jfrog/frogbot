@@ -130,6 +130,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security main
+
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
 // replace github.com/jfrog/jfrog-cli-artifactory => github.com/jfrog/jfrog-cli-artifactory main

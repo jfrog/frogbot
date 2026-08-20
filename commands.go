@@ -45,7 +45,7 @@ func GetCommands() []*clitool.Command {
 		},
 		{
 			Name:    utils.AutoPr,
-			Aliases: []string{"af"},
+			Aliases: []string{"apr"},
 			Usage:   "Fix a known vulnerable dependency and open a pull request with the fix",
 			Action: func(ctx *clitool.Context) error {
 				return Exec(&autopr.AutoPrCmd{}, ctx.Command.Name)

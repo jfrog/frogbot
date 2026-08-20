@@ -145,6 +145,14 @@ export class Utils {
             const git: SimpleGit = simpleGit();
             try {
                 const currentBranch: BranchSummary = await git.branch();
+                if (!currentBranch.current) {
+                    // Checking out by commit-hash leaves the working tree in detached HEAD, so git reports no current branch.
+                    throw new Error(
+                        'Cannot resolve JF_GIT_BASE_BRANCH: the workspace is on a detached HEAD ' +
+                            '(this happens when the workflow was invoked with commit-hash only). ' +
+                            'Provide the `branch-name` input alongside `commit-hash`, or set JF_GIT_BASE_BRANCH explicitly.',
+                    );
+                }
                 core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
             } catch (error) {
                 throw new Error('Error getting current branch from the .git folder: ' + error);

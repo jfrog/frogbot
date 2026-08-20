@@ -14,6 +14,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/log"
 
 	"github.com/jfrog/frogbot/v3/utils"
+	"github.com/jfrog/frogbot/v3/utils/outputwriter"
 )
 
 const (
@@ -21,9 +22,17 @@ const (
 	affectedVersionEnv = "JF_AFFECTED_VERSION"
 	fixVersionEnv      = "JF_FIX_VERSION"
 	commitHashEnv      = "JF_COMMIT_HASH"
-	autoPrBranchPrefix = "jfrog-auto-pr"
-	autoPrBranchMaxLen = 255
 )
+
+// ErrAutoPrSkipped is returned when auto-pr cannot proceed but the situation is not fatal
+// (e.g. component not found, fix branch already exists). Callers can distinguish it from real failures.
+type ErrAutoPrSkipped struct {
+	Reason string
+}
+
+func (e *ErrAutoPrSkipped) Error() string {
+	return fmt.Sprintf("auto-pr skipped: %s", e.Reason)
+}
 
 type AutoPrCmd struct{}
 
@@ -40,51 +49,9 @@ func (a *AutoPrCmd) Run(repository utils.Repository, client vcsclient.VcsClient)
 		componentName, affectedVersion, fixVersion,
 		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName))
 
-	fixed, err := fixDependency(componentName, affectedVersion, fixVersion)
-	if err != nil {
-		return err
-	}
-	if !fixed {
-		return nil
-	}
+	// Base branch is validated by getconfiguration.setDefaultsIfNeeded before Run is invoked.
+	baseBranch := repository.Params.Git.Branches[0]
 
-	return openFixPullRequest(repository, client, componentName, affectedVersion, fixVersion)
-}
-
-func fixDependency(componentName, affectedVersion, fixVersion string) (bool, error) {
-	workspaceDir, err := os.Getwd()
-	if err != nil {
-		return false, fmt.Errorf("failed to get current working directory: %w", err)
-	}
-
-	log.Info(fmt.Sprintf("Scanning project to locate '%s@%s' in dependency tree...", componentName, affectedVersion))
-	descriptorPaths, tech, err := findDescriptorPaths(workspaceDir, componentName, affectedVersion)
-	if err != nil {
-		return false, err
-	}
-	if len(descriptorPaths) == 0 {
-		log.Info(fmt.Sprintf("Component '%s@%s' was not found in the project dependency tree; skipping auto-pr", componentName, affectedVersion))
-		return false, nil
-	}
-	if tech == techutils.NoTech {
-		return false, fmt.Errorf("could not determine package manager for component '%s@%s'", componentName, affectedVersion)
-	}
-
-	updater, err := newUpdater(tech)
-	if err != nil {
-		return false, err
-	}
-
-	log.Info(fmt.Sprintf("Updating '%s' from %s to %s in %d file(s): %v",
-		componentName, affectedVersion, fixVersion, len(descriptorPaths), descriptorPaths))
-	if err = updater.UpdateDependency(buildFixDetails(componentName, affectedVersion, fixVersion, tech, descriptorPaths)); err != nil {
-		return false, fmt.Errorf("failed to update dependency: %w", err)
-	}
-	log.Info(fmt.Sprintf("Successfully updated '%s' to %s", componentName, fixVersion))
-	return true, nil
-}
-
-func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient, componentName, affectedVersion, fixVersion string) error {
 	gitManager, err := utils.NewGitManager().
 		SetAuth(repository.Params.Git.Username, repository.Params.Git.Token).
 		SetLocalRepositoryAndRemoteName()
@@ -93,28 +60,68 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 	}
 	gitManager = gitManager.SetGitParams(&repository.Params.Git)
 
-	fixBranchName := generateAutoPrBranchName(componentName, fixVersion)
+	customTemplates, err := utils.LoadCustomTemplates(
+		repository.ConfigProfile.FrogbotConfig.CommitMessageTemplate,
+		repository.ConfigProfile.FrogbotConfig.BranchNameTemplate,
+		repository.ConfigProfile.FrogbotConfig.PrTitleTemplate,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to load custom templates: %w", err)
+	}
+	gitManager = gitManager.SetCustomTemplates(customTemplates)
+
+	fixBranchName, err := gitManager.GenerateFixBranchName(baseBranch, componentName, fixVersion)
+	if err != nil {
+		return fmt.Errorf("failed to generate fix branch name: %w", err)
+	}
 
 	existsInRemote, err := gitManager.BranchExistsInRemote(fixBranchName)
 	if err != nil {
 		return fmt.Errorf("failed to check if fix branch '%s' exists: %w", fixBranchName, err)
 	}
 	if existsInRemote {
-		log.Info(fmt.Sprintf("Skipping fix pull request for dependency '%s' to version '%s': a fix branch already exists. If the pull request was previously closed, delete the fix branch to allow a new one to be created.",
-			componentName, fixVersion))
-		return nil
+		return &ErrAutoPrSkipped{Reason: fmt.Sprintf(
+			"a fix branch '%s' already exists for '%s' to version '%s'. If the pull request was previously closed, delete the fix branch to allow a new one to be created.",
+			fixBranchName, componentName, fixVersion)}
 	}
 
-	if err = gitManager.CreateBranchAndCheckout(fixBranchName, true); err != nil {
+	workspaceDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	descriptorPaths, tech, isDirect, err := findDescriptorPaths(workspaceDir, componentName, affectedVersion)
+	if err != nil {
+		return err
+	}
+	if len(descriptorPaths) == 0 {
+		return &ErrAutoPrSkipped{Reason: fmt.Sprintf("component '%s@%s' was not found in the project dependency tree", componentName, affectedVersion)}
+	}
+	if tech == techutils.NoTech {
+		return fmt.Errorf("could not determine package manager for component '%s@%s'", componentName, affectedVersion)
+	}
+	if !isDirect {
+		// Updaters generally cannot fix transitive dependencies via a simple manifest change.
+		return fmt.Errorf("component '%s@%s' is a transitive dependency; auto-pr only supports direct dependencies", componentName, affectedVersion)
+	}
+
+	if err = gitManager.CreateBranchAndCheckout(fixBranchName, false); err != nil {
 		return fmt.Errorf("failed to create fix branch '%s': %w", fixBranchName, err)
 	}
 
-	commitMessage := fmt.Sprintf("fix: update %s from %s to %s", componentName, affectedVersion, fixVersion)
+	if err = runUpdater(componentName, affectedVersion, fixVersion, tech, isDirect, descriptorPaths); err != nil {
+		return err
+	}
+
+	if err = utils.CleanUntrackedFiles(workspaceDir); err != nil {
+		log.Warn(fmt.Sprintf("failed to clean untracked files from '%s': %s", workspaceDir, err.Error()))
+	}
+
+	commitMessage := gitManager.GenerateCommitMessage(componentName, fixVersion)
 	if err = gitManager.AddAllAndCommit(commitMessage, componentName); err != nil {
 		var errNoChanges *utils.ErrNothingToCommit
 		if errors.As(err, &errNoChanges) {
 			log.Info(err.Error())
-			return nil
+			return &ErrAutoPrSkipped{Reason: err.Error()}
 		}
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
@@ -124,27 +131,17 @@ func openFixPullRequest(repository utils.Repository, client vcsclient.VcsClient,
 	}
 	log.Info(fmt.Sprintf("Branch '%s' pushed to origin", fixBranchName))
 
-	baseBranch, err := resolveBaseBranch(repository)
-	if err != nil {
-		return err
-	}
-	prTitle := fmt.Sprintf("[Auto-PR] Update %s to %s", componentName, fixVersion)
+	prTitle := gitManager.GeneratePullRequestTitle(componentName, fixVersion)
+	prBody := buildPRBody(repository, componentName, affectedVersion, fixVersion, tech, descriptorPaths)
 	log.Info(fmt.Sprintf("Creating pull request from '%s' to '%s'", fixBranchName, baseBranch))
 	if err = client.CreatePullRequest(context.Background(),
 		repository.Params.Git.RepoOwner, repository.Params.Git.RepoName,
-		fixBranchName, baseBranch, prTitle, buildPRBody(componentName, affectedVersion, fixVersion)); err != nil {
+		fixBranchName, baseBranch, prTitle, prBody); err != nil {
 		return fmt.Errorf("failed to create pull request: %w", err)
 	}
 
 	log.Info("Pull request created successfully")
 	return nil
-}
-
-func resolveBaseBranch(repository utils.Repository) (string, error) {
-	if len(repository.Params.Git.Branches) == 0 {
-		return "", fmt.Errorf("no base branch provided. Please set the `JF_GIT_BASE_BRANCH` environment variable")
-	}
-	return repository.Params.Git.Branches[0], nil
 }
 
 func validateInputs(componentName, affectedVersion, fixVersion string) error {
@@ -164,26 +161,22 @@ func validateInputs(componentName, affectedVersion, fixVersion string) error {
 	return nil
 }
 
-func newUpdater(tech techutils.Technology) (securitypkgupdaters.PackageUpdater, error) {
-	switch tech {
-	case techutils.Maven:
-		return &securitypkgupdaters.MavenPackageUpdater{}, nil
-	case techutils.Npm:
-		return &securitypkgupdaters.NpmPackageUpdater{}, nil
-	case techutils.Pnpm:
-		return &securitypkgupdaters.PnpmPackageUpdater{}, nil
-	case techutils.Go:
-		return &securitypkgupdaters.GoPackageUpdater{}, nil
-	case techutils.Pip:
-		return &securitypkgupdaters.PythonPackageUpdater{}, nil
-	case techutils.Docker:
-		return &securitypkgupdaters.DockerPackageUpdater{}, nil
-	default:
-		return nil, fmt.Errorf("unsupported technology '%s' for auto-pr", tech)
+func runUpdater(componentName, affectedVersion, fixVersion string, tech techutils.Technology, isDirect bool, descriptorPaths []string) error {
+	fixDetails := buildFixDetails(componentName, affectedVersion, fixVersion, tech, isDirect, descriptorPaths)
+	updater, supported := securitypkgupdaters.GetCompatiblePackageUpdater(fixDetails)
+	if !supported {
+		return fmt.Errorf("unsupported technology '%s' for auto-pr", tech)
 	}
+	log.Info(fmt.Sprintf("Updating '%s' from %s to %s in %d file(s): %v",
+		componentName, affectedVersion, fixVersion, len(descriptorPaths), descriptorPaths))
+	if err := updater.UpdateDependency(fixDetails); err != nil {
+		return fmt.Errorf("failed to update dependency: %w", err)
+	}
+	log.Info(fmt.Sprintf("Successfully updated '%s' to %s", componentName, fixVersion))
+	return nil
 }
 
-func buildFixDetails(componentName, affectedVersion, fixVersion string, tech techutils.Technology, descriptorPaths []string) *securitypkgupdaters.FixDetails {
+func buildFixDetails(componentName, affectedVersion, fixVersion string, tech techutils.Technology, isDirect bool, descriptorPaths []string) *securitypkgupdaters.FixDetails {
 	evidences := make([]formats.Location, len(descriptorPaths))
 	for i, path := range descriptorPaths {
 		evidences[i] = formats.Location{File: path}
@@ -192,7 +185,7 @@ func buildFixDetails(componentName, affectedVersion, fixVersion string, tech tec
 		ImpactedDependencyName:    componentName,
 		ImpactedDependencyVersion: affectedVersion,
 		SuggestedFixedVersion:     fixVersion,
-		IsDirectDependency:        true,
+		IsDirectDependency:        isDirect,
 		Technology:                tech,
 		Components: []formats.ComponentRow{
 			{
@@ -204,27 +197,40 @@ func buildFixDetails(componentName, affectedVersion, fixVersion string, tech tec
 	}
 }
 
-func buildPRBody(componentName, affectedVersion, fixVersion string) string {
-	body := fmt.Sprintf(
-		"This PR was automatically created by JFrog Frogbot auto-pr.\n\n"+
-			"**Component:** `%s`\n"+
-			"**Affected version:** `%s`\n"+
-			"**Fix version:** `%s`\n",
-		componentName, affectedVersion, fixVersion,
-	)
-	if commitHash := os.Getenv(commitHashEnv); commitHash != "" {
-		body += fmt.Sprintf("**Scanned commit:** `%s`\n", commitHash)
+// buildPRBody reuses the standard fix-PR content produced by scan-repository so auto-pr messages
+// stay consistent with the rest of Frogbot.
+func buildPRBody(repository utils.Repository, componentName, affectedVersion, fixVersion string, tech techutils.Technology, descriptorPaths []string) string {
+	writer := repository.OutputWriter
+	if writer == nil {
+		writer = outputwriter.GetCompatibleOutputWriter(repository.Params.Git.GitProvider, false)
 	}
-	return body
+	componentRow := formats.ComponentRow{Name: componentName, Version: affectedVersion}
+	rootRow := formats.ComponentRow{Name: repository.Params.Git.RepoName, Version: ""}
+	row := formats.VulnerabilityOrViolationRow{
+		ImpactedDependencyDetails: formats.ImpactedDependencyDetails{
+			ImpactedDependencyName:    componentName,
+			ImpactedDependencyVersion: affectedVersion,
+			Components:                buildComponentRows(componentName, affectedVersion, descriptorPaths),
+		},
+		FixedVersions: []string{fixVersion},
+		ImpactPaths:   [][]formats.ComponentRow{{rootRow, componentRow}},
+		Technology:    tech,
+	}
+	description, _ := utils.GenerateFixPullRequestDetails([]formats.VulnerabilityOrViolationRow{row}, "", writer)
+	if commitHash := os.Getenv(commitHashEnv); commitHash != "" {
+		description += outputwriter.MarkdownComment(fmt.Sprintf("Scanned commit: %s", commitHash))
+	}
+	return description
 }
 
-func generateAutoPrBranchName(componentName, fixVersion string) string {
-	replacer := strings.NewReplacer(":", "-", "/", "-", "@", "", " ", "-")
-	safeName := replacer.Replace(componentName)
-	safeVersion := replacer.Replace(fixVersion)
-	branchName := fmt.Sprintf("%s/%s-%s", autoPrBranchPrefix, safeName, safeVersion)
-	if len(branchName) > autoPrBranchMaxLen {
-		branchName = strings.TrimRight(branchName[:autoPrBranchMaxLen], "-/")
+func buildComponentRows(componentName, affectedVersion string, descriptorPaths []string) []formats.ComponentRow {
+	evidences := make([]formats.Location, len(descriptorPaths))
+	for i, path := range descriptorPaths {
+		evidences[i] = formats.Location{File: path}
 	}
-	return branchName
+	return []formats.ComponentRow{{
+		Name:      componentName,
+		Version:   affectedVersion,
+		Evidences: evidences,
+	}}
 }

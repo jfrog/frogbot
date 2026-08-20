@@ -1,13 +1,13 @@
 package autopr
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/jfrog/frogbot/v3/utils"
+	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/remediation/sca/packageupdaters"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
 )
 
@@ -59,76 +59,6 @@ func TestValidateInputs(t *testing.T) {
 	}
 }
 
-func TestGenerateAutoPrBranchName(t *testing.T) {
-	tests := []struct {
-		name          string
-		componentName string
-		fixVersion    string
-		notContains   []string
-		maxLen        int
-		exactLen      bool
-	}{
-		{
-			name:          "basic — colon replaced",
-			componentName: "com.example:lib",
-			fixVersion:    "1.0.1",
-			notContains:   []string{":"},
-		},
-		{
-			name:          "special chars sanitized",
-			componentName: "@scope/pkg",
-			fixVersion:    "2.0.0",
-			notContains:   []string{"@", "/scope/"},
-		},
-		{
-			name:          "long name truncated",
-			componentName: strings.Repeat("a", 300),
-			fixVersion:    "1.0.0",
-			maxLen:        autoPrBranchMaxLen,
-			exactLen:      true,
-		},
-		{
-			name:          "digest fix version sanitized",
-			componentName: "gcr.io/distroless/base-debian12",
-			fixVersion:    "sha256:abcdef",
-			notContains:   []string{":"},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			name := generateAutoPrBranchName(tc.componentName, tc.fixVersion)
-			assert.True(t, strings.HasPrefix(name, autoPrBranchPrefix+"/"))
-			assert.False(t, strings.HasSuffix(name, "-"))
-			assert.False(t, strings.HasSuffix(name, "/"))
-			for _, s := range tc.notContains {
-				assert.NotContains(t, name, s)
-			}
-			if tc.maxLen > 0 {
-				assert.LessOrEqual(t, len(name), tc.maxLen)
-				if tc.exactLen {
-					assert.Equal(t, tc.maxLen, len(name))
-				}
-			}
-		})
-	}
-}
-
-func TestResolveBaseBranch(t *testing.T) {
-	t.Run("present", func(t *testing.T) {
-		repo := utils.Repository{}
-		repo.Params.Git.Branches = []string{"main"}
-		branch, err := resolveBaseBranch(repo)
-		require.NoError(t, err)
-		assert.Equal(t, "main", branch)
-	})
-	t.Run("empty", func(t *testing.T) {
-		repo := utils.Repository{}
-		_, err := resolveBaseBranch(repo)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "JF_GIT_BASE_BRANCH")
-	})
-}
-
 func TestBuildPRBody(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -137,14 +67,13 @@ func TestBuildPRBody(t *testing.T) {
 		notContains []string
 	}{
 		{
-			name:        "no commit hash",
-			contains:    []string{"com.example:lib", "1.0.0", "1.0.1"},
-			notContains: []string{"Scanned commit"},
+			name:     "no commit hash",
+			contains: []string{"com.example:lib", "1.0.0", "Frogbot"},
 		},
 		{
 			name:       "with commit hash",
 			commitHash: "abc123",
-			contains:   []string{"abc123", "Scanned commit"},
+			contains:   []string{"abc123"},
 		},
 	}
 	for _, tc := range tests {
@@ -154,7 +83,7 @@ func TestBuildPRBody(t *testing.T) {
 			} else {
 				t.Setenv(commitHashEnv, "")
 			}
-			body := buildPRBody("com.example:lib", "1.0.0", "1.0.1")
+			body := buildPRBody(utils.Repository{}, "com.example:lib", "1.0.0", "1.0.1", techutils.Maven, []string{"pom.xml"})
 			for _, s := range tc.contains {
 				assert.Contains(t, body, s)
 			}
@@ -165,36 +94,37 @@ func TestBuildPRBody(t *testing.T) {
 	}
 }
 
-func TestNewUpdater(t *testing.T) {
-	tests := []struct {
-		name        string
-		tech        techutils.Technology
-		expectError bool
-	}{
-		{name: "maven", tech: techutils.Maven},
-		{name: "npm", tech: techutils.Npm},
-		{name: "pnpm", tech: techutils.Pnpm},
-		{name: "go", tech: techutils.Go},
-		{name: "pip", tech: techutils.Pip},
-		{name: "unsupported yarn", tech: techutils.Yarn, expectError: true},
+// TestRunUpdater_UnsupportedTech ensures runUpdater surfaces a clear error for technologies
+// GetCompatiblePackageUpdater does not recognize (Yarn is not in the compatible set).
+func TestRunUpdater_UnsupportedTech(t *testing.T) {
+	err := runUpdater("some-pkg", "1.0.0", "1.0.1", techutils.Yarn, true, []string{"package.json"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unsupported technology")
+}
+
+// TestGetCompatiblePackageUpdater_SupportedSet documents the technologies routed through the
+// shared factory. Docker must be included so auto-pr can fix container images.
+func TestGetCompatiblePackageUpdater_SupportedSet(t *testing.T) {
+	techs := []techutils.Technology{
+		techutils.Maven,
+		techutils.Npm,
+		techutils.Pnpm,
+		techutils.Go,
+		techutils.Pip,
+		techutils.Docker,
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			updater, err := newUpdater(tc.tech)
-			if tc.expectError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "unsupported technology")
-			} else {
-				assert.NoError(t, err)
-				assert.NotNil(t, updater)
-			}
+	for _, tech := range techs {
+		t.Run(tech.String(), func(t *testing.T) {
+			updater, supported := securitypkgupdaters.GetCompatiblePackageUpdater(&securitypkgupdaters.FixDetails{Technology: tech})
+			require.True(t, supported)
+			require.NotNil(t, updater)
 		})
 	}
 }
 
 func TestBuildFixDetails(t *testing.T) {
 	paths := []string{"pom.xml", "module/pom.xml"}
-	details := buildFixDetails("com.example:lib", "1.0.0", "1.0.1", techutils.Maven, paths)
+	details := buildFixDetails("com.example:lib", "1.0.0", "1.0.1", techutils.Maven, true, paths)
 
 	assert.Equal(t, "com.example:lib", details.ImpactedDependencyName)
 	assert.Equal(t, "1.0.0", details.ImpactedDependencyVersion)
@@ -205,4 +135,7 @@ func TestBuildFixDetails(t *testing.T) {
 	require.Len(t, details.Components[0].Evidences, 2)
 	assert.Equal(t, "pom.xml", details.Components[0].Evidences[0].File)
 	assert.Equal(t, "module/pom.xml", details.Components[0].Evidences[1].File)
+
+	transitive := buildFixDetails("com.example:lib", "1.0.0", "1.0.1", techutils.Maven, false, paths)
+	assert.False(t, transitive.IsDirectDependency)
 }
