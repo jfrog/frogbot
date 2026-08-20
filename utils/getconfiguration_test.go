@@ -77,6 +77,19 @@ func TestExtractJFrogCredentialsFromEnvs(t *testing.T) {
 	assert.Equal(t, "admin", server.User)
 	assert.Equal(t, "password", server.Password)
 	assert.Empty(t, server.AccessToken)
+
+	// Both access token and username/password set - access token takes precedence
+	SetEnvAndAssert(t, map[string]string{
+		JFrogUrlEnv:      "http://127.0.0.1:8081",
+		JFrogUserEnv:     "admin",
+		JFrogPasswordEnv: "password",
+		JFrogTokenEnv:    "token",
+	})
+	server, err = extractJFrogCredentialsFromEnvs()
+	assert.NoError(t, err)
+	assert.Equal(t, "token", server.AccessToken)
+	assert.Empty(t, server.User)
+	assert.Empty(t, server.Password)
 }
 
 // Test extraction of env params in ScanPullRequest command
