@@ -11,7 +11,6 @@ import (
 
 	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/remediation/sca/packageupdaters"
 
-	"github.com/go-git/go-git/v5"
 	biutils "github.com/jfrog/build-info-go/utils"
 
 	"github.com/jfrog/froggit-go/vcsclient"
@@ -39,6 +38,9 @@ const (
 	createAutoFixPrConfigNameInProfile = "Create automated fixes"
 )
 
+// supportedAutoFixTechnologies gates which technologies scan-repository will try to fix.
+// When you add a technology here, also confirm it is handled by
+// securitypkgupdaters.GetCompatiblePackageUpdater (the same factory used by the auto-pr command).
 var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Npm,
 	techutils.Maven,
@@ -405,35 +407,7 @@ func (sr *ScanRepositoryCmd) openAggregatedPullRequest(repository *utils.Reposit
 }
 
 func (sr *ScanRepositoryCmd) cleanNewFilesMissingInRemote() error {
-	// Open the local repository
-	localRepo, err := git.PlainOpen(sr.baseWd)
-	if err != nil {
-		return err
-	}
-
-	// Getting the repository working tree
-	worktree, err := localRepo.Worktree()
-	if err != nil {
-		return err
-	}
-
-	// Getting the working tree status
-	gitStatus, err := worktree.Status()
-	if err != nil {
-		return err
-	}
-
-	for relativeFilePath, status := range gitStatus {
-		if status.Worktree == git.Untracked {
-			log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
-			fileDeletionErr := os.Remove(filepath.Join(sr.baseWd, relativeFilePath))
-			if fileDeletionErr != nil {
-				err = errors.Join(err, fmt.Errorf("file '%s': %s", relativeFilePath, fileDeletionErr.Error()))
-				continue
-			}
-		}
-	}
-	return err
+	return utils.CleanUntrackedFiles(sr.baseWd)
 }
 
 func (sr *ScanRepositoryCmd) preparePullRequestDetails(aggregateFixes bool, resultsPlatformURL string, vulnerabilitiesDetails ...*utils.VulnerabilityDetails) (prTitle, prBody string, otherComments []string, err error) {

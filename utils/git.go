@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -644,4 +646,31 @@ func removeCredentialsFromUrlIfNeeded(url string) string {
 		return url
 	}
 	return clientutils.RemoveCredentials(url, matchedResult)
+}
+
+// CleanUntrackedFiles removes files present in the worktree but missing in the remote index,
+// so package-manager side effects don't leak into the fix commit.
+func CleanUntrackedFiles(workspaceDir string) error {
+	localRepo, err := git.PlainOpen(workspaceDir)
+	if err != nil {
+		return err
+	}
+	worktree, err := localRepo.Worktree()
+	if err != nil {
+		return err
+	}
+	gitStatus, err := worktree.Status()
+	if err != nil {
+		return err
+	}
+	for relativeFilePath, status := range gitStatus {
+		if status.Worktree != git.Untracked {
+			continue
+		}
+		log.Debug(fmt.Sprintf("Untracking file '%s' that was created locally during the scan/fix process", relativeFilePath))
+		if deletionErr := os.Remove(filepath.Join(workspaceDir, relativeFilePath)); deletionErr != nil {
+			err = errors.Join(err, fmt.Errorf("file '%s': %s", relativeFilePath, deletionErr.Error()))
+		}
+	}
+	return err
 }

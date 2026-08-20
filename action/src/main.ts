@@ -8,6 +8,12 @@ async function main() {
         await Utils.setupOidcTokenIfNeeded(jfrogUrl);
         const eventName: string = await Utils.setFrogbotEnv();
         await Utils.addToPath();
+
+        if (core.getInput('command') === 'auto-pr') {
+            await Utils.execAutoPr();
+            return;
+        }
+
         switch (eventName) {
             case 'pull_request':
             case 'pull_request_target':

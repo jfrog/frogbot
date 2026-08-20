@@ -41,6 +41,7 @@ import (
 const (
 	ScanPullRequest                     = "scan-pull-request"
 	ScanRepository                      = "scan-repository"
+	AutoPr                              = "auto-pr"
 	RootDir                             = "."
 	branchNameRegex                     = `[~^:?\\\[\]@{}*]`
 	dependencySubmissionFrogbotDetector = "JFrog Frogbot"

@@ -150,6 +150,44 @@ class Utils {
         });
     }
     /**
+     * Execute frogbot auto-pr command.
+     */
+    static execAutoPr() {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.exportVariable('JF_COMPONENT_NAME', core.getInput('component-name'));
+            core.exportVariable('JF_AFFECTED_VERSION', core.getInput('affected-version'));
+            core.exportVariable('JF_FIX_VERSION', core.getInput('fix-version'));
+            const commitHash = core.getInput('commit-hash');
+            if (commitHash) {
+                core.exportVariable('JF_COMMIT_HASH', commitHash);
+            }
+            const branchName = core.getInput('branch-name');
+            if (branchName) {
+                core.exportVariable('JF_GIT_BASE_BRANCH', branchName);
+            }
+            else if (!process.env.JF_GIT_BASE_BRANCH) {
+                const git = (0, simple_git_1.simpleGit)();
+                try {
+                    const currentBranch = yield git.branch();
+                    if (!currentBranch.current) {
+                        // Checking out by commit-hash leaves the working tree in detached HEAD, so git reports no current branch.
+                        throw new Error('Cannot resolve JF_GIT_BASE_BRANCH: the workspace is on a detached HEAD ' +
+                            '(this happens when the workflow was invoked with commit-hash only). ' +
+                            'Provide the `branch-name` input alongside `commit-hash`, or set JF_GIT_BASE_BRANCH explicitly.');
+                    }
+                    core.exportVariable('JF_GIT_BASE_BRANCH', currentBranch.current);
+                }
+                catch (error) {
+                    throw new Error('Error getting current branch from the .git folder: ' + error);
+                }
+            }
+            const res = yield (0, exec_1.exec)(Utils.getExecutableName(), ['auto-pr']);
+            if (res !== core.ExitCode.Success) {
+                throw new Error('Frogbot exited with exit code ' + res);
+            }
+        });
+    }
+    /**
      * Try to load the Frogbot executables from cache.
      *
      * @param version  - Frogbot version

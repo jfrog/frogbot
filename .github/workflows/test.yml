@@ -79,6 +79,9 @@ jobs:
           - name: 'Scan Pull Request'
             package: 'scanpullrequest'
 
+          - name: 'Auto PR'
+            package: 'autopr'
+
         os: [ ubuntu, windows, macos ]
     steps:
       # Configure prerequisites
