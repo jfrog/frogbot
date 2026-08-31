@@ -120,7 +120,7 @@ func (sr *ScanRepositoryCmd) setCommandPrerequisites(repository *utils.Repositor
 	}
 	sr.scanDetails = utils.NewScanDetails(client, &repository.Server, &repository.Params.Git).
 		SetJfrogVersions(sr.XrayVersion, sr.XscVersion).
-		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.JFrogProjectKey, false).
+		SetResultsContext(repositoryCloneUrl, repository.Params.JFrogPlatform.JFrogProjectKey, true).
 		SetConfigProfile(repository.Params.ConfigProfile)
 
 	sr.OutputWriter = repository.OutputWriter
