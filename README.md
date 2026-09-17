@@ -5,7 +5,6 @@
 [![Frogbot](images/frogbot-intro.png)](#readme)
 
 [![Scanned by Frogbot](https://raw.github.com/jfrog/frogbot/main/images/frogbot-badge.svg)](https://jfrog.com/help/r/jfrog-security-user-guide/shift-left-on-security/frogbot)
-[![Go Report Card](https://goreportcard.com/badge/github.com/jfrog/frogbot)](https://goreportcard.com/report/github.com/jfrog/frogbot)
 
 | Branch | Status |
 |:------:|:------:|
