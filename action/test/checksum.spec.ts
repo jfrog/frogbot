@@ -12,18 +12,18 @@ jest.mock('@actions/http-client', () => {
     };
 });
 
-const artifactUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/3.7.0/getFrogbot.sh';
-const storageUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3/3.7.0/getFrogbot.sh';
+const artifactUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/3.7.0/frogbot-linux-amd64/frogbot';
+const storageUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3/3.7.0/frogbot-linux-amd64/frogbot';
 
-describe('getFrogbot.sh checksum verification', () => {
+describe('Frogbot checksum verification', () => {
     let workDir: string;
-    let scriptPath: string;
+    let binaryPath: string;
     let request: jest.Mock;
 
     beforeEach(() => {
         workDir = mkdtempSync(join(tmpdir(), 'frogbot-checksum-'));
-        scriptPath = join(workDir, 'getFrogbot.sh');
-        writeFileSync(scriptPath, '#!/bin/bash\necho frogbot\n');
+        binaryPath = join(workDir, 'frogbot');
+        writeFileSync(binaryPath, 'frogbot-binary');
         request = httpRequest();
         request.mockReset();
         delete process.env.FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION;
@@ -36,61 +36,61 @@ describe('getFrogbot.sh checksum verification', () => {
 
     it('Derives the Artifactory storage API URL from the first artifactory segment', () => {
         expect(artifactUrlToStorageUrl(artifactUrl)).toBe(storageUrl);
-        expect(artifactUrlToStorageUrl('https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.35.3/getFrogbot.sh')).toBe(
-            'https://myfrogbot.com/artifactory/api/storage/frogbot-remote/artifactory/frogbot/v2/2.35.3/getFrogbot.sh',
-        );
+        expect(
+            artifactUrlToStorageUrl('https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.35.3/frogbot-linux-amd64/frogbot'),
+        ).toBe('https://myfrogbot.com/artifactory/api/storage/frogbot-remote/artifactory/frogbot/v2/2.35.3/frogbot-linux-amd64/frogbot');
     });
 
-    it('Accepts getFrogbot.sh when HEAD checksum headers match', async () => {
-        request.mockResolvedValue(headResponse(checksumHeaders(scriptPath)));
+    it('Accepts Frogbot when HEAD checksum headers match', async () => {
+        request.mockResolvedValue(headResponse(checksumHeaders(binaryPath)));
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, '');
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
 
         expect(request).toHaveBeenCalledTimes(1);
         expect(request).toHaveBeenCalledWith('HEAD', artifactUrl, null, {});
-        expect(existsSync(scriptPath)).toBe(true);
+        expect(existsSync(binaryPath)).toBe(true);
     });
 
-    it('Sends the installer authorization header when a releases repo is configured', async () => {
-        request.mockResolvedValue(headResponse(checksumHeaders(scriptPath)));
+    it('Sends the authorization header when a releases repo is configured', async () => {
+        request.mockResolvedValue(headResponse(checksumHeaders(binaryPath)));
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, 'Bearer token');
+        await verifyDownloadedFile(binaryPath, artifactUrl, 'Bearer token');
 
         expect(request).toHaveBeenCalledWith('HEAD', artifactUrl, null, { Authorization: 'Bearer token' });
     });
 
-    it('Rejects getFrogbot.sh and deletes it when a checksum header does not match', async () => {
-        const headers: Record<string, string> = checksumHeaders(scriptPath);
+    it('Rejects Frogbot and deletes it when a checksum header does not match', async () => {
+        const headers: Record<string, string> = checksumHeaders(binaryPath);
         headers['x-checksum-sha256'] = 'deadbeef';
         request.mockResolvedValue(headResponse(headers));
 
-        await expect(verifyDownloadedFile(scriptPath, artifactUrl, '')).rejects.toThrow('Checksum verification failed for getFrogbot.sh');
-        expect(existsSync(scriptPath)).toBe(false);
+        await expect(verifyDownloadedFile(binaryPath, artifactUrl, '')).rejects.toThrow('Checksum verification failed for ' + artifactUrl);
+        expect(existsSync(binaryPath)).toBe(false);
     });
 
-    it('Accepts getFrogbot.sh when SHA256 is absent and MD5 and SHA1 match', async () => {
-        const headers: Record<string, string> = checksumHeaders(scriptPath);
+    it('Accepts Frogbot when SHA256 is absent and MD5 and SHA1 match', async () => {
+        const headers: Record<string, string> = checksumHeaders(binaryPath);
         delete headers['x-checksum-sha256'];
         request.mockResolvedValue(headResponse(headers));
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, '');
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
 
-        expect(existsSync(scriptPath)).toBe(true);
+        expect(existsSync(binaryPath)).toBe(true);
     });
 
     it('Falls back to the storage API when HEAD returns no checksum headers', async () => {
-        request.mockResolvedValueOnce(headResponse({})).mockResolvedValueOnce(storageResponse(scriptPath));
+        request.mockResolvedValueOnce(headResponse({})).mockResolvedValueOnce(storageResponse(binaryPath));
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, '');
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
 
         expect(request).toHaveBeenNthCalledWith(2, 'GET', storageUrl, null, {});
-        expect(existsSync(scriptPath)).toBe(true);
+        expect(existsSync(binaryPath)).toBe(true);
     });
 
     it('Falls back to the storage API when HEAD fails for a reason other than authentication', async () => {
-        request.mockRejectedValueOnce(httpError(404)).mockResolvedValueOnce(storageResponse(scriptPath));
+        request.mockRejectedValueOnce(httpError(404)).mockResolvedValueOnce(storageResponse(binaryPath));
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, '');
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
 
         expect(request).toHaveBeenCalledTimes(2);
     });
@@ -98,18 +98,69 @@ describe('getFrogbot.sh checksum verification', () => {
     it('Does not fall back to the storage API when Artifactory rejects the HEAD request', async () => {
         request.mockRejectedValueOnce(httpError(401));
 
-        await expect(verifyDownloadedFile(scriptPath, artifactUrl, 'Bearer token')).rejects.toThrow('401');
+        await expect(verifyDownloadedFile(binaryPath, artifactUrl, 'Bearer token')).rejects.toThrow('401');
         expect(request).toHaveBeenCalledTimes(1);
-        expect(existsSync(scriptPath)).toBe(false);
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Does not fall back when a resolved HEAD response is unauthorized', async () => {
+        request.mockResolvedValueOnce(responseWithStatus(401));
+
+        await expect(verifyDownloadedFile(binaryPath, artifactUrl, 'Bearer token')).rejects.toThrow(
+            'Artifactory rejected the Frogbot checksum request (401)',
+        );
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Falls back to the storage API when a resolved HEAD response is not successful', async () => {
+        request.mockResolvedValueOnce(responseWithStatus(404)).mockResolvedValueOnce(storageResponse(binaryPath));
+
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
+
+        expect(request).toHaveBeenNthCalledWith(2, 'GET', storageUrl, null, {});
+        expect(existsSync(binaryPath)).toBe(true);
+    });
+
+    it('Reports Artifactory credentials when the storage API rejects the request', async () => {
+        request.mockResolvedValueOnce(headResponse({})).mockResolvedValueOnce(responseWithStatus(403));
+
+        await expect(verifyDownloadedFile(binaryPath, artifactUrl, 'Bearer token')).rejects.toThrow(
+            'Artifactory rejected the Frogbot checksum request (403)',
+        );
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Reports the storage API status when metadata lookup is not successful', async () => {
+        request.mockResolvedValueOnce(headResponse({})).mockResolvedValueOnce(responseWithStatus(500));
+
+        await expect(verifyDownloadedFile(binaryPath, artifactUrl, '')).rejects.toThrow('Artifactory Storage API returned HTTP 500');
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Resolves [RELEASE] before requesting storage metadata', async () => {
+        const releaseUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/[RELEASE]/frogbot-linux-amd64/frogbot';
+        const folderUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3';
+        const concreteStorageUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3/3.10.0/frogbot-linux-amd64/frogbot';
+        request
+            .mockResolvedValueOnce(headResponse({}))
+            .mockResolvedValueOnce(releaseListingResponse(['/3.6.0', '/3.10.0', '/3.7.0', '/3.9.0-SNAPSHOT']))
+            .mockResolvedValueOnce(storageResponse(binaryPath));
+
+        await verifyDownloadedFile(binaryPath, releaseUrl, '');
+
+        expect(request).toHaveBeenNthCalledWith(2, 'GET', folderUrl, null, {});
+        expect(request).toHaveBeenNthCalledWith(3, 'GET', concreteStorageUrl, null, {});
+        expect(existsSync(binaryPath)).toBe(true);
     });
 
     it('Skips checksum verification when FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION is set', async () => {
         process.env.FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION = '1';
 
-        await verifyDownloadedFile(scriptPath, artifactUrl, '');
+        await verifyDownloadedFile(binaryPath, artifactUrl, '');
 
         expect(request).not.toHaveBeenCalled();
-        expect(existsSync(scriptPath)).toBe(true);
+        expect(existsSync(binaryPath)).toBe(true);
     });
 });
 
@@ -137,6 +188,28 @@ function headResponse(headers: Record<string, string>): {
     return {
         message: { statusCode: 200, headers },
         readBody: async (): Promise<string> => '',
+    };
+}
+
+function responseWithStatus(statusCode: number): {
+    message: { statusCode: number; headers: Record<string, string> };
+    readBody: () => Promise<string>;
+} {
+    return {
+        message: { statusCode, headers: {} },
+        readBody: async (): Promise<string> => {
+            throw new Error('response body should not be read');
+        },
+    };
+}
+
+function releaseListingResponse(uris: string[]): {
+    message: { statusCode: number; headers: Record<string, string> };
+    readBody: () => Promise<string>;
+} {
+    return {
+        message: { statusCode: 200, headers: {} },
+        readBody: async (): Promise<string> => JSON.stringify({ children: uris.map((uri: string) => ({ uri, folder: true })) }),
     };
 }
 

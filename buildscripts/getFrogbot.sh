@@ -3,7 +3,6 @@
 FROGBOT_OS="na"
 FILE_NAME="na"
 VERSION="[RELEASE]"
-MAJOR="3"
 PLATFORM_URL="https://releases.jfrog.io"
 
 setFrogbotVersion() {
@@ -13,12 +12,6 @@ setFrogbotVersion() {
       echo "Downloading version $VERSION of Frogbot..."
   else
       echo "Downloading the latest version of Frogbot..."
-  fi
-  if [ "${VERSION}" = "[RELEASE]" ] || [ "${VERSION}" = "latest" ]; then
-      MAJOR="3"
-      VERSION="[RELEASE]"
-  else
-      MAJOR="${VERSION%%.*}"
   fi
 }
 
@@ -32,7 +25,7 @@ setFrogbotRemoteRepositoryIfNeeded() {
 
 setWindowsProperties() {
   FROGBOT_OS="windows"
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH:-}frogbot/v${MAJOR}/${VERSION}/frogbot-windows-amd64/frogbot.exe"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-windows-amd64/frogbot.exe"
   FILE_NAME="frogbot.exe"
 }
 
@@ -47,7 +40,7 @@ setMacProperties() {
           ARCH="386"
           ;;
   esac
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH:-}frogbot/v${MAJOR}/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
   FILE_NAME="frogbot"
 }
 
@@ -81,7 +74,7 @@ setLinuxProperties() {
           exit 1
           ;;
   esac
-  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH:-}frogbot/v${MAJOR}/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
+  URL="${PLATFORM_URL}/artifactory/${REMOTE_PATH}frogbot/v3/${VERSION}/frogbot-${FROGBOT_OS}-${ARCH}/frogbot"
   FILE_NAME="frogbot"
 }
 
@@ -106,7 +99,7 @@ echoGreetings() {
 download_to() {
   dl_url="$1"
   dl_out="$2"
-  if [ -n "${REMOTE_PATH:-}" ]; then
+  if [ -n "${REMOTE_PATH}" ]; then
       if [ -n "${JF_ACCESS_TOKEN}" ]; then
         curl -fLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" -X GET "${dl_url}" -o "${dl_out}"
       else
@@ -119,42 +112,15 @@ download_to() {
 
 head_request() {
   dl_url="$1"
-  if [ -n "${REMOTE_PATH:-}" ]; then
-      if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
+  if [ -n "${REMOTE_PATH}" ]; then
+      if [ -n "${JF_ACCESS_TOKEN}" ]; then
         curl -sfILg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${dl_url}"
       else
-        curl -sfILg -u "${JF_USER}:${JF_PASSWORD:-}" "${dl_url}"
+        curl -sfILg -u "${JF_USER}:${JF_PASSWORD}" "${dl_url}"
       fi
     else
       curl -sfILg "${dl_url}"
     fi
-}
-
-artifact_url_to_storage_url() {
-  local prefix suffix
-  case "${1}" in
-    */artifactory/*)
-      prefix="${1%%/artifactory/*}"
-      suffix="${1#*/artifactory/}"
-      suffix="${suffix%%\?*}"
-      echo "${prefix}/artifactory/api/storage/${suffix}"
-      return 0
-      ;;
-  esac
-  return 1
-}
-
-storage_request() {
-  local storage_url="$1"
-  if [ -n "${REMOTE_PATH:-}" ]; then
-    if [ -n "${JF_ACCESS_TOKEN:-}" ]; then
-      curl -sfLg -H "Authorization:Bearer ${JF_ACCESS_TOKEN}" "${storage_url}"
-    else
-      curl -sfLg -u "${JF_USER}:${JF_PASSWORD:-}" "${storage_url}"
-    fi
-  else
-    curl -sfLg "${storage_url}"
-  fi
 }
 
 get_header_value() {
@@ -164,77 +130,6 @@ get_header_value() {
     $1 ~ header":" { sub(/^[^:]+:[[:space:]]*/, ""); value=$0 }
     END { gsub(/\r/, "", value); print value }
   '
-}
-
-parse_storage_checksums() {
-  json="$1"
-  local _cs
-  if command -v jq >/dev/null 2>&1; then
-    remote_md5=$(echo "${json}" | jq -r '.checksums.md5 // empty')
-    remote_sha1=$(echo "${json}" | jq -r '.checksums.sha1 // empty')
-    remote_sha256=$(echo "${json}" | jq -r '.checksums.sha256 // empty')
-    return 0
-  fi
-  if command -v python3 >/dev/null 2>&1; then
-    _cs=$(echo "${json}" | python3 -c 'import json,sys; c=json.load(sys.stdin).get("checksums",{}); print(c.get("md5") or ""); print(c.get("sha1") or ""); print(c.get("sha256") or "")')
-    remote_md5=$(printf '%s\n' "${_cs}" | sed -n '1p')
-    remote_sha1=$(printf '%s\n' "${_cs}" | sed -n '2p')
-    remote_sha256=$(printf '%s\n' "${_cs}" | sed -n '3p')
-    return 0
-  fi
-  return 1
-}
-
-stderr_indicates_auth_failure() {
-  [ -f "$1" ] && grep -qiE '401|403|Unauthorized|Forbidden' "$1"
-}
-
-load_remote_checksums_from_headers() {
-  headers="$1"
-  remote_md5=$(get_header_value "X-Checksum-Md5" "${headers}")
-  remote_sha1=$(get_header_value "X-Checksum-Sha1" "${headers}")
-  remote_sha256=$(get_header_value "X-Checksum-Sha256" "${headers}")
-  [ -n "${remote_md5}" ] && [ -n "${remote_sha1}" ]
-}
-
-load_remote_checksums() {
-  local headers json storage_url head_err
-
-  remote_md5=""
-  remote_sha1=""
-  remote_sha256=""
-
-  head_err=$(mktemp "${TMPDIR:-/tmp}/frogbot-head.XXXXXX")
-  if headers=$(head_request "${URL}" 2>"${head_err}") && load_remote_checksums_from_headers "${headers}"; then
-    rm -f "${head_err}"
-    return 0
-  fi
-  if stderr_indicates_auth_failure "${head_err}"; then
-    echo "Artifactory HEAD request was rejected (401/403). Check JF_ACCESS_TOKEN or JF_USER/JF_PASSWORD." >&2
-    rm -f "${head_err}"
-    return 1
-  fi
-  rm -f "${head_err}"
-
-  if ! storage_url=$(artifact_url_to_storage_url "${URL}"); then
-    echo "Cannot derive Artifactory Storage API URL from ${URL}." >&2
-    return 1
-  fi
-
-  echo "Checksum headers not returned by HEAD; using Artifactory Storage API ..." >&2
-  if ! json=$(storage_request "${storage_url}"); then
-    echo "Failed to fetch Artifactory storage metadata from ${storage_url}." >&2
-    return 1
-  fi
-  if ! parse_storage_checksums "${json}"; then
-    echo "jq or python3 is required to parse Artifactory storage metadata." >&2
-    return 1
-  fi
-  if [ -z "${remote_md5}" ] || [ -z "${remote_sha1}" ]; then
-    echo "Artifactory storage metadata did not include md5/sha1 checksums." >&2
-    return 1
-  fi
-  return 0
 }
 
 local_md5() {
@@ -268,8 +163,18 @@ verify_download_or_exit() {
     return 0
   fi
 
-  if ! load_remote_checksums; then
+  headers=$(head_request "${URL}") || {
     echo "Failed to fetch Artifactory file details for this Frogbot build." >&2
+    rm -f "${FILE_NAME}"
+    exit 1
+  }
+
+  remote_md5=$(get_header_value "X-Checksum-Md5" "${headers}")
+  remote_sha1=$(get_header_value "X-Checksum-Sha1" "${headers}")
+  remote_sha256=$(get_header_value "X-Checksum-Sha256" "${headers}")
+
+  if [ -z "${remote_md5}" ] || [ -z "${remote_sha1}" ]; then
+    echo "Artifactory did not return checksum headers; cannot verify the downloaded binary." >&2
     rm -f "${FILE_NAME}"
     exit 1
   fi
@@ -296,9 +201,7 @@ download() {
   setPermissions && echoGreetings
 }
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  setFrogbotVersion "$@"
-  setFrogbotRemoteRepositoryIfNeeded
-  setFrogbotDownloadProperties
-  download
-fi
+setFrogbotVersion "$@"
+setFrogbotRemoteRepositoryIfNeeded
+setFrogbotDownloadProperties
+download
