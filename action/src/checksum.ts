@@ -29,8 +29,9 @@ export function artifactUrlToStorageUrl(artifactUrl: string): string {
  * Verifies a downloaded file against Artifactory checksums.
  * HEAD checksum headers are used first. A 401 or 403 response fails immediately.
  * Any other HEAD failure, or a HEAD response without MD5 and SHA1, falls back to
- * the Artifactory storage API. A [RELEASE] path is resolved to a concrete version
- * before that fallback, because the storage API does not expand [RELEASE].
+ * the Artifactory Storage API for a concrete version. A [RELEASE] download
+ * without those headers fails: the Storage API does not expand [RELEASE], and
+ * listing the parent folder only shows artifacts cached in a remote repository.
  * The file is deleted when verification fails.
  */
 export async function verifyDownloadedFile(filePath: string, artifactUrl: string, authorization: string): Promise<void> {
@@ -85,31 +86,17 @@ async function loadRemoteChecksums(artifactUrl: string, authorization: string): 
         }
     }
 
-    const resolvedUrl: string = await resolveReleaseArtifactUrl(client, artifactUrl, headers);
-    const storageUrl: string = artifactUrlToStorageUrl(resolvedUrl);
+    if (artifactUrl.includes('/[RELEASE]/')) {
+        throw new Error(
+            `Artifactory did not return checksum headers for ${artifactUrl}. Cannot verify a [RELEASE] download without those headers.`,
+        );
+    }
+
+    const storageUrl: string = artifactUrlToStorageUrl(artifactUrl);
     const response: HttpClientResponse = await client.request('GET', storageUrl, null, headers);
     ensureStorageSuccess(response.message.statusCode, storageUrl);
     const body: string = await response.readBody();
     return checksumsFromStorage(body);
-}
-
-async function resolveReleaseArtifactUrl(client: HttpClient, artifactUrl: string, headers: OutgoingHttpHeaders): Promise<string> {
-    const token: string = '/[RELEASE]/';
-    const index: number = artifactUrl.indexOf(token);
-    if (index < 0) {
-        return artifactUrl;
-    }
-
-    const parentUrl: string = artifactUrl.slice(0, index);
-    const parentStorageUrl: string = artifactUrlToStorageUrl(parentUrl);
-    core.debug(`Resolving [RELEASE] from ${parentStorageUrl}.`);
-    const response: HttpClientResponse = await client.request('GET', parentStorageUrl, null, headers);
-    ensureStorageSuccess(response.message.statusCode, parentStorageUrl);
-    const version: string = latestReleaseVersion(await response.readBody());
-    if (!version) {
-        throw new Error(`Could not resolve [RELEASE] from ${parentStorageUrl}.`);
-    }
-    return `${parentUrl}/${version}/${artifactUrl.slice(index + token.length)}`;
 }
 
 function ensureStorageSuccess(status: number | undefined, storageUrl: string): void {
@@ -123,44 +110,6 @@ function ensureStorageSuccess(status: number | undefined, storageUrl: string): v
 
 function rejectedChecksumRequest(status: number): Error {
     return new Error(`Artifactory rejected the Frogbot checksum request (${status}). Check JF_ACCESS_TOKEN or JF_USER/JF_PASSWORD.`);
-}
-
-function latestReleaseVersion(body: string): string {
-    let parsed: unknown;
-    try {
-        parsed = JSON.parse(body);
-    } catch {
-        throw new Error('Artifactory storage metadata was not valid JSON.');
-    }
-    if (!isRecord(parsed) || !Array.isArray(parsed.children)) {
-        throw new Error('Artifactory storage metadata did not include release versions.');
-    }
-
-    const versions: string[] = [];
-    for (const child of parsed.children) {
-        if (!isRecord(child) || typeof child.uri !== 'string') {
-            continue;
-        }
-        const name: string = child.uri.replace(/^\//, '');
-        if (/^\d+(?:\.\d+)+$/.test(name)) {
-            versions.push(name);
-        }
-    }
-    versions.sort(compareVersions);
-    return versions[versions.length - 1] ?? '';
-}
-
-function compareVersions(left: string, right: string): number {
-    const leftParts: number[] = left.split('.').map((part: string) => Number(part));
-    const rightParts: number[] = right.split('.').map((part: string) => Number(part));
-    const length: number = Math.max(leftParts.length, rightParts.length);
-    for (let index: number = 0; index < length; index++) {
-        const difference: number = (leftParts[index] ?? 0) - (rightParts[index] ?? 0);
-        if (difference !== 0) {
-            return difference;
-        }
-    }
-    return 0;
 }
 
 function authorizationHeaders(authorization: string): OutgoingHttpHeaders {

@@ -56,8 +56,9 @@ exports.artifactUrlToStorageUrl = artifactUrlToStorageUrl;
  * Verifies a downloaded file against Artifactory checksums.
  * HEAD checksum headers are used first. A 401 or 403 response fails immediately.
  * Any other HEAD failure, or a HEAD response without MD5 and SHA1, falls back to
- * the Artifactory storage API. A [RELEASE] path is resolved to a concrete version
- * before that fallback, because the storage API does not expand [RELEASE].
+ * the Artifactory Storage API for a concrete version. A [RELEASE] download
+ * without those headers fails: the Storage API does not expand [RELEASE], and
+ * listing the parent folder only shows artifacts cached in a remote repository.
  * The file is deleted when verification fails.
  */
 function verifyDownloadedFile(filePath, artifactUrl, authorization) {
@@ -113,31 +114,14 @@ function loadRemoteChecksums(artifactUrl, authorization) {
                 core.debug(`Checksum HEAD returned HTTP ${status}; using Artifactory Storage API.`);
             }
         }
-        const resolvedUrl = yield resolveReleaseArtifactUrl(client, artifactUrl, headers);
-        const storageUrl = artifactUrlToStorageUrl(resolvedUrl);
+        if (artifactUrl.includes('/[RELEASE]/')) {
+            throw new Error(`Artifactory did not return checksum headers for ${artifactUrl}. Cannot verify a [RELEASE] download without those headers.`);
+        }
+        const storageUrl = artifactUrlToStorageUrl(artifactUrl);
         const response = yield client.request('GET', storageUrl, null, headers);
         ensureStorageSuccess(response.message.statusCode, storageUrl);
         const body = yield response.readBody();
         return checksumsFromStorage(body);
-    });
-}
-function resolveReleaseArtifactUrl(client, artifactUrl, headers) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const token = '/[RELEASE]/';
-        const index = artifactUrl.indexOf(token);
-        if (index < 0) {
-            return artifactUrl;
-        }
-        const parentUrl = artifactUrl.slice(0, index);
-        const parentStorageUrl = artifactUrlToStorageUrl(parentUrl);
-        core.debug(`Resolving [RELEASE] from ${parentStorageUrl}.`);
-        const response = yield client.request('GET', parentStorageUrl, null, headers);
-        ensureStorageSuccess(response.message.statusCode, parentStorageUrl);
-        const version = latestReleaseVersion(yield response.readBody());
-        if (!version) {
-            throw new Error(`Could not resolve [RELEASE] from ${parentStorageUrl}.`);
-        }
-        return `${parentUrl}/${version}/${artifactUrl.slice(index + token.length)}`;
     });
 }
 function ensureStorageSuccess(status, storageUrl) {
@@ -150,44 +134,6 @@ function ensureStorageSuccess(status, storageUrl) {
 }
 function rejectedChecksumRequest(status) {
     return new Error(`Artifactory rejected the Frogbot checksum request (${status}). Check JF_ACCESS_TOKEN or JF_USER/JF_PASSWORD.`);
-}
-function latestReleaseVersion(body) {
-    var _a;
-    let parsed;
-    try {
-        parsed = JSON.parse(body);
-    }
-    catch (_b) {
-        throw new Error('Artifactory storage metadata was not valid JSON.');
-    }
-    if (!isRecord(parsed) || !Array.isArray(parsed.children)) {
-        throw new Error('Artifactory storage metadata did not include release versions.');
-    }
-    const versions = [];
-    for (const child of parsed.children) {
-        if (!isRecord(child) || typeof child.uri !== 'string') {
-            continue;
-        }
-        const name = child.uri.replace(/^\//, '');
-        if (/^\d+(?:\.\d+)+$/.test(name)) {
-            versions.push(name);
-        }
-    }
-    versions.sort(compareVersions);
-    return (_a = versions[versions.length - 1]) !== null && _a !== void 0 ? _a : '';
-}
-function compareVersions(left, right) {
-    var _a, _b;
-    const leftParts = left.split('.').map((part) => Number(part));
-    const rightParts = right.split('.').map((part) => Number(part));
-    const length = Math.max(leftParts.length, rightParts.length);
-    for (let index = 0; index < length; index++) {
-        const difference = ((_a = leftParts[index]) !== null && _a !== void 0 ? _a : 0) - ((_b = rightParts[index]) !== null && _b !== void 0 ? _b : 0);
-        if (difference !== 0) {
-            return difference;
-        }
-    }
-    return 0;
 }
 function authorizationHeaders(authorization) {
     if (!authorization) {

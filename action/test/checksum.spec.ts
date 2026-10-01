@@ -138,20 +138,15 @@ describe('Frogbot checksum verification', () => {
         expect(existsSync(binaryPath)).toBe(false);
     });
 
-    it('Resolves [RELEASE] before requesting storage metadata', async () => {
+    it('Fails a [RELEASE] download when HEAD returns no checksum headers', async () => {
         const releaseUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/[RELEASE]/frogbot-linux-amd64/frogbot';
-        const folderUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3';
-        const concreteStorageUrl: string = 'https://releases.jfrog.io/artifactory/api/storage/frogbot/v3/3.10.0/frogbot-linux-amd64/frogbot';
-        request
-            .mockResolvedValueOnce(headResponse({}))
-            .mockResolvedValueOnce(releaseListingResponse(['/3.6.0', '/3.10.0', '/3.7.0', '/3.9.0-SNAPSHOT']))
-            .mockResolvedValueOnce(storageResponse(binaryPath));
+        request.mockResolvedValueOnce(headResponse({}));
 
-        await verifyDownloadedFile(binaryPath, releaseUrl, '');
-
-        expect(request).toHaveBeenNthCalledWith(2, 'GET', folderUrl, null, {});
-        expect(request).toHaveBeenNthCalledWith(3, 'GET', concreteStorageUrl, null, {});
-        expect(existsSync(binaryPath)).toBe(true);
+        await expect(verifyDownloadedFile(binaryPath, releaseUrl, '')).rejects.toThrow(
+            'Artifactory did not return checksum headers for ' + releaseUrl,
+        );
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(existsSync(binaryPath)).toBe(false);
     });
 
     it('Skips checksum verification when FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION is set', async () => {
@@ -200,16 +195,6 @@ function responseWithStatus(statusCode: number): {
         readBody: async (): Promise<string> => {
             throw new Error('response body should not be read');
         },
-    };
-}
-
-function releaseListingResponse(uris: string[]): {
-    message: { statusCode: number; headers: Record<string, string> };
-    readBody: () => Promise<string>;
-} {
-    return {
-        message: { statusCode: 200, headers: {} },
-        readBody: async (): Promise<string> => JSON.stringify({ children: uris.map((uri: string) => ({ uri, folder: true })) }),
     };
 }
 
