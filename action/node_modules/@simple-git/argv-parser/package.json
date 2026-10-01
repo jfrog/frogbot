@@ -1,0 +1,36 @@
+{
+  "name": "@simple-git/argv-parser",
+  "version": "1.1.1",
+  "main": "dist/index.cjs",
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "git",
+    "source control",
+    "vcs",
+    "simple-git",
+    "argv"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steveukx/git-js.git",
+    "directory": "packages/argv-parser"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "dependencies": {
+    "@simple-git/args-pathspec": "^1.0.3"
+  }
+}

@@ -36,12 +36,15 @@
     "author": "JFrog",
     "license": "Apache-2.0",
     "dependencies": {
-        "@actions/core": "~1.10.0",
+        "@actions/core": "~1.11.1",
         "@actions/exec": "~1.1.1",
         "@actions/github": "~5.1.1",
-        "@actions/http-client": "~2.2.1",
+        "@actions/http-client": "~2.2.3",
         "@actions/tool-cache": "~2.0.1",
-        "simple-git": "^3.19.1"
+        "simple-git": "^3.36.0"
+    },
+    "overrides": {
+        "undici": "6.29.0"
     },
     "devDependencies": {
         "@types/jest": "^29.5.4",
