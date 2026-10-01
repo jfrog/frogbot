@@ -38,8 +38,10 @@ const exec_1 = require("@actions/exec");
 const github_1 = require("@actions/github");
 const tool_cache_1 = require("@actions/tool-cache");
 const fs_1 = require("fs");
+const promises_1 = require("fs/promises");
 const os_1 = require("os");
 const path_1 = require("path");
+const checksum_1 = require("./checksum");
 const simple_git_1 = require("simple-git");
 const http_client_1 = require("@actions/http-client");
 class Utils {
@@ -59,15 +61,36 @@ class Utils {
                     return;
                 }
             }
-            // Download Frogbot
+            // Download getFrogbot.sh, verify it, then let it download and verify the binary.
             const releasesRepo = (_a = process.env.JF_RELEASES_REPO) !== null && _a !== void 0 ? _a : '';
-            let url = Utils.getCliUrl(major, version, fileName, releasesRepo);
-            core.debug('Downloading Frogbot from ' + url);
+            let url = Utils.getInstallerScriptUrl(major, version, releasesRepo);
+            core.debug('Downloading Frogbot installer from ' + url);
             let auth = this.generateAuthString(releasesRepo);
-            let downloadDir = yield (0, tool_cache_1.downloadTool)(url, '', auth);
-            // Cache 'frogbot' executable
-            yield this.cacheAndAddPath(downloadDir, version, fileName);
+            let scriptPath = yield (0, tool_cache_1.downloadTool)(url, '', auth);
+            yield (0, checksum_1.verifyDownloadedFile)(scriptPath, url, auth);
+            const workDir = yield (0, promises_1.mkdtemp)((0, path_1.join)((0, os_1.tmpdir)(), 'frogbot-'));
+            let res = yield (0, exec_1.exec)('bash', [toBashPath(scriptPath), version], { cwd: toBashPath(workDir) });
+            if (res !== core.ExitCode.Success) {
+                throw new Error('Frogbot installer exited with exit code ' + res);
+            }
+            const binaryPath = (0, path_1.join)(workDir, fileName);
+            if (!(0, fs_1.existsSync)(binaryPath)) {
+                throw new Error('Frogbot installer did not produce ' + fileName);
+            }
+            yield this.cacheAndAddPath(binaryPath, version, fileName);
         });
+    }
+    static getInstallerScriptUrl(major, version, releasesRepo) {
+        var _a;
+        if (releasesRepo) {
+            let platformUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
+            if (!platformUrl) {
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/getFrogbot.sh`;
+        }
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/getFrogbot.sh`;
     }
     static generateAuthString(releasesRepo) {
         var _a, _b, _c;
@@ -217,41 +240,6 @@ class Utils {
             core.addPath(cliDir);
         });
     }
-    static getCliUrl(major, version, fileName, releasesRepo) {
-        var _a;
-        let architecture = 'frogbot-' + Utils.getArchitecture();
-        if (releasesRepo) {
-            let platformUrl = (_a = process.env.JF_URL) !== null && _a !== void 0 ? _a : '';
-            if (!platformUrl) {
-                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
-            }
-            // Remove trailing slash if exists
-            platformUrl = platformUrl.replace(/\/$/, '');
-            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-        }
-        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-    }
-    static getArchitecture() {
-        if (Utils.isWindows()) {
-            return 'windows-amd64';
-        }
-        if ((0, os_1.platform)().includes('darwin')) {
-            if ((0, os_1.arch)().includes('arm')) {
-                return 'mac-arm64';
-            }
-            return 'mac-386';
-        }
-        if ((0, os_1.arch)().includes('arm')) {
-            return (0, os_1.arch)().includes('64') ? 'linux-arm64' : 'linux-arm';
-        }
-        if ((0, os_1.arch)().includes('ppc64le')) {
-            return 'linux-ppc64le';
-        }
-        if ((0, os_1.arch)().includes('ppc64')) {
-            return 'linux-ppc64';
-        }
-        return (0, os_1.arch)().includes('64') ? 'linux-amd64' : 'linux-386';
-    }
     static getExecutableName() {
         return Utils.isWindows() ? 'frogbot.exe' : 'frogbot';
     }
@@ -349,3 +337,6 @@ Utils.TOOL_NAME = 'frogbot';
 Utils.OIDC_AUDIENCE_ARG = 'oidc-audience';
 // OpenID Connect provider_name input
 Utils.OIDC_INTEGRATION_PROVIDER_NAME_ARG = 'oidc-provider-name';
+function toBashPath(filePath) {
+    return filePath.replace(/\\/g, '/');
+}

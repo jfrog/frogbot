@@ -1,9 +1,15 @@
 import os from 'os';
-import { readFileSync } from 'fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { exec } from '@actions/exec';
+import { cacheFile, downloadTool, find } from '@actions/tool-cache';
+import { verifyDownloadedFile } from '../src/checksum';
 import { Utils } from '../src/utils';
 
 jest.mock('os');
+jest.mock('@actions/exec');
+jest.mock('@actions/tool-cache');
+jest.mock('../src/checksum');
 
 describe('Frogbot Action Tests', () => {
     afterEach(() => {
@@ -50,100 +56,24 @@ describe('Frogbot Action Tests', () => {
         });
     });
 
-    describe('Frogbot URL Tests', () => {
-        const myOs: jest.Mocked<typeof os> = os as any;
-        let cases: string[][] = [
-            [
-                'win32' as NodeJS.Platform,
-                'amd64',
-                'jfrog.exe',
-                'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-windows-amd64/jfrog.exe',
-            ],
-            ['darwin' as NodeJS.Platform, 'amd64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-mac-386/jfrog'],
-            ['darwin' as NodeJS.Platform, 'arm64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-mac-arm64/jfrog'],
-            ['linux' as NodeJS.Platform, 'amd64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-amd64/jfrog'],
-            ['linux' as NodeJS.Platform, 'arm64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-arm64/jfrog'],
-            ['linux' as NodeJS.Platform, '386', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-386/jfrog'],
-            ['linux' as NodeJS.Platform, 'arm', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-arm/jfrog'],
-            ['linux' as NodeJS.Platform, 'ppc64', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-ppc64/jfrog'],
-            ['linux' as NodeJS.Platform, 'ppc64le', 'jfrog', 'https://releases.jfrog.io/artifactory/frogbot/v1/1.2.3/frogbot-linux-ppc64le/jfrog'],
-        ];
-
-        test.each(cases)('CLI Url for %s-%s', (platform, arch, fileName, expectedUrl) => {
-            myOs.platform.mockImplementation(() => <NodeJS.Platform>platform);
-            myOs.arch.mockImplementation(() => arch);
-            let cliUrl: string = Utils.getCliUrl('1', '1.2.3', fileName, '');
-            expect(cliUrl).toBe(expectedUrl);
+    describe('Frogbot installer URL', () => {
+        afterEach(() => {
+            delete process.env.JF_URL;
         });
-    });
 
-    describe('Frogbot URL Tests With Remote Artifactory', () => {
-        const myOs: jest.Mocked<typeof os> = os as any;
-        const releasesRepo: string = 'frogbot-remote';
-        process.env['JF_URL'] = 'https://myfrogbot.com/';
-        process.env['JF_ACCESS_TOKEN'] = 'access_token1';
-        let cases: string[][] = [
-            [
-                'win32' as NodeJS.Platform,
-                'amd64',
-                'jfrog.exe',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-windows-amd64/jfrog.exe',
-            ],
-            [
-                'darwin' as NodeJS.Platform,
-                'amd64',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-mac-386/jfrog',
-            ],
-            [
-                'darwin' as NodeJS.Platform,
-                'arm64',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-mac-arm64/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                'amd64',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-amd64/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                'arm64',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm64/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                '386',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-386/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                'arm',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-arm/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                'ppc64',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64/jfrog',
-            ],
-            [
-                'linux' as NodeJS.Platform,
-                'ppc64le',
-                'jfrog',
-                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v2/2.8.7/frogbot-linux-ppc64le/jfrog',
-            ],
-        ];
+        it('Builds a public v3 installer URL', () => {
+            expect(Utils.getInstallerScriptUrl('3', '3.7.0', '')).toBe('https://releases.jfrog.io/artifactory/frogbot/v3/3.7.0/getFrogbot.sh');
+        });
 
-        test.each(cases)('Remote CLI Url for %s-%s', (platform, arch, fileName, expectedUrl) => {
-            myOs.platform.mockImplementation(() => <NodeJS.Platform>platform);
-            myOs.arch.mockImplementation(() => arch);
-            let cliUrl: string = Utils.getCliUrl('2', '2.8.7', fileName, releasesRepo);
-            expect(cliUrl).toBe(expectedUrl);
+        it('Builds a public v2 installer URL from the version major', () => {
+            expect(Utils.getInstallerScriptUrl('2', '2.35.3', '')).toBe('https://releases.jfrog.io/artifactory/frogbot/v2/2.35.3/getFrogbot.sh');
+        });
+
+        it('Builds a remote-repository installer URL', () => {
+            process.env.JF_URL = 'https://myfrogbot.com/';
+            expect(Utils.getInstallerScriptUrl('3', '[RELEASE]', 'frogbot-remote')).toBe(
+                'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v3/[RELEASE]/getFrogbot.sh',
+            );
         });
     });
 
@@ -295,6 +225,98 @@ describe('Frogbot Action Tests', () => {
             process.env['GITHUB_REPOSITORY'] = 'jfrog/frogbot';
             await Utils.setFrogbotEnv();
             expect(process.env['JF_GIT_SERVER_URL']).toBe('https://custom.server.com');
+        });
+    });
+
+    describe('getFrogbot.sh download', () => {
+        let cacheDir: string;
+
+        beforeEach(() => {
+            (os.platform as jest.Mock).mockReturnValue('linux');
+            const realTmp: string = jest.requireActual<typeof os>('os').tmpdir();
+            (os.tmpdir as jest.Mock).mockReturnValue(realTmp);
+            cacheDir = mkdtempSync(join(realTmp, 'frogbot-cache-'));
+            writeFileSync(join(cacheDir, Utils.getExecutableName()), 'binary');
+            (find as jest.Mock).mockReturnValue('');
+            (downloadTool as jest.Mock).mockResolvedValue(join(cacheDir, 'getFrogbot.sh'));
+            (verifyDownloadedFile as jest.Mock).mockResolvedValue(undefined);
+            (cacheFile as jest.Mock).mockResolvedValue(cacheDir);
+            (exec as jest.Mock).mockImplementation(async (_command: string, _args: string[], options: { cwd?: string }) => {
+                writeFileSync(join(options.cwd ?? '', Utils.getExecutableName()), 'binary');
+                return 0;
+            });
+            process.env.INPUT_VERSION = '3.7.0';
+        });
+
+        afterEach(() => {
+            rmSync(cacheDir, { recursive: true, force: true });
+            delete process.env.INPUT_VERSION;
+            delete process.env.JF_RELEASES_REPO;
+            delete process.env.JF_URL;
+            delete process.env.JF_ACCESS_TOKEN;
+            jest.clearAllMocks();
+        });
+
+        it('Verifies the downloaded getFrogbot.sh before running it', async () => {
+            await Utils.addToPath();
+
+            const scriptUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/3.7.0/getFrogbot.sh';
+            expect(downloadTool).toHaveBeenCalledWith(scriptUrl, '', '');
+            expect(verifyDownloadedFile).toHaveBeenCalledWith(expect.any(String), scriptUrl, '');
+            expect(exec).toHaveBeenCalledWith('bash', [expect.any(String), '3.7.0'], expect.objectContaining({ cwd: expect.any(String) }));
+            const verifyOrder: number = (verifyDownloadedFile as jest.Mock).mock.invocationCallOrder[0];
+            const execOrder: number = (exec as jest.Mock).mock.invocationCallOrder[0];
+            expect(verifyOrder).toBeLessThan(execOrder);
+            expect(cacheFile).toHaveBeenCalled();
+        });
+
+        it('Does not run getFrogbot.sh when checksum verification fails', async () => {
+            (verifyDownloadedFile as jest.Mock).mockRejectedValue(new Error('Checksum verification failed for getFrogbot.sh'));
+
+            await expect(Utils.addToPath()).rejects.toThrow('Checksum verification failed for getFrogbot.sh');
+
+            expect(exec).not.toHaveBeenCalled();
+            expect(cacheFile).not.toHaveBeenCalled();
+        });
+
+        it('Downloads the v2 installer when the version input is a v2 release', async () => {
+            process.env.INPUT_VERSION = '2.35.3';
+
+            await Utils.addToPath();
+
+            expect(downloadTool).toHaveBeenCalledWith('https://releases.jfrog.io/artifactory/frogbot/v2/2.35.3/getFrogbot.sh', '', '');
+        });
+
+        it('Downloads the v3 latest installer without using the tool cache', async () => {
+            process.env.INPUT_VERSION = 'latest';
+
+            await Utils.addToPath();
+
+            expect(find).not.toHaveBeenCalled();
+            expect(downloadTool).toHaveBeenCalledWith('https://releases.jfrog.io/artifactory/frogbot/v3/[RELEASE]/getFrogbot.sh', '', '');
+            expect(exec).toHaveBeenCalledWith('bash', [expect.any(String), '[RELEASE]'], expect.objectContaining({ cwd: expect.any(String) }));
+        });
+
+        it('Passes releases-repo credentials when verifying getFrogbot.sh', async () => {
+            process.env.JF_RELEASES_REPO = 'frogbot-remote';
+            process.env.JF_URL = 'https://myfrogbot.com/';
+            process.env.JF_ACCESS_TOKEN = 'token';
+
+            await Utils.addToPath();
+
+            const scriptUrl: string = 'https://myfrogbot.com/artifactory/frogbot-remote/artifactory/frogbot/v3/3.7.0/getFrogbot.sh';
+            expect(downloadTool).toHaveBeenCalledWith(scriptUrl, '', 'Bearer token');
+            expect(verifyDownloadedFile).toHaveBeenCalledWith(expect.any(String), scriptUrl, 'Bearer token');
+        });
+
+        it('Skips the download when the pinned version is already cached', async () => {
+            (find as jest.Mock).mockReturnValue(cacheDir);
+
+            await Utils.addToPath();
+
+            expect(downloadTool).not.toHaveBeenCalled();
+            expect(verifyDownloadedFile).not.toHaveBeenCalled();
+            expect(exec).not.toHaveBeenCalled();
         });
     });
 });

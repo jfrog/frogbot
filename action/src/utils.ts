@@ -2,9 +2,11 @@ import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import { context as githubContext } from '@actions/github';
 import { downloadTool, find, cacheFile } from '@actions/tool-cache';
-import { chmodSync } from 'fs';
-import { platform, arch } from 'os';
+import { chmodSync, existsSync } from 'fs';
+import { mkdtemp } from 'fs/promises';
+import { platform, tmpdir } from 'os';
 import { normalize, join } from 'path';
+import { verifyDownloadedFile } from './checksum';
 import { BranchSummary, SimpleGit, simpleGit } from 'simple-git';
 import { HttpClient, HttpClientResponse } from '@actions/http-client';
 import { OutgoingHttpHeaders } from 'http';
@@ -33,14 +35,36 @@ export class Utils {
             }
         }
 
-        // Download Frogbot
+        // Download getFrogbot.sh, verify it, then let it download and verify the binary.
         const releasesRepo: string = process.env.JF_RELEASES_REPO ?? '';
-        let url: string = Utils.getCliUrl(major, version, fileName, releasesRepo);
-        core.debug('Downloading Frogbot from ' + url);
+        let url: string = Utils.getInstallerScriptUrl(major, version, releasesRepo);
+        core.debug('Downloading Frogbot installer from ' + url);
         let auth: string = this.generateAuthString(releasesRepo);
-        let downloadDir: string = await downloadTool(url, '', auth);
-        // Cache 'frogbot' executable
-        await this.cacheAndAddPath(downloadDir, version, fileName);
+        let scriptPath: string = await downloadTool(url, '', auth);
+        await verifyDownloadedFile(scriptPath, url, auth);
+
+        const workDir: string = await mkdtemp(join(tmpdir(), 'frogbot-'));
+        let res: number = await exec('bash', [toBashPath(scriptPath), version], { cwd: toBashPath(workDir) });
+        if (res !== core.ExitCode.Success) {
+            throw new Error('Frogbot installer exited with exit code ' + res);
+        }
+        const binaryPath: string = join(workDir, fileName);
+        if (!existsSync(binaryPath)) {
+            throw new Error('Frogbot installer did not produce ' + fileName);
+        }
+        await this.cacheAndAddPath(binaryPath, version, fileName);
+    }
+
+    public static getInstallerScriptUrl(major: string, version: string, releasesRepo: string): string {
+        if (releasesRepo) {
+            let platformUrl: string = process.env.JF_URL ?? '';
+            if (!platformUrl) {
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/getFrogbot.sh`;
+        }
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/getFrogbot.sh`;
     }
 
     public static generateAuthString(releasesRepo: string): string {
@@ -195,42 +219,6 @@ export class Utils {
         core.addPath(cliDir);
     }
 
-    public static getCliUrl(major: string, version: string, fileName: string, releasesRepo: string): string {
-        let architecture: string = 'frogbot-' + Utils.getArchitecture();
-        if (releasesRepo) {
-            let platformUrl: string = process.env.JF_URL ?? '';
-            if (!platformUrl) {
-                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
-            }
-            // Remove trailing slash if exists
-            platformUrl = platformUrl.replace(/\/$/, '');
-            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-        }
-        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-    }
-
-    public static getArchitecture() {
-        if (Utils.isWindows()) {
-            return 'windows-amd64';
-        }
-        if (platform().includes('darwin')) {
-            if (arch().includes('arm')) {
-                return 'mac-arm64';
-            }
-            return 'mac-386';
-        }
-        if (arch().includes('arm')) {
-            return arch().includes('64') ? 'linux-arm64' : 'linux-arm';
-        }
-        if (arch().includes('ppc64le')) {
-            return 'linux-ppc64le';
-        }
-        if (arch().includes('ppc64')) {
-            return 'linux-ppc64';
-        }
-        return arch().includes('64') ? 'linux-amd64' : 'linux-386';
-    }
-
     public static getExecutableName() {
         return Utils.isWindows() ? 'frogbot.exe' : 'frogbot';
     }
@@ -320,6 +308,10 @@ export class Utils {
         process.env.JF_ACCESS_TOKEN = responseJson.access_token;
     }
 }
+function toBashPath(filePath: string): string {
+    return filePath.replace(/\\/g, '/');
+}
+
 export interface TokenExchangeResponseData {
     access_token: string;
     errors: string;
