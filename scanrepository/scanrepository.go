@@ -44,6 +44,9 @@ var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Pip,
 	techutils.Go,
 	techutils.Pnpm,
+	techutils.Nuget,
+	techutils.Yarn,
+	techutils.Uv,
 }
 
 type ScanRepositoryCmd struct {

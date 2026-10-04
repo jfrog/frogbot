@@ -111,7 +111,7 @@ func extractComponentMatch(sbom *cyclonedx.BOM, componentName, affectedVersion s
 }
 
 // resolveTechnology maps a PURL type to a package manager, disambiguating ambiguous
-// types (npm, pypi, maven) by inspecting the workspace.
+// types (npm, python, maven) by inspecting the workspace.
 func resolveTechnology(purlType, workspaceDir string, descriptorPaths []string) techutils.Technology {
 	if tech := techutils.CdxPackageTypeToTechnology(purlType); tech != techutils.NoTech {
 		return tech
@@ -121,8 +121,14 @@ func resolveTechnology(purlType, workspaceDir string, descriptorPaths []string) 
 		if isPnpmWorkspace(workspaceDir, descriptorPaths) {
 			return techutils.Pnpm
 		}
+		if isYarnWorkspace(workspaceDir, descriptorPaths) {
+			return techutils.Yarn
+		}
 		return techutils.Npm
 	case techutils.Pypi:
+		if isUvWorkspace(workspaceDir, descriptorPaths) {
+			return techutils.Uv
+		}
 		return techutils.Pip
 	case techutils.Maven.String():
 		return techutils.Maven
@@ -130,8 +136,20 @@ func resolveTechnology(purlType, workspaceDir string, descriptorPaths []string) 
 	return techutils.NoTech
 }
 
-// isPnpmWorkspace reports whether the workspace or any descriptor directory carries a pnpm marker.
 func isPnpmWorkspace(workspaceDir string, descriptorPaths []string) bool {
+	return hasMarker(workspaceDir, descriptorPaths, "pnpm-lock.yaml", "pnpm-workspace.yaml")
+}
+
+func isYarnWorkspace(workspaceDir string, descriptorPaths []string) bool {
+	return hasMarker(workspaceDir, descriptorPaths, "yarn.lock", ".yarnrc.yml", ".yarnrc", ".yarn")
+}
+
+func isUvWorkspace(workspaceDir string, descriptorPaths []string) bool {
+	return hasMarker(workspaceDir, descriptorPaths, "uv.lock")
+}
+
+// hasMarker reports whether the workspace or any descriptor directory contains one of the given marker files.
+func hasMarker(workspaceDir string, descriptorPaths []string, markers ...string) bool {
 	candidates := []string{workspaceDir}
 	for _, path := range descriptorPaths {
 		if !filepath.IsAbs(path) {
@@ -140,7 +158,7 @@ func isPnpmWorkspace(workspaceDir string, descriptorPaths []string) bool {
 		candidates = append(candidates, filepath.Dir(path))
 	}
 	for _, dir := range candidates {
-		for _, marker := range []string{"pnpm-lock.yaml", "pnpm-workspace.yaml"} {
+		for _, marker := range markers {
 			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
 				return true
 			}
