@@ -17,7 +17,7 @@ jobs:
     name: Scan Repository (${{ matrix.branch }} branch)
     strategy:
       matrix:
-        branch: ${{ fromJSON(github.event_name == 'push' && format('["{0}"]', github.ref_name) || '["main","v2_main"]') }}
+        branch: ${{ fromJSON(github.event_name == 'push' && '["main"]' || '["main","v2_main"]') }}
     steps:
       - uses: actions/checkout@v7
         with:
