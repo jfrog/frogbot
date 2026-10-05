@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { HttpClient } from '@actions/http-client';
@@ -187,12 +187,15 @@ describe('Frogbot checksum verification', () => {
         const headers: Record<string, string> = checksumHeaders(binaryPath);
         headers['x-checksum-sha256'] = 'deadbeef';
         request.mockResolvedValue(headResponse(headers));
-        chmodSync(workDir, 0o555);
+        const fs: typeof import('fs') = jest.requireActual('fs');
+        const unlink: jest.SpyInstance = jest.spyOn(fs, 'unlinkSync').mockImplementation(() => {
+            throw new Error('permission denied');
+        });
         try {
             await expect(verifyDownloadedFile(binaryPath, artifactUrl, '')).rejects.toThrow('Checksum verification failed for ' + artifactUrl);
             expect(existsSync(binaryPath)).toBe(true);
         } finally {
-            chmodSync(workDir, 0o755);
+            unlink.mockRestore();
         }
     });
 
