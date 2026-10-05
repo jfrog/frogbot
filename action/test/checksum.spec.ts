@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { HttpClient } from '@actions/http-client';
@@ -48,6 +48,7 @@ describe('Frogbot checksum verification', () => {
 
         expect(request).toHaveBeenCalledTimes(1);
         expect(request).toHaveBeenCalledWith('HEAD', artifactUrl, null, {});
+        expect(HttpClient).toHaveBeenLastCalledWith(undefined, undefined, { allowRedirects: false });
         expect(existsSync(binaryPath)).toBe(true);
     });
 
@@ -139,7 +140,7 @@ describe('Frogbot checksum verification', () => {
     });
 
     it('Fails a [RELEASE] download when HEAD returns no checksum headers', async () => {
-        const releaseUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/[RELEASE]/frogbot-linux-amd64/frogbot';
+        const releaseUrl: string = releaseArtifactUrl();
         request.mockResolvedValueOnce(headResponse({}));
 
         await expect(verifyDownloadedFile(binaryPath, releaseUrl, '')).rejects.toThrow(
@@ -147,6 +148,52 @@ describe('Frogbot checksum verification', () => {
         );
         expect(request).toHaveBeenCalledTimes(1);
         expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Fails a [RELEASE] download when HEAD fails before returning checksum headers', async () => {
+        const releaseUrl: string = releaseArtifactUrl();
+        request.mockRejectedValueOnce(httpError(404));
+
+        await expect(verifyDownloadedFile(binaryPath, releaseUrl, '')).rejects.toThrow(
+            'Artifactory did not return checksum headers for ' + releaseUrl,
+        );
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Fails a [RELEASE] download when HEAD returns an unsuccessful status', async () => {
+        const releaseUrl: string = releaseArtifactUrl();
+        request.mockResolvedValueOnce(responseWithStatus(404));
+
+        await expect(verifyDownloadedFile(binaryPath, releaseUrl, '')).rejects.toThrow(
+            'Artifactory did not return checksum headers for ' + releaseUrl,
+        );
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(existsSync(binaryPath)).toBe(false);
+    });
+
+    it('Accepts a [RELEASE] download when HEAD returns checksum headers', async () => {
+        const releaseUrl: string = releaseArtifactUrl();
+        request.mockResolvedValueOnce(headResponse(checksumHeaders(binaryPath)));
+
+        await verifyDownloadedFile(binaryPath, releaseUrl, '');
+
+        expect(request).toHaveBeenCalledTimes(1);
+        expect(request).toHaveBeenCalledWith('HEAD', releaseUrl, null, {});
+        expect(existsSync(binaryPath)).toBe(true);
+    });
+
+    it('Reports the checksum failure when the rejected file cannot be deleted', async () => {
+        const headers: Record<string, string> = checksumHeaders(binaryPath);
+        headers['x-checksum-sha256'] = 'deadbeef';
+        request.mockResolvedValue(headResponse(headers));
+        chmodSync(workDir, 0o555);
+        try {
+            await expect(verifyDownloadedFile(binaryPath, artifactUrl, '')).rejects.toThrow('Checksum verification failed for ' + artifactUrl);
+            expect(existsSync(binaryPath)).toBe(true);
+        } finally {
+            chmodSync(workDir, 0o755);
+        }
     });
 
     it('Skips checksum verification when FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION is set', async () => {
@@ -158,6 +205,10 @@ describe('Frogbot checksum verification', () => {
         expect(existsSync(binaryPath)).toBe(true);
     });
 });
+
+function releaseArtifactUrl(): string {
+    return 'https://releases.jfrog.io/artifactory/frogbot/v3/[RELEASE]/frogbot-linux-amd64/frogbot';
+}
 
 function httpRequest(): jest.Mock {
     const client: HttpClient = new HttpClient();

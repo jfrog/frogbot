@@ -44,40 +44,6 @@ export class Utils {
         await this.cacheAndAddPath(downloadDir, version, fileName);
     }
 
-    public static getCliUrl(major: string, version: string, fileName: string, releasesRepo: string): string {
-        let architecture: string = 'frogbot-' + Utils.getArchitecture();
-        if (releasesRepo) {
-            let platformUrl: string = process.env.JF_URL ?? '';
-            if (!platformUrl) {
-                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
-            }
-            platformUrl = platformUrl.replace(/\/$/, '');
-            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-        }
-        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
-    }
-
-    public static getArchitecture() {
-        if (Utils.isWindows()) {
-            return 'windows-amd64';
-        }
-        if (platform().includes('darwin')) {
-            if (arch().includes('arm')) {
-                return 'mac-arm64';
-            }
-            return 'mac-386';
-        }
-        if (arch().includes('arm')) {
-            return arch().includes('64') ? 'linux-arm64' : 'linux-arm';
-        }
-        if (arch().includes('ppc64le')) {
-            return 'linux-ppc64le';
-        }
-        if (arch().includes('ppc64')) {
-            return 'linux-ppc64';
-        }
-        return arch().includes('64') ? 'linux-amd64' : 'linux-386';
-    }
 
     public static generateAuthString(releasesRepo: string): string {
         if (!releasesRepo) {
@@ -229,6 +195,41 @@ export class Utils {
             chmodSync(filePath, 0o555);
         }
         core.addPath(cliDir);
+    }
+
+    public static getCliUrl(major: string, version: string, fileName: string, releasesRepo: string): string {
+        let architecture: string = 'frogbot-' + Utils.getArchitecture();
+        if (releasesRepo) {
+            let platformUrl: string = process.env.JF_URL ?? '';
+            if (!platformUrl) {
+                throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
+            }
+            platformUrl = platformUrl.replace(/\/$/, '');
+            return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+        }
+        return `https://releases.jfrog.io/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
+    }
+
+    public static getArchitecture() {
+        if (Utils.isWindows()) {
+            return 'windows-amd64';
+        }
+        if (platform().includes('darwin')) {
+            if (arch().includes('arm')) {
+                return 'mac-arm64';
+            }
+            return 'mac-386';
+        }
+        if (arch().includes('arm')) {
+            return arch().includes('64') ? 'linux-arm64' : 'linux-arm';
+        }
+        if (arch().includes('ppc64le')) {
+            return 'linux-ppc64le';
+        }
+        if (arch().includes('ppc64')) {
+            return 'linux-ppc64';
+        }
+        return arch().includes('64') ? 'linux-amd64' : 'linux-386';
     }
 
     public static getExecutableName() {

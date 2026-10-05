@@ -299,6 +299,7 @@ describe('Frogbot Action Tests', () => {
             const cliUrl: string = 'https://releases.jfrog.io/artifactory/frogbot/v3/3.7.0/frogbot-linux-amd64/frogbot';
             expect(downloadTool).toHaveBeenCalledWith(cliUrl, '', '');
             expect(verifyDownloadedFile).toHaveBeenCalledWith(binaryPath, cliUrl, '');
+            expect(cacheFile).toHaveBeenCalledWith(binaryPath, 'frogbot', 'frogbot', '3.7.0');
             const verifyOrder: number = (verifyDownloadedFile as jest.Mock).mock.invocationCallOrder[0];
             const cacheOrder: number = (cacheFile as jest.Mock).mock.invocationCallOrder[0];
             expect(verifyOrder).toBeLessThan(cacheOrder);
@@ -350,6 +351,7 @@ describe('Frogbot Action Tests', () => {
 
             await Utils.addToPath();
 
+            expect(find).toHaveBeenCalledWith('frogbot', '3.7.0');
             expect(downloadTool).not.toHaveBeenCalled();
             expect(verifyDownloadedFile).not.toHaveBeenCalled();
             expect(cacheFile).not.toHaveBeenCalled();

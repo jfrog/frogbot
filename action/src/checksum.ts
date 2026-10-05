@@ -25,15 +25,6 @@ export function artifactUrlToStorageUrl(artifactUrl: string): string {
     return `${prefix}/artifactory/api/storage/${suffix}`;
 }
 
-/**
- * Verifies a downloaded file against Artifactory checksums.
- * HEAD checksum headers are used first. A 401 or 403 response fails immediately.
- * Any other HEAD failure, or a HEAD response without MD5 and SHA1, falls back to
- * the Artifactory Storage API for a concrete version. A [RELEASE] download
- * without those headers fails: the Storage API does not expand [RELEASE], and
- * listing the parent folder only shows artifacts cached in a remote repository.
- * The file is deleted when verification fails.
- */
 export async function verifyDownloadedFile(filePath: string, artifactUrl: string, authorization: string): Promise<void> {
     if (process.env.FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION === '1') {
         core.warning('Skipping checksum verification (FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION=1).');
@@ -49,16 +40,17 @@ export async function verifyDownloadedFile(filePath: string, artifactUrl: string
             );
         }
     } catch (error) {
-        if (existsSync(filePath)) {
-            unlinkSync(filePath);
-        }
+        deleteRejectedDownload(filePath);
         throw error;
     }
 }
 
 async function loadRemoteChecksums(artifactUrl: string, authorization: string): Promise<RemoteChecksums> {
     const headers: OutgoingHttpHeaders = authorizationHeaders(authorization);
-    const client: HttpClient = new HttpClient();
+    // Redirects stay off so checksum headers and status come from Artifactory.
+    // A GET of the same URL returns 302 to object storage, which has no X-Checksum-* headers,
+    // and a 401 or 403 from that target would be reported as bad JFrog credentials.
+    const client: HttpClient = new HttpClient(undefined, undefined, { allowRedirects: false });
     let headResponse: HttpClientResponse | undefined;
     try {
         headResponse = await client.request('HEAD', artifactUrl, null, headers);
@@ -87,9 +79,7 @@ async function loadRemoteChecksums(artifactUrl: string, authorization: string): 
     }
 
     if (artifactUrl.includes('/[RELEASE]/')) {
-        throw new Error(
-            `Artifactory did not return checksum headers for ${artifactUrl}. Cannot verify a [RELEASE] download without those headers.`,
-        );
+        throw new Error(`Artifactory did not return checksum headers for ${artifactUrl}. Cannot verify a [RELEASE] download without those headers.`);
     }
 
     const storageUrl: string = artifactUrlToStorageUrl(artifactUrl);
@@ -161,6 +151,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function stringField(record: Record<string, unknown>, key: string): string {
     const value: unknown = record[key];
     return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function deleteRejectedDownload(filePath: string): void {
+    try {
+        if (existsSync(filePath)) {
+            unlinkSync(filePath);
+        }
+    } catch (deleteError) {
+        const message: string = deleteError instanceof Error ? deleteError.message : String(deleteError);
+        core.warning(`Failed to delete ${filePath} after checksum verification failed: ${message}`);
+    }
 }
 
 function localChecksums(filePath: string): RemoteChecksums {

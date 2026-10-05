@@ -52,15 +52,6 @@ function artifactUrlToStorageUrl(artifactUrl) {
     return `${prefix}/artifactory/api/storage/${suffix}`;
 }
 exports.artifactUrlToStorageUrl = artifactUrlToStorageUrl;
-/**
- * Verifies a downloaded file against Artifactory checksums.
- * HEAD checksum headers are used first. A 401 or 403 response fails immediately.
- * Any other HEAD failure, or a HEAD response without MD5 and SHA1, falls back to
- * the Artifactory Storage API for a concrete version. A [RELEASE] download
- * without those headers fails: the Storage API does not expand [RELEASE], and
- * listing the parent folder only shows artifacts cached in a remote repository.
- * The file is deleted when verification fails.
- */
 function verifyDownloadedFile(filePath, artifactUrl, authorization) {
     return __awaiter(this, void 0, void 0, function* () {
         if (process.env.FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION === '1') {
@@ -75,9 +66,7 @@ function verifyDownloadedFile(filePath, artifactUrl, authorization) {
             }
         }
         catch (error) {
-            if ((0, fs_1.existsSync)(filePath)) {
-                (0, fs_1.unlinkSync)(filePath);
-            }
+            deleteRejectedDownload(filePath);
             throw error;
         }
     });
@@ -86,7 +75,10 @@ exports.verifyDownloadedFile = verifyDownloadedFile;
 function loadRemoteChecksums(artifactUrl, authorization) {
     return __awaiter(this, void 0, void 0, function* () {
         const headers = authorizationHeaders(authorization);
-        const client = new http_client_1.HttpClient();
+        // Redirects stay off so checksum headers and status come from Artifactory.
+        // A GET of the same URL returns 302 to object storage, which has no X-Checksum-* headers,
+        // and a 401 or 403 from that target would be reported as bad JFrog credentials.
+        const client = new http_client_1.HttpClient(undefined, undefined, { allowRedirects: false });
         let headResponse;
         try {
             headResponse = yield client.request('HEAD', artifactUrl, null, headers);
@@ -181,6 +173,17 @@ function isRecord(value) {
 function stringField(record, key) {
     const value = record[key];
     return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+function deleteRejectedDownload(filePath) {
+    try {
+        if ((0, fs_1.existsSync)(filePath)) {
+            (0, fs_1.unlinkSync)(filePath);
+        }
+    }
+    catch (deleteError) {
+        const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
+        core.warning(`Failed to delete ${filePath} after checksum verification failed: ${message}`);
+    }
 }
 function localChecksums(filePath) {
     const bytes = (0, fs_1.readFileSync)(filePath);
