@@ -23,6 +23,7 @@ import (
 	"github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/formats/snapshotconvertor"
+	"github.com/jfrog/jfrog-cli-security/utils/formats/violationutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
 	"github.com/jfrog/jfrog-cli-security/utils/results/conversion"
 	"github.com/jfrog/jfrog-cli-security/utils/results/output"
@@ -32,6 +33,7 @@ import (
 	"github.com/jfrog/jfrog-client-go/utils/errorutils"
 	"github.com/jfrog/jfrog-client-go/utils/io/fileutils"
 	"github.com/jfrog/jfrog-client-go/utils/log"
+	"github.com/owenrumney/go-sarif/v3/pkg/report/v210/sarif"
 
 	"github.com/jfrog/frogbot/v2/utils/issues"
 )
@@ -111,6 +113,11 @@ type VulnerabilityDetails struct {
 	IsDirectDependency bool
 	// Cves as a list of string
 	Cves []string
+}
+
+type savedTargetSecrets struct {
+	target  *results.TargetResults
+	secrets []*sarif.Run
 }
 
 func NewVulnerabilityDetails(vulnerability formats.VulnerabilityOrViolationRow, fixVersion string) *VulnerabilityDetails {
@@ -592,13 +599,41 @@ func CreateErrorIfPartialResultsDisabled(allowPartial bool, messageForLog string
 	return err
 }
 
-func PrintScanResultsTable(scanResults *results.SecurityCommandResults) {
+func PrintScanResultsTable(scanResults *results.SecurityCommandResults, showSecrets bool) {
 	if scanResults == nil {
 		return
+	}
+	if !showSecrets {
+		restore := hideSecretsForPrinting(scanResults)
+		defer restore()
 	}
 	if err := output.NewResultsWriter(scanResults).
 		SetOutputFormat(format.Table).
 		PrintScanResults(); err != nil {
 		log.Warn(fmt.Sprintf("Failed to print scan results table: %s", err.Error()))
+	}
+}
+
+func hideSecretsForPrinting(scanResults *results.SecurityCommandResults) (restore func()) {
+	var savedTargets []savedTargetSecrets
+	for _, target := range scanResults.Targets {
+		if target == nil || target.JasResults == nil {
+			continue
+		}
+		savedTargets = append(savedTargets, savedTargetSecrets{target: target, secrets: target.JasResults.JasVulnerabilities.SecretsScanResults})
+		target.JasResults.JasVulnerabilities.SecretsScanResults = nil
+	}
+	var savedViolationsSecrets []violationutils.JasViolation
+	if scanResults.Violations != nil {
+		savedViolationsSecrets = scanResults.Violations.Secrets
+		scanResults.Violations.Secrets = nil
+	}
+	return func() {
+		for _, saved := range savedTargets {
+			saved.target.JasResults.JasVulnerabilities.SecretsScanResults = saved.secrets
+		}
+		if scanResults.Violations != nil {
+			scanResults.Violations.Secrets = savedViolationsSecrets
+		}
 	}
 }

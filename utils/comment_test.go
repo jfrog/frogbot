@@ -615,7 +615,7 @@ func TestGetNewReviewComments(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			repo := &Repository{OutputWriter: writer, Params: Params{Git: Git{PullRequestSecretComments: tc.generateSecretsComments}}}
+			repo := &Repository{OutputWriter: writer, Params: Params{Git: Git{AddSecretsComments: tc.generateSecretsComments}}}
 			output := getNewReviewComments(repo, tc.issues)
 			assert.ElementsMatch(t, tc.expectedOutput, output)
 		})
