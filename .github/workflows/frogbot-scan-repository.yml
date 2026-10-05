@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - v2_main
 permissions:
   pull-requests: write
   contents: write
@@ -17,8 +18,12 @@ jobs:
     name: Scan Repository (${{ matrix.branch }} branch)
     strategy:
       matrix:
-        branch: [ "main", "v2_main" ]
+        branch: ${{ fromJSON(github.event_name == 'push' && format('["{0}"]', github.ref_name) || '["main","v2_main"]') }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+
       - uses: jfrog/frogbot@v3
         env:
           JF_URL: ${{ secrets.FROGBOT_URL }}
