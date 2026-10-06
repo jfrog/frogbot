@@ -40,6 +40,7 @@ const tool_cache_1 = require("@actions/tool-cache");
 const fs_1 = require("fs");
 const os_1 = require("os");
 const path_1 = require("path");
+const checksum_1 = require("./checksum");
 const simple_git_1 = require("simple-git");
 const http_client_1 = require("@actions/http-client");
 class Utils {
@@ -59,13 +60,13 @@ class Utils {
                     return;
                 }
             }
-            // Download Frogbot
+            // Download Frogbot and verify it before caching.
             const releasesRepo = (_a = process.env.JF_RELEASES_REPO) !== null && _a !== void 0 ? _a : '';
             let url = Utils.getCliUrl(major, version, fileName, releasesRepo);
             core.debug('Downloading Frogbot from ' + url);
             let auth = this.generateAuthString(releasesRepo);
             let downloadDir = yield (0, tool_cache_1.downloadTool)(url, '', auth);
-            // Cache 'frogbot' executable
+            yield (0, checksum_1.verifyDownloadedFile)(downloadDir, url, auth);
             yield this.cacheAndAddPath(downloadDir, version, fileName);
         });
     }
@@ -225,7 +226,6 @@ class Utils {
             if (!platformUrl) {
                 throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
             }
-            // Remove trailing slash if exists
             platformUrl = platformUrl.replace(/\/$/, '');
             return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
         }
