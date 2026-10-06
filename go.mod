@@ -13,7 +13,7 @@ require (
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.7
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260925084932-b47892ded3a0
-	github.com/jfrog/jfrog-cli-security v1.37.0
+	github.com/jfrog/jfrog-cli-security v1.39.1
 	github.com/jfrog/jfrog-client-go v1.55.1-0.20261005090941-0646d7b50f9a
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
@@ -130,7 +130,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security v1.39.1-0.20261006073446-eb7e66e8013e
+// replace github.com/jfrog/jfrog-cli-security => github.com/jfrog/jfrog-cli-security dev
 
 // replace github.com/jfrog/jfrog-cli-core/v2 => github.com/jfrog/jfrog-cli-core/v2 dev
 
