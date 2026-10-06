@@ -146,14 +146,14 @@ func TestRun_ComponentBranches(t *testing.T) {
 }
 
 func TestRun_UnsupportedTechnologyFinishesWithoutError(t *testing.T) {
-	workspaceDir := createCleanTestRepository(t, map[string]string{"yarn.lock": ""})
+	workspaceDir := createCleanTestRepository(t, map[string]string{"Cargo.lock": ""})
 	t.Chdir(workspaceDir)
 	setAutoPrInputs(t)
 	gitManager := &fakeAutoPrGitManager{clean: true, fixBranchName: "fix"}
 	cmd := &AutoPrCmd{
 		newGitManager: func(utils.Repository) (autoPrGitManager, error) { return gitManager, nil },
 		findDescriptorPaths: func(_, _, _ string) ([]string, techutils.Technology, bool, error) {
-			return []string{"yarn.lock"}, techutils.Yarn, true, nil
+			return []string{"Cargo.lock"}, techutils.Cargo, true, nil
 		},
 	}
 
@@ -404,7 +404,7 @@ func TestCreatePullRequestWithComments_PostsOverflowComments(t *testing.T) {
 // TestRunUpdater_UnsupportedTech ensures runUpdater surfaces a clear error for technologies
 // GetCompatiblePackageUpdater does not recognize (Yarn is not in the compatible set).
 func TestRunUpdater_UnsupportedTech(t *testing.T) {
-	err := runUpdater("some-pkg", "1.0.0", "1.0.1", techutils.Yarn, true, []string{"package.json"})
+	err := runUpdater("some-pkg", "1.0.0", "1.0.1", techutils.Cargo, true, []string{"package.json"})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unsupported technology")
 }

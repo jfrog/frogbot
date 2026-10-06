@@ -6,15 +6,15 @@ replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
-	github.com/go-git/go-git/v5 v5.19.1
+	github.com/go-git/go-git/v5 v5.19.2
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20260902120316-b325d342b210
+	github.com/jfrog/build-info-go v1.13.1-0.20260925090031-f9d40441f262
 	github.com/jfrog/froggit-go v1.23.1
 	github.com/jfrog/gofrog v1.7.7
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260831061529-c6dd293bccca
-	github.com/jfrog/jfrog-cli-security v1.37.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20260908141255-cbf686ec1698
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260925084932-b47892ded3a0
+	github.com/jfrog/jfrog-cli-security v1.39.1
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20261005090941-0646d7b50f9a
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -64,7 +64,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.8.3 // indirect
 	github.com/jfrog/archiver/v3 v3.6.5 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260908123315-10cfe381853a // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260928054331-4a0f3827cfa0 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
 	github.com/klauspost/compress v1.18.6 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
@@ -113,14 +113,14 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/mod v0.37.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
-	golang.org/x/term v0.45.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/term v0.46.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
