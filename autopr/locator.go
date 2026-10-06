@@ -118,11 +118,20 @@ func resolveTechnology(purlType, workspaceDir string, descriptorPaths []string) 
 	}
 	switch strings.ToLower(purlType) {
 	case string(techutils.Npm):
-		if isPnpmWorkspace(workspaceDir, descriptorPaths) {
+		if hasWorkspaceMarker(workspaceDir, descriptorPaths, "pnpm-lock.yaml", "pnpm-workspace.yaml") {
 			return techutils.Pnpm
+		}
+		if hasWorkspaceMarker(workspaceDir, descriptorPaths, "yarn.lock", ".yarnrc.yml") {
+			return techutils.Yarn
 		}
 		return techutils.Npm
 	case techutils.Pypi:
+		if hasWorkspaceMarker(workspaceDir, descriptorPaths, "uv.lock") {
+			return techutils.Uv
+		}
+		if hasWorkspaceMarker(workspaceDir, descriptorPaths, "poetry.lock") {
+			return techutils.Poetry
+		}
 		return techutils.Pip
 	case techutils.Maven.String():
 		return techutils.Maven
@@ -130,8 +139,8 @@ func resolveTechnology(purlType, workspaceDir string, descriptorPaths []string) 
 	return techutils.NoTech
 }
 
-// isPnpmWorkspace reports whether the workspace or any descriptor directory carries a pnpm marker.
-func isPnpmWorkspace(workspaceDir string, descriptorPaths []string) bool {
+// hasWorkspaceMarker reports whether the workspace or any descriptor directory contains one of the marker files.
+func hasWorkspaceMarker(workspaceDir string, descriptorPaths []string, markers ...string) bool {
 	candidates := []string{workspaceDir}
 	for _, path := range descriptorPaths {
 		if !filepath.IsAbs(path) {
@@ -140,7 +149,7 @@ func isPnpmWorkspace(workspaceDir string, descriptorPaths []string) bool {
 		candidates = append(candidates, filepath.Dir(path))
 	}
 	for _, dir := range candidates {
-		for _, marker := range []string{"pnpm-lock.yaml", "pnpm-workspace.yaml"} {
+		for _, marker := range markers {
 			if _, err := os.Stat(filepath.Join(dir, marker)); err == nil {
 				return true
 			}
