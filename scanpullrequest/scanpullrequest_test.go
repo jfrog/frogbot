@@ -38,6 +38,7 @@ import (
 	"github.com/jfrog/frogbot/v3/utils"
 	"github.com/jfrog/frogbot/v3/utils/issues"
 	"github.com/jfrog/frogbot/v3/utils/outputwriter"
+	"github.com/jfrog/jfrog-client-go/utils/log"
 )
 
 //go:generate go run github.com/golang/mock/mockgen@v1.6.0 -destination=../testdata/vcsclientmock.go -package=testdata github.com/jfrog/froggit-go/vcsclient VcsClient
@@ -1853,4 +1854,148 @@ func createSecurityCommandResultsForTest(targetLocation string, targetName strin
 	}
 
 	return result
+}
+
+func TestResolveTargetRefUsesMergeBase(t *testing.T) {
+	client := CreateMockVcsClient(t)
+	client.EXPECT().GetMergeBase(context.Background(), "owner", "repo", "master", "feature").
+		Return(vcsclient.CommitInfo{Hash: "abc123"}, nil)
+
+	scanDetails := utils.NewScanDetails(client, &coreconfig.ServerDetails{}, &utils.Git{})
+	scanDetails.PullRequestDetails = vcsclient.PullRequestInfo{
+		Source: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "feature"},
+		Target: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"},
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	assert.Equal(t, "abc123", resolveTargetRef(scanDetails, target, "feature"))
+}
+
+func TestResolveTargetRefWarnsWhenProviderUnsupported(t *testing.T) {
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() { log.SetLogger(originalLogger) })
+	var output bytes.Buffer
+	log.SetLogger(log.NewLogger(log.INFO, &output))
+
+	client := CreateMockVcsClient(t)
+	client.EXPECT().GetMergeBase(context.Background(), "owner", "repo", "master", "feature").
+		Return(vcsclient.CommitInfo{}, vcsclient.ErrMergeBaseUnsupported)
+
+	scanDetails := utils.NewScanDetails(client, &coreconfig.ServerDetails{}, &utils.Git{})
+	scanDetails.PullRequestDetails = vcsclient.PullRequestInfo{
+		Source: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "feature"},
+		Target: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"},
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	assert.Equal(t, "master", resolveTargetRef(scanDetails, target, "feature"))
+	assert.Contains(t, output.String(), "not yet supported")
+	assert.Contains(t, output.String(), "Rebasing")
+}
+
+func TestResolveTargetRefWarnsOnApiFailure(t *testing.T) {
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() { log.SetLogger(originalLogger) })
+	var output bytes.Buffer
+	log.SetLogger(log.NewLogger(log.INFO, &output))
+
+	client := CreateMockVcsClient(t)
+	client.EXPECT().GetMergeBase(context.Background(), "owner", "repo", "master", "feature").
+		Return(vcsclient.CommitInfo{}, errors.New("vcs api is down"))
+
+	scanDetails := utils.NewScanDetails(client, &coreconfig.ServerDetails{}, &utils.Git{})
+	scanDetails.PullRequestDetails = vcsclient.PullRequestInfo{
+		Source: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "feature"},
+		Target: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"},
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	assert.Equal(t, "master", resolveTargetRef(scanDetails, target, "feature"))
+	assert.Contains(t, output.String(), "vcs api is down")
+}
+
+func TestResolveTargetRefSkipsForkPullRequests(t *testing.T) {
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() { log.SetLogger(originalLogger) })
+	var output bytes.Buffer
+	log.SetLogger(log.NewLogger(log.INFO, &output))
+
+	client := CreateMockVcsClient(t)
+	scanDetails := utils.NewScanDetails(client, &coreconfig.ServerDetails{}, &utils.Git{
+		VcsInfo: vcsclient.VcsInfo{},
+	})
+	scanDetails.PullRequestDetails = vcsclient.PullRequestInfo{
+		Source: vcsclient.BranchInfo{Owner: "contributor", Repository: "repo", Name: "feature"},
+		Target: vcsclient.BranchInfo{Owner: "upstream", Repository: "repo", Name: "master"},
+	}
+	target := vcsclient.BranchInfo{Owner: "upstream", Repository: "repo", Name: "master"}
+
+	assert.Equal(t, "master", resolveTargetRef(scanDetails, target, "feature"))
+	assert.Contains(t, output.String(), "fork")
+}
+
+func TestResolveTargetRefFallsBackOnEmptyMergeBase(t *testing.T) {
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() { log.SetLogger(originalLogger) })
+	var output bytes.Buffer
+	log.SetLogger(log.NewLogger(log.INFO, &output))
+
+	client := CreateMockVcsClient(t)
+	client.EXPECT().GetMergeBase(context.Background(), "owner", "repo", "master", "feature").
+		Return(vcsclient.CommitInfo{}, nil)
+
+	scanDetails := utils.NewScanDetails(client, &coreconfig.ServerDetails{}, &utils.Git{})
+	scanDetails.PullRequestDetails = vcsclient.PullRequestInfo{
+		Source: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "feature"},
+		Target: vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"},
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	assert.Equal(t, "master", resolveTargetRef(scanDetails, target, "feature"))
+	assert.Contains(t, output.String(), "empty")
+}
+
+func TestDownloadTargetRetriesAtBranchTipWhenMergeBaseDownloadFails(t *testing.T) {
+	originalLogger := log.GetLogger()
+	t.Cleanup(func() { log.SetLogger(originalLogger) })
+	var output bytes.Buffer
+	log.SetLogger(log.NewLogger(log.INFO, &output))
+
+	const mergeBaseSha = "5d5479f857362d9eb668b6403631e57f0d3d3ba6"
+	var requested []string
+	downloadCommit := func(_ vcsclient.VcsClient, _, _, ref string) (string, func() error, error) {
+		requested = append(requested, ref)
+		return "", nil, errors.New("404 Not Found")
+	}
+	downloadBranch := func(_ vcsclient.VcsClient, _, _, ref string) (string, func() error, error) {
+		requested = append(requested, ref)
+		return t.TempDir(), func() error { return nil }, nil
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	wd, cleanup, err := downloadTargetAtRef(nil, target, mergeBaseSha, downloadCommit, downloadBranch)
+
+	assert.NoError(t, err)
+	assert.NotEmpty(t, wd)
+	assert.NotNil(t, cleanup)
+	assert.Equal(t, []string{mergeBaseSha, "master"}, requested, "must retry at the branch tip")
+	assert.Contains(t, output.String(), "scanning the tip of master instead")
+}
+
+func TestDownloadTargetDoesNotRetryWhenAlreadyAtBranchTip(t *testing.T) {
+	var requested []string
+	downloadCommit := func(_ vcsclient.VcsClient, _, _, ref string) (string, func() error, error) {
+		requested = append(requested, "commit:"+ref)
+		return "", nil, errors.New("should not be called")
+	}
+	downloadBranch := func(_ vcsclient.VcsClient, _, _, ref string) (string, func() error, error) {
+		requested = append(requested, ref)
+		return "", nil, errors.New("network is down")
+	}
+	target := vcsclient.BranchInfo{Owner: "owner", Repository: "repo", Name: "master"}
+
+	_, _, err := downloadTargetAtRef(nil, target, "master", downloadCommit, downloadBranch)
+
+	assert.Error(t, err)
+	assert.Equal(t, []string{"master"}, requested, "no pointless second attempt at the same ref")
 }
