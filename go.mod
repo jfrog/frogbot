@@ -10,7 +10,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
 	github.com/jfrog/build-info-go v1.13.1-0.20260925090031-f9d40441f262
-	github.com/jfrog/froggit-go v1.23.1
+	github.com/jfrog/froggit-go v1.23.2
 	github.com/jfrog/gofrog v1.7.7
 	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260925084932-b47892ded3a0
 	github.com/jfrog/jfrog-cli-security v1.40.0
@@ -140,4 +140,4 @@ require (
 
 // replace github.com/jfrog/jfrog-client-go => github.com/jfrog/jfrog-client-go master
 
-replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go v1.23.2-0.20260909160929-7d982ce8ac90
+// replace github.com/jfrog/froggit-go => github.com/jfrog/froggit-go master
