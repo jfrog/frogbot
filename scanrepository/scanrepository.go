@@ -612,7 +612,7 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 
 	fixedVulnerabilities, err := sr.fixMultiplePackages(vulnerabilitiesMap)
 	if err != nil {
-		return err
+		return utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, "failed to fix some of the vulnerable dependencies", err)
 	}
 	updateRequired, e := sr.isUpdateRequired(fixedVulnerabilities, existingPullRequestInfo)
 	if e != nil {
