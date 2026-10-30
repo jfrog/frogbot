@@ -43,3 +43,8 @@ func TestGitHub_ScanRepositoryIntegration(t *testing.T) {
 	githubClient, testDetails := githubTestsInit(t)
 	runScanRepositoryCmd(t, githubClient, testDetails)
 }
+
+func TestHelper_CleanupIntegrationTestsArtifactsGitHub(t *testing.T) {
+	githubClient, testDetails := githubTestsInit(t)
+	cleanupIntegrationArtifacts(t, githubClient, testDetails)
+}

@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 8 issues
+- Frogbot scanned for vulnerabilities and found 11 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>8 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 8 High<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>11 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 10 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -26,6 +26,7 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Dependency Path                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | ----------------------------------- |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-102277 | Not Covered | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-69152 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-33750 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27904 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
@@ -33,10 +34,86 @@
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-14257 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-13149 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-102278 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-102276 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 
 ### 🔖 Details
 
+
+<details><summary><b>[ CVE-2026-102277 ] brace-expansion 1.1.12</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Covered |
+| **CVSS V3:** | 5.3 |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.21<br></details> |
+
+### Summary
+
+Expanding `{a},b}`-shaped input takes time quadratic in the number of literal `}` characters, blocking the event loop.
+
+Bash preserves a quirk where a brace group followed by a comma set still expands (`{a},b}`). The parser implements this by rewriting the string and restarting the scan. Each pass absorbs exactly one `}` and re-scans from the beginning, so `n` trailing braces cost `n` full passes.
+
+### Reproduction
+
+```js
+const build = n => '{a}' + '}'.repeat(n) + ',z}'
+
+for (const n of [8000, 16000, 32000, 64000, 128000]) {
+  const t = Date.now()
+  expand(build(n))
+  console.log(n, Date.now() - t + 'ms')
+}
+```
+
+| n | input | time | results |
+|---|---|---|---|
+| 8,000 | 8 KB | 110 ms | 2 |
+| 16,000 | 16 KB | 446 ms | 2 |
+| 32,000 | 32 KB | 1.7 s | 2 |
+| 64,000 | 64 KB | 6.9 s | 2 |
+| 128,000 | 128 KB | **27.7 s** | 2 |
+
+`ms/n^2` is flat at ~1.7 and each doubling of `n` costs exactly 4.0x - quadratic. 128 KB of input blocks the event loop for nearly half a minute to produce two results.
+
+### Mechanism
+
+Instrumenting the rewrite branch confirms it runs exactly `n + 1` times, once per literal `}`, each re-scanning the whole string.
+
+There is a second multiplier. The rewrite replaces the group's closing `}` with the internal `escClose` sentinel, which is `'\0CLOSE' + Math.random() + '\0'` - about 25 characters. The working string therefore *grows* by ~25 characters on every pass:
+
+| n | input length | final string length |
+|---|---|---|
+| 1,000 | 1,006 | 26,006 |
+| 8,000 | 8,006 | 208,006 |
+
+So the input is inflated roughly 26x, and that factor multiplies both the quadratic constant and peak memory. This makes it partly a memory-pressure issue as well as a CPU one.
+
+### Why `max` and `maxLength` do not help
+
+The cost is in parsing, before the result set exists. The payload yields 2 results regardless of size, so neither bound is ever reached.
+
+### Impact
+
+An application passing an untrusted pattern to `expand()`, directly or through `minimatch` / `glob`, can have its event loop blocked for tens of seconds by a payload well under minimatch's 65,536-character cap. For a single-threaded Node server that is a full stall, not just a slow request.
+
+Degraded availability rather than a crash - the process recovers once the expansion completes.
+
+### Affected versions
+
+Verified affected on 1.1.18, 2.1.4, 3.0.6 and 5.0.9, all within a few percent of each other (~460-490 ms at n=16,000).
+
+### Patch
+
+The rewrite loop gets an iteration bound. Past the cap the remaining string is treated as non-expanding and returned literally, consistent with the existing `max` / `maxLength` caps, which truncate rather than throw.
+
+Note this bounds the number of passes, not the cost of each: worst-case work remains proportional to `cap x input length`. The cap is set low enough that the residual is bounded in practice, and far above what any realistic `{a},b}` input needs.
+
+### Severity note
+
+Scored 5.3 Medium (`A:L`) for consistency with GHSA-3jxr-9vmj-r5cp, the other algorithmic-complexity advisory on this package (CWE-407), which uses the same vector. The stack-exhaustion advisories on this package score `A:H` because they crash the process outright; this one stalls it.<br></details>
 
 <details><summary><b>[ CVE-2026-69152 ] brace-expansion 1.1.12</b></summary>
 
@@ -732,6 +809,143 @@ Upgrade to a patched release. The fix:
 Verified: the PoC drops from ~2 min to 0.55 ms, 5,000 groups complete in ~344 ms, and output is identical to 5.0.6 across a behavioral-equivalence suite (sequences, padding, $-prefix, a{},b}c, {},a}b, x{{a,b}}y, etc.). Post-fix complexity is ~O(n²) on this input class - acceptable for the security fix; a linear rewrite can be a non-urgent follow-up.
 
 If immediate upgrade isn't possible, avoid passing untrusted input to expand() / glob brace patterns, or run such expansion under a timeout/worker.<br></details>
+
+<details><summary><b>[ CVE-2026-102278 ] brace-expansion 1.1.12</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **CVSS V3:** | 7.5 |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.20<br></details> |
+
+### Summary
+
+`expand_()` recurses once per level of brace *nesting*. Deeply nested input exhausts the native stack and crashes the process.
+
+This is distinct from CVE-2026-14257 / GHSA-mh99-v99m-4gvg, which made the *tail* iterative (recursion on `m.post`, driven by how many groups are chained). Nesting depth drives a different recursion that the tail fix never touched, so the documented constant-stack-depth guarantee only ever covered chained input, not nested input.
+
+It is also distinct from GHSA-6j4f-fj2g-mc7p, which fixed recursion in `parseCommaParts()`. Both payloads below still crash with that fix applied.
+
+### Two recursion sites
+
+**Comma members.** Each alternative of a brace set is expanded by a recursive call, so nesting a set inside every alternative recurses once per level:
+
+```js
+expand('{a,'.repeat(4000) + 'z' + '}'.repeat(4000))
+// RangeError: Maximum call stack size exceeded
+```
+
+Crashes at depth 3,907 - about **15.6 KB** of input.
+
+**Single set.** A brace set whose body parses to a single part is expanded by a recursive call before being re-wrapped (`x{{a,b}}y` -> `x{a}y x{b}y`), which recurses once per nesting level:
+
+```js
+expand('{'.repeat(3200) + 'a,b' + '}'.repeat(3200))
+// RangeError: Maximum call stack size exceeded
+```
+
+Crashes at depth 3,125 - about **6.25 KB** of input. This is the cheapest stack-exhaustion payload known against this package: roughly a quarter the input of GHSA-6j4f-fj2g-mc7p (29 KB), and about a tenth of minimatch's `MAX_PATTERN_LENGTH` (65,536).
+
+### Why `max` and `maxLength` do not help
+
+Both crashes happen while recursing into sub-expansions, before the result set grows. The payloads produce almost no output - the single-set case yields 2 results - so neither bound is ever the limiter. `expand(payload, { max: 1, maxLength: 1 })` still overflows.
+
+### Impact
+
+Any application passing an untrusted string to `expand()`, directly or through `minimatch` / `glob` as a user-supplied glob pattern, can be crashed. In Node a `RangeError` the application does not catch terminates the process, so a server globbing user input is exposed to remote unauthenticated denial of service.
+
+Availability only. No code execution, no data exposure.
+
+### Affected versions
+
+Verified affected on 1.1.18, 2.1.4, 3.0.6 and 5.0.9, at near-identical depths on every line (single set: 3,125 on all four; comma members: 3,907-4,102). Not a regression from any recent fix - the gap predates them.
+
+### Patch
+
+A `maxDepth` bound (default `EXPANSION_MAX_DEPTH`) is threaded through `expand_()`. Past the cap a group is treated as non-expanding and returned literally, which is how the parser already handles a group that cannot expand. This matches the existing `max` / `maxLength` caps, which truncate rather than throw, so `expand()` continues never to throw on any input.
+
+The default sits far above any realistic nesting depth and well below the crash threshold.<br></details>
+
+<details><summary><b>[ CVE-2026-102276 ] brace-expansion 1.1.12</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **CVSS V3:** | 7.5 |
+| **Dependency Path:** | <details><summary><b>brace-expansion: 1.1.12 (Transitive)</b></summary>Fix Version: 1.1.19<br></details> |
+
+### Summary
+
+`parseCommaParts()` can exhaust the native stack and crash the process. There are two distinct ways to trigger it, both reachable from a single untrusted pattern string.
+
+This is the parsing-side counterpart to CVE-2026-14257 / GHSA-mh99-v99m-4gvg. That fix made `expand_()` iterative and documented a constant-stack-depth guarantee, but `parseCommaParts()` was left recursive, so the guarantee only held for one of the two parsing paths.
+
+### Vector 1 - unbounded recursion on `post`
+
+`parseCommaParts()` recursed on the remainder of the string once per brace group:
+
+```js
+const postParts = parseCommaParts(post)   // unbounded
+```
+
+A brace group containing many comma-separated groups drives one recursion level per group:
+
+```js
+expand('{' + '{a},'.repeat(7000) + 'b}')
+// RangeError: Maximum call stack size exceeded
+```
+
+About 7,300 repetitions - roughly 29 KB of input - is enough on Node 24; roughly 6,300 (25 KB) on Node 18. The threshold is identical on every affected release line.
+
+### Vector 2 - `push.apply` with an unbounded array
+
+Even with the recursion removed, `parseCommaParts()` spread whole arrays into an argument list:
+
+```js
+p.push.apply(p, postParts)
+parts.push.apply(parts, p)
+```
+
+`Function.prototype.apply` places one argument per element on the stack, so a single large array overflows it. This needs **no recursion depth at all** - the following reaches a recursion depth of exactly 1:
+
+```js
+expand('{{x},' + 'a,'.repeat(125000) + 'b}')
+// RangeError: Maximum call stack size exceeded
+```
+
+Threshold is about 124,300 repetitions (~249 KB). This vector was not part of the original report; it was found while verifying the fix. A patch that only de-recurses but keeps `push.apply` leaves a working denial of service behind.
+
+### Why `max` and `maxLength` do not help
+
+Both crashes happen during **parsing**, before any expansion. The payloads produce one result per group, so output size grows linearly with input and is never the limiter. `expand(payload, { max: 1, maxLength: 1 })` still overflows.
+
+### Impact
+
+Any application that passes an untrusted string to `expand()` - directly, or through `minimatch` / `glob` where it is a user-supplied glob pattern - can be crashed. In Node, a `RangeError` that the application does not catch terminates the process, so a server that globs user input is exposed to remote unauthenticated denial of service.
+
+`minimatch`'s own `MAX_PATTERN_LENGTH` cap (65,536) does not help against vector 1: the overflow threshold sits well below it. Confirmed on minimatch 10.2.6 - a 64,003-byte pattern passes the length check and overflows both `minimatch.braceExpand()` and `new minimatch.Minimatch()`.
+
+This is an availability-only issue. No code execution and no data exposure.
+
+### Not a regression
+
+5.0.8 and 5.0.9 overflow at the same repetition count, so the gap predates the recent advisories; those fixes simply did not reach it. Verified affected on 1.1.18, 2.1.4, 3.0.6, 5.0.8 and 5.0.9, all at an identical threshold.
+
+### Patch
+
+`parseCommaParts()` is rewritten as a loop that carries the partial part across chunks, and every array append uses an element-by-element loop rather than `push.apply`. The redundant `if (!str) return ['']` guard is dropped - the loop returns `['']` for the empty string on its own.
+
+Equivalence of the old and new implementations was checked by differential testing: exhaustive over every string of `{`, `}`, `,`, `a` up to length 7 plus 300,000 random inputs - 322,000 cases, zero mismatches.
+
+### Severity note
+
+Scored 7.5 High under CVSS 3.1 for consistency with the other availability advisories on this package (GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895), which use the same vector. The reporter self-assessed 6.9 Medium under CVSS 4.0 (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N`).
+
+### Credit
+
+Reported by baeseungwon1010, with a working proof of concept and a proposed patch. Vector 2 was identified during maintainer verification.<br></details>
 
 <details><summary><b>[ CVE-2022-3517 ] minimatch 3.0.4</b></summary>
 

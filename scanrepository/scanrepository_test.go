@@ -962,3 +962,10 @@ func createTestConfigProfile(aggregateFixes, failUponAnyScannerError bool) servi
 		}},
 	}
 }
+
+func TestSupportedAutoFixTechnologiesIncludesPythonJsAndDotnetUpdaters(t *testing.T) {
+	for _, tech := range []techutils.Technology{techutils.Poetry, techutils.Yarn, techutils.Nuget, techutils.Uv} {
+		assert.Contains(t, supportedAutoFixTechnologies, tech)
+	}
+	assert.NotContains(t, supportedAutoFixTechnologies, techutils.Pipenv)
+}

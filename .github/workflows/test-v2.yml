@@ -192,6 +192,9 @@ jobs:
     name: GitHub Integration Tests
     needs: Pretest
     runs-on: ubuntu-latest
+    concurrency:
+      group: github-integration-fixture
+      cancel-in-progress: false
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -224,7 +227,41 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test -tags integration github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration -run 'TestGitHub_' github_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V2_TESTS_GITHUB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITHUB_TOKEN }}
+
+  github-integration-cleanup:
+    name: Cleanup GitHub Integration Test Artifacts
+    needs: [ Pretest, github-integration ]
+    if: ${{ always() && !cancelled() && needs.Pretest.result != 'skipped' && needs.github-integration.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-integration-fixture
+      cancel-in-progress: false
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsGitHub github_test.go integrationutils.go commands.go -v
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
@@ -236,8 +273,12 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         os: [ ubuntu, windows, macos ]
+    concurrency:
+      group: azure-integration-fixture
+      cancel-in-progress: false
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -270,7 +311,41 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test -tags integration azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration -run 'TestAzureRepos_' azure_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V2_TESTS_AZURE_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_AZURE_TOKEN }}
+
+  azure-integration-cleanup:
+    name: Cleanup Azure Integration Test Artifacts
+    needs: [ Pretest, azure-integration ]
+    if: ${{ always() && !cancelled() && needs.Pretest.result != 'skipped' && needs.azure-integration.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: azure-integration-fixture
+      cancel-in-progress: false
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsAzureRepos azure_test.go integrationutils.go commands.go -v
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
@@ -282,8 +357,12 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         os: [ ubuntu, windows, macos ]
+    concurrency:
+      group: gitlab-integration-fixture
+      cancel-in-progress: false
     env:
       JFROG_CLI_LOG_LEVEL: "DEBUG"
     steps:
@@ -316,7 +395,41 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: Run Tests
-        run: go test -tags integration gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        run: go test -tags integration -run 'TestGitLab_' gitlab_test.go integrationutils.go commands.go -v -race -timeout 30m -cover
+        env:
+          JF_URL: ${{ secrets.PLATFORM_URL }}
+          JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}
+          FROGBOT_V2_TESTS_GITLAB_TOKEN: ${{ secrets.FROGBOT_V2_TESTS_GITLAB_TOKEN }}
+
+  gitlab-integration-cleanup:
+    name: Cleanup GitLab Integration Test Artifacts
+    needs: [ Pretest, gitlab-integration ]
+    if: ${{ always() && !cancelled() && needs.Pretest.result != 'skipped' && needs.gitlab-integration.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: gitlab-integration-fixture
+      cancel-in-progress: false
+    env:
+      JFROG_CLI_LOG_LEVEL: "DEBUG"
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          allow-unsafe-pr-checkout: true
+          persist-credentials: false
+
+      - uses: jfrog/boost@v0
+        with:
+          accept_terms: yes
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          cache: false
+
+      - name: Run Cleanup
+        run: go test -tags integration -run TestHelper_CleanupIntegrationTestsArtifactsGitLab gitlab_test.go integrationutils.go commands.go -v
         env:
           JF_URL: ${{ secrets.PLATFORM_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.PLATFORM_ADMIN_TOKEN }}

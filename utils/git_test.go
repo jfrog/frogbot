@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -335,6 +336,38 @@ func TestGitManager_Checkout(t *testing.T) {
 			assert.Equal(t, "master", currBranch)
 		})
 	}
+}
+
+func TestGitManager_Checkout_DetachedHeadFallsBackToRemoteTrackingBranch(t *testing.T) {
+	tmpDir, err := fileutils.CreateTempDir()
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, fileutils.RemoveTempDir(tmpDir))
+	}()
+	restoreWd, err := Chdir(tmpDir)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, restoreWd())
+	}()
+	gitManager := createFakeDotGit(t, tmpDir)
+
+	masterRef, err := gitManager.localGitRepository.Reference(plumbing.NewBranchReferenceName("master"), true)
+	assert.NoError(t, err)
+
+	remoteRefName := plumbing.NewRemoteReferenceName(vcsutils.RemoteName, "master")
+	assert.NoError(t, gitManager.localGitRepository.Storer.SetReference(plumbing.NewHashReference(remoteRefName, masterRef.Hash())))
+	assert.NoError(t, gitManager.localGitRepository.Storer.RemoveReference(plumbing.NewBranchReferenceName("master")))
+	worktree, err := gitManager.localGitRepository.Worktree()
+	assert.NoError(t, err)
+	assert.NoError(t, worktree.Checkout(&git.CheckoutOptions{Hash: masterRef.Hash(), Force: true}))
+
+	_, err = gitManager.localGitRepository.Reference(plumbing.NewBranchReferenceName("master"), true)
+	assert.ErrorIs(t, err, plumbing.ErrReferenceNotFound)
+
+	assert.NoError(t, gitManager.Checkout("master"))
+	currBranch, err := getCurrentBranch(gitManager.localGitRepository)
+	assert.NoError(t, err)
+	assert.Equal(t, "master", currBranch)
 }
 
 func createFakeDotGit(t *testing.T, testPath string) *GitManager {

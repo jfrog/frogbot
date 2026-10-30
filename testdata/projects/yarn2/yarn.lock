@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yarn@workspace:.":
+"yarn-test-fixture@workspace:.":
   version: 0.0.0-use.local
-  resolution: "yarn@workspace:."
+  resolution: "yarn-test-fixture@workspace:."
   dependencies:
     minimist: 1.2.5
   languageName: unknown

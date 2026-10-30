@@ -21,7 +21,7 @@ inputs:
     description: "Exact commit the vulnerability was detected in."
     required: false
   version:
-    description: "Frogbot version"
+    description: "Frogbot version. The downloaded binary is checked against Artifactory checksums. Set FROGBOT_INSECURE_SKIP_CHECKSUM_VERIFICATION to 1 to skip that check."
     default: "latest"
     required: false
   oidc-provider-name:

@@ -44,6 +44,10 @@ var supportedAutoFixTechnologies = []techutils.Technology{
 	techutils.Pip,
 	techutils.Go,
 	techutils.Pnpm,
+	techutils.Poetry,
+	techutils.Yarn,
+	techutils.Nuget,
+	techutils.Uv,
 }
 
 type ScanRepositoryCmd struct {
@@ -608,7 +612,9 @@ func (sr *ScanRepositoryCmd) aggregateFixAndOpenPullRequest(repository *utils.Re
 
 	fixedVulnerabilities, err := sr.fixMultiplePackages(vulnerabilitiesMap)
 	if err != nil {
-		return err
+		if err = utils.CreateErrorIfFailUponScannerErrorEnabled(repository.GeneralConfig.FailUponAnyScannerError, "failed to fix some of the vulnerable dependencies", err); err != nil {
+			return err
+		}
 	}
 	updateRequired, e := sr.isUpdateRequired(fixedVulnerabilities, existingPullRequestInfo)
 	if e != nil {

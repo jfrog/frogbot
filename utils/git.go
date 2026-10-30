@@ -174,9 +174,38 @@ func (gm *GitManager) SetDryRun(dryRun bool, dryRunRepoPath string) *GitManager 
 
 func (gm *GitManager) Checkout(branchName string) error {
 	log.Debug("Running git checkout to branch:", branchName)
-	if err := gm.createBranchAndCheckout(branchName, false, false); err != nil {
-		return fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
+	err := gm.createBranchAndCheckout(branchName, false, false)
+	if err == nil {
+		return nil
 	}
+	if errors.Is(err, plumbing.ErrReferenceNotFound) {
+		if trackErr := gm.checkoutFromRemoteTrackingBranch(branchName); trackErr == nil {
+			return nil
+		}
+	}
+	return fmt.Errorf("'git checkout %s' failed with error: %s", branchName, err.Error())
+}
+
+// checkoutFromRemoteTrackingBranch creates a local branch named branchName from the corresponding
+// remote-tracking ref (e.g. refs/remotes/origin/<branchName>) and checks it out.
+func (gm *GitManager) checkoutFromRemoteTrackingBranch(branchName string) error {
+	remoteRefName := plumbing.NewRemoteReferenceName(gm.remoteName, plumbing.ReferenceName(branchName).Short())
+	remoteRef, err := gm.localGitRepository.Reference(remoteRefName, true)
+	if err != nil {
+		return err
+	}
+	localRefName := GetFullBranchName(branchName)
+	if err = gm.localGitRepository.Storer.SetReference(plumbing.NewHashReference(localRefName, remoteRef.Hash())); err != nil {
+		return err
+	}
+	worktree, err := gm.localGitRepository.Worktree()
+	if err != nil {
+		return err
+	}
+	if err = worktree.Checkout(&git.CheckoutOptions{Branch: localRefName, Force: true}); err != nil {
+		return err
+	}
+	log.Debug(fmt.Sprintf("Local branch '%s' was missing, recreated it from remote-tracking ref '%s'", branchName, remoteRefName))
 	return nil
 }
 

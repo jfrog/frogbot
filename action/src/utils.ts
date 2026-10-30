@@ -3,8 +3,9 @@ import { exec } from '@actions/exec';
 import { context as githubContext } from '@actions/github';
 import { downloadTool, find, cacheFile } from '@actions/tool-cache';
 import { chmodSync } from 'fs';
-import { platform, arch } from 'os';
+import { arch, platform } from 'os';
 import { normalize, join } from 'path';
+import { verifyDownloadedFile } from './checksum';
 import { BranchSummary, SimpleGit, simpleGit } from 'simple-git';
 import { HttpClient, HttpClientResponse } from '@actions/http-client';
 import { OutgoingHttpHeaders } from 'http';
@@ -33,15 +34,16 @@ export class Utils {
             }
         }
 
-        // Download Frogbot
+        // Download Frogbot and verify it before caching.
         const releasesRepo: string = process.env.JF_RELEASES_REPO ?? '';
         let url: string = Utils.getCliUrl(major, version, fileName, releasesRepo);
         core.debug('Downloading Frogbot from ' + url);
         let auth: string = this.generateAuthString(releasesRepo);
         let downloadDir: string = await downloadTool(url, '', auth);
-        // Cache 'frogbot' executable
+        await verifyDownloadedFile(downloadDir, url, auth);
         await this.cacheAndAddPath(downloadDir, version, fileName);
     }
+
 
     public static generateAuthString(releasesRepo: string): string {
         if (!releasesRepo) {
@@ -202,7 +204,6 @@ export class Utils {
             if (!platformUrl) {
                 throw new Error('Failed while downloading Frogbot from Artifactory, JF_URL must be set');
             }
-            // Remove trailing slash if exists
             platformUrl = platformUrl.replace(/\/$/, '');
             return `${platformUrl}/artifactory/${releasesRepo}/artifactory/frogbot/v${major}/${version}/${architecture}/${fileName}`;
         }
@@ -320,6 +321,7 @@ export class Utils {
         process.env.JF_ACCESS_TOKEN = responseJson.access_token;
     }
 }
+
 export interface TokenExchangeResponseData {
     access_token: string;
     errors: string;

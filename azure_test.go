@@ -47,3 +47,8 @@ func TestAzureRepos_ScanRepositoryIntegration(t *testing.T) {
 	azureClient, testDetails := azureReposTestsInit(t)
 	runScanRepositoryCmd(t, azureClient, testDetails)
 }
+
+func TestHelper_CleanupIntegrationTestsArtifactsAzureRepos(t *testing.T) {
+	azureClient, testDetails := azureReposTestsInit(t)
+	cleanupIntegrationArtifacts(t, azureClient, testDetails)
+}
