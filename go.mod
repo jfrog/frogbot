@@ -1,20 +1,20 @@
 module github.com/jfrog/frogbot/v3
 
-go 1.26.6
+go 1.26.10
 
 replace github.com/CycloneDX/cyclonedx-go => github.com/CycloneDX/cyclonedx-go v0.10.0
 
 require (
 	github.com/CycloneDX/cyclonedx-go v0.11.0
-	github.com/go-git/go-git/v5 v5.19.2
+	github.com/go-git/go-git/v5 v5.19.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-github/v45 v45.2.0
-	github.com/jfrog/build-info-go v1.13.1-0.20260925090031-f9d40441f262
-	github.com/jfrog/froggit-go v1.23.2
+	github.com/jfrog/build-info-go v1.13.1-0.20261028123549-f0cd26bfc2de
+	github.com/jfrog/froggit-go v1.24.0
 	github.com/jfrog/gofrog v1.7.7
-	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20260925084932-b47892ded3a0
-	github.com/jfrog/jfrog-cli-security v1.40.0
-	github.com/jfrog/jfrog-client-go v1.55.1-0.20261014133608-3b4b900d8174
+	github.com/jfrog/jfrog-cli-core/v2 v2.60.1-0.20261027135447-d76f4db4eedc
+	github.com/jfrog/jfrog-cli-security v1.41.2
+	github.com/jfrog/jfrog-client-go v1.55.1-0.20261029150622-a2075f5e551a
 	github.com/owenrumney/go-sarif/v3 v3.2.3
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.7
@@ -26,7 +26,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/beevik/etree v1.7.0 // indirect
 	github.com/buger/jsonparser v1.3.0 // indirect
 	github.com/c-bata/go-prompt v0.2.6 // indirect
@@ -43,7 +43,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/gfleury/go-bitbucket-v1 v0.0.0-20240917142304-df385efaac68 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.9.0 // indirect
+	github.com/go-git/go-billy/v5 v5.9.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20260523204920-c264028e67ea // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
@@ -64,9 +64,9 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.8.3 // indirect
 	github.com/jfrog/archiver/v3 v3.6.5 // indirect
 	github.com/jfrog/jfrog-apps-config v1.0.1 // indirect
-	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20260928054331-4a0f3827cfa0 // indirect
+	github.com/jfrog/jfrog-cli-artifactory v0.8.1-0.20261101122816-c0098229a376 // indirect
 	github.com/kevinburke/ssh_config v1.6.0 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/ktrysmt/go-bitbucket v0.9.88 // indirect
@@ -83,7 +83,7 @@ require (
 	github.com/package-url/packageurl-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
-	github.com/pjbgf/sha1cd v0.6.0 // indirect
+	github.com/pjbgf/sha1cd v0.7.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/term v1.2.0-beta.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -113,14 +113,14 @@ require (
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.57.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/term v0.46.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/term v0.47.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/grpc v1.79.3 // indirect

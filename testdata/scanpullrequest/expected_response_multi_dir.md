@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 11 issues
+- Frogbot scanned for vulnerabilities and found 12 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>11 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 10 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>12 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 10 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 2 Medium<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -26,6 +26,7 @@
 
 | Severity                | ID                  | Contextual Analysis                  | Dependency Path                  |
 | :---------------------: | :-----------------------------------: | :-----------------------------------: | ----------------------------------- |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-118764 | Not Covered | <details><summary><b>1 Direct</b></summary>minimatch:3.0.4<br></details> |
 | ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-102277 | Not Covered | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-69152 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-33750 | Not Applicable | <details><summary><b>1 Transitive</b></summary>brace-expansion:1.1.12<br></details> |
@@ -40,6 +41,45 @@
 
 ### 🔖 Details
 
+
+<details><summary><b>[ CVE-2026-118764 ] minimatch 3.0.4</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Covered |
+| **CVSS V3:** | - |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 11.0.1<br></details> |
+
+minimatch 10.2.6 contains an attacker-controlled pattern amplification in firstPhasePreProcess() when optimizationLevel >= 2.
+
+researcher: Reid Downing (b1nv0id)
+files: 
+
+- src/index.ts: 690-770
+- src/index.ts: 780-796
+
+issue:
+input-controlled growth of globParts during first-phase preprocessing, followed by quadratic second-phase processing.
+
+the **/../ transformation clones a globparts entry and appends the clone to the same globparts array:
+```
+parts.splice(gs, 1)
+const other = parts.slice(0)
+other[gs] = '**'
+globParts.push(other)
+```
+this occurs inside a do...while (didSomething) fixpoint loop, allowing generated entries to be processed again.
+
+the expanded globparts array is subsequently processed by secondPhasePreProcess(), which performs pairwise comparisons:
+```
+for (let i = 0; i < globParts.length - 1; i++) {
+  for (let j = i + 1; j < globParts.length; j++) {
+    this.partsMatch(...)
+  }
+}
+```
+an attacker who can supply a glob pattern can therefore cause additional pattern entries to be generated during preprocessing, followed by quadratic pairwise processing, resulting in excessive cpu and memory consumption.<br></details>
 
 <details><summary><b>[ CVE-2026-102277 ] brace-expansion 1.1.12</b></summary>
 
@@ -954,7 +994,7 @@ Reported by baeseungwon1010, with a working proof of concept and a proposed patc
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.0.7<br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.0.8<br></details> |
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
