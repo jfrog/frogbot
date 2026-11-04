@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/build-info-go/tests"
 	biutils "github.com/jfrog/build-info-go/utils"
 	"github.com/jfrog/frogbot/v2/utils"
+	"github.com/jfrog/jfrog-cli-core/v2/utils/coreutils"
 	"github.com/jfrog/jfrog-cli-security/sca/bom/buildinfo/technologies/java"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/techutils"
@@ -1090,4 +1091,21 @@ func TestPnpmFixVulnerabilityIfExists(t *testing.T) {
 	nodeModulesExist, err := fileutils.IsDirExists(filepath.Join(tmpDir, "node_modules"), false)
 	assert.NoError(t, err)
 	assert.False(t, nodeModulesExist)
+}
+
+func TestNewMavenPackageHandlerUsesWrapper(t *testing.T) {
+	tmpDir := t.TempDir()
+	if coreutils.IsWindows() {
+		assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "mvnw.cmd"), []byte("@echo wrapper-invoked\r\n"), 0700))
+	} else {
+		assert.NoError(t, os.WriteFile(filepath.Join(tmpDir, "mvnw"), []byte("#!/bin/sh\necho wrapper-invoked\n"), 0700))
+	}
+	restoreDir, err := utils.Chdir(tmpDir)
+	assert.NoError(t, err)
+	defer func() { assert.NoError(t, restoreDir()) }()
+
+	handler := NewMavenPackageHandler(&utils.ScanDetails{Project: &utils.Project{UseWrapper: &utils.TrueVal}})
+	output, err := handler.RunMvnCmd([]string{"-v"})
+	assert.NoError(t, err)
+	assert.Contains(t, string(output), "wrapper-invoked")
 }
