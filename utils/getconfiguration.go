@@ -184,8 +184,11 @@ func createFrogbotDetails(xrayVersion string, xscVersion string, repository Repo
 	if repository.ConfigProfile != nil {
 		frogbotDetails.ReleasesRepo = repository.GeneralConfig.ScannersDownloadPath
 	}
+	envReleasesRepo := os.Getenv(jfrogReleasesRepoEnv)
 	if frogbotDetails.ReleasesRepo == "" {
-		frogbotDetails.ReleasesRepo = os.Getenv(jfrogReleasesRepoEnv)
+		frogbotDetails.ReleasesRepo = envReleasesRepo
+	} else if envReleasesRepo != "" && envReleasesRepo != frogbotDetails.ReleasesRepo {
+		log.Info(fmt.Sprintf("Both the Config Profile and the '%s' environment variable define a releases repository. Using the Config Profile value '%s' and ignoring '%s'", jfrogReleasesRepoEnv, frogbotDetails.ReleasesRepo, envReleasesRepo))
 	}
 	return &frogbotDetails
 }
