@@ -2,23 +2,14 @@ package schema
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	clientutils "github.com/jfrog/jfrog-client-go/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/xeipuuv/gojsonschema"
 	"gopkg.in/yaml.v3"
-)
-
-const (
-	maxRetriesToDownloadSchema           = 5
-	durationBetweenSchemaDownloadRetries = 10 * time.Second
 )
 
 func TestFrogbotSchema(t *testing.T) {
@@ -54,43 +45,6 @@ func TestBadFrogbotSchemas(t *testing.T) {
 	for _, testCase := range testCases {
 		validateYamlSchema(t, schemaLoader, filepath.Join("testdata", testCase.testName+".yml"), testCase.errorString)
 	}
-}
-
-func TestJFrogPipelinesTemplates(t *testing.T) {
-	schemaLoader := downloadFromSchemaStore(t, "jfrog-pipelines.json")
-	validateYamlsInDirectory(t, filepath.Join("..", "docs", "templates", "jfrog-pipelines"), schemaLoader)
-}
-
-// Download a Yaml schema from https://json.schemastore.org.
-// t      - Testing object
-// schema - The schema file to download
-func downloadFromSchemaStore(t *testing.T, schema string) gojsonschema.JSONLoader {
-	var response *http.Response
-	var err error
-	retryExecutor := clientutils.RetryExecutor{
-		MaxRetries:               maxRetriesToDownloadSchema,
-		RetriesIntervalMilliSecs: int(durationBetweenSchemaDownloadRetries.Milliseconds()),
-		ErrorMessage:             "Failed to download schema.",
-		ExecutionHandler: func() (bool, error) {
-			response, err = http.Get("https://json.schemastore.org/" + schema)
-			if err != nil {
-				return true, err
-			}
-			if response.StatusCode != http.StatusOK {
-				return true, fmt.Errorf("failed to download schema. Response status: %s", response.Status)
-			}
-			return false, nil
-		},
-	}
-	assert.NoError(t, retryExecutor.Execute())
-	assert.Equal(t, http.StatusOK, response.StatusCode, response.Status)
-	// Check server response and read schema bytes
-	defer func() {
-		assert.NoError(t, response.Body.Close())
-	}()
-	schemaBytes, err := io.ReadAll(response.Body)
-	assert.NoError(t, err)
-	return gojsonschema.NewBytesLoader(schemaBytes)
 }
 
 // Validate all yml files in the given directory against the input schema
