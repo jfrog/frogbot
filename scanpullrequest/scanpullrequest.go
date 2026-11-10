@@ -12,6 +12,7 @@ import (
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/datastructures"
+	securityutils "github.com/jfrog/jfrog-cli-security/utils"
 	"github.com/jfrog/jfrog-cli-security/utils/formats"
 	"github.com/jfrog/jfrog-cli-security/utils/jasutils"
 	"github.com/jfrog/jfrog-cli-security/utils/results"
@@ -33,6 +34,15 @@ const (
 	analyticsScanPrScanType              = "PR"
 	vulnerabilitiesFilteringErrorMessage = "%s scan has completed with errors. Vulnerabilities results will be removed from final report"
 	violationsFilteringErrorMessage      = "%s scan has completed with errors. Violations results will be removed from final report"
+)
+
+var (
+	// Matches the inline string form: environment: frogbot / environment: "frogbot" / environment: 'frogbot'
+	frogbotInlineEnvPattern = regexp.MustCompile(`(?m)^\s*environment\s*:\s*['"]?frogbot['"]?\s*(#.*)?$`)
+	// Matches the object form, when 'name' is the line immediately following 'environment:':
+	//   environment:
+	//     name: frogbot
+	frogbotObjectEnvPattern = regexp.MustCompile(`(?m)^\s*environment\s*:\s*(#.*)?\n\s*name\s*:\s*['"]?frogbot['"]?\s*(#.*)?$`)
 )
 
 type ScanPullRequestCmd struct{}
@@ -107,7 +117,7 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 	// Note: the owner/repo here is the workflow's repo, which may differ from the scanned repo.
 	atIdx := strings.LastIndex(workflowRef, "@")
 	if atIdx == -1 {
-		return nil
+		return fmt.Errorf("failed verifying environment in workflow file: unexpected GITHUB_WORKFLOW_REF format, missing '@' separator: '%s'", workflowRef)
 	}
 	pathPart := workflowRef[:atIdx]
 	ref := workflowRef[atIdx+1:]
@@ -115,7 +125,7 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 	// Parse owner, repo, and file path from "{owner}/{repo}/{path}"
 	parts := strings.SplitN(pathPart, "/", 3)
 	if len(parts) < 3 {
-		return nil
+		return fmt.Errorf("failed verifying environment in workflow file: unexpected GITHUB_WORKFLOW_REF format, expected '{owner}/{repo}/{path}' but got '%s'", pathPart)
 	}
 	owner, repo, filePath := parts[0], parts[1], parts[2]
 
@@ -129,19 +139,13 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 
 	fileContent, _, err := client.DownloadFileFromRepo(context.Background(), owner, repo, branch, filePath)
 	if err != nil {
-		// Can't fetch the file — skip this check rather than blocking the scan
-		log.Warn(fmt.Sprintf("Failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error()))
-		return nil
+		return fmt.Errorf("failed to fetch workflow file '%s' for environment verification: %s", filePath, err.Error())
 	}
 
-	matched, err := regexp.MatchString(`\n\s*environment\s*:\s*frogbot`, string(fileContent))
-	if err != nil {
-		return err
-	}
-	if !matched {
+	content := string(fileContent)
+	if !frogbotInlineEnvPattern.MatchString(content) && !frogbotObjectEnvPattern.MatchString(content) {
 		return errors.New(noGitHubEnvInWorkflowErr)
 	}
-
 	return nil
 }
 
@@ -196,7 +200,7 @@ func toFailTaskStatus(repo *utils.Repository, issues *issues.ScansIssuesCollecti
 	failFlagSet := repo.FailOnSecurityIssues != nil && *repo.FailOnSecurityIssues
 	if failFlagSet {
 		// If the fail flag is set to true (JF_FAIL), we check if any security ISSUE exists (not just violations), and if so, we fail the build.
-		return issues.IssuesExists(repo.PullRequestSecretComments)
+		return issues.IssuesExists(repo.AddSecretsComments)
 	} else {
 		// When fail flag is set to false, we check for fail-pr rule in existing VIOLATIONS. If one exists, we fail the build as well.
 		return issues.IsFailPrRuleApplied()
@@ -227,11 +231,16 @@ func auditPullRequestAndReport(repoConfig *utils.Repository, client vcsclient.Vc
 	)
 	defer func() {
 		if issuesCollection != nil {
+			var scanTypesExecuted []securityutils.SubScanType
+			if scanResults != nil {
+				scanTypesExecuted = scanResults.GetStatusCodes().GetExecutedScanTypes()
+			}
 			xsc.SendScanEndedEvent(
 				scanDetails.XrayVersion,
 				scanDetails.XscVersion,
 				scanDetails.ServerDetails,
-				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true), &scanDetails.ResultContext, err,
+				scanDetails.MultiScanId, scanDetails.StartTime, issuesCollection.GetAllIssuesCount(true),
+				&scanDetails.ResultContext, securityutils.SubScanTypesToStrings(scanTypesExecuted), "", err,
 			)
 		}
 	}()
@@ -326,7 +335,7 @@ func auditPullRequestCode(repoConfig *utils.Repository, scanDetails *utils.ScanD
 		scanResults = aggregatedScanResults
 	}
 
-	utils.PrintScanResultsTable(scanResults)
+	utils.PrintScanResultsTable(scanResults, repoConfig.AddSecretsComments)
 	return
 }
 

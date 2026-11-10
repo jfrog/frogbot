@@ -11,11 +11,11 @@
 
 
 ## 📗 Scan Summary
-- Frogbot scanned for vulnerabilities and found 11 issues
+- Frogbot scanned for vulnerabilities and found 14 issues
 
 | Scan Category                | Status                  | Security Issues                  |
 | --------------------- | :-----------------------------------: | ----------------------------------- |
-| **Software Composition Analysis** | ✅ Done | <details><summary><b>11 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 9 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 1 Medium<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallLow.svg" alt=""/> 1 Low<br></details> |
+| **Software Composition Analysis** | ✅ Done | <details><summary><b>14 Issues Found</b></summary><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallCritical.svg" alt=""/> 1 Critical<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallHigh.svg" alt=""/> 10 High<br><img src="https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/smallMedium.svg" alt=""/> 3 Medium<br></details> |
 | **Contextual Analysis** | ✅ Done | - |
 | **Static Application Security Testing (SAST)** | ✅ Done | Not Found |
 | **Secrets** | ✅ Done | - |
@@ -31,13 +31,16 @@
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-27903 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.5]<br>[5.1.8]<br>[6.2.2]<br>[7.4.8]<br>[8.0.6]<br>[9.0.7]<br>[10.2.3] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-26996 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.1.3]<br>[4.2.4]<br>[5.1.7]<br>[6.2.1]<br>[7.4.7]<br>[8.0.5]<br>[9.0.6]<br>[10.2.1] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2022-3517 | Not Applicable | minimatch:3.0.4 | minimatch 3.0.4 | [3.0.5] |
-| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-13149 | Not Applicable | minimatch:3.0.4 | brace-expansion 1.1.15 | [5.0.7] |
 | ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | CVE-2022-29217 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.4.0] |
-| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-48522 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
-| ![low](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableLowSeverity.png)<br>     Low | CVE-2026-48524 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
+| ![high](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableHighSeverity.png)<br>    High | - | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-102270 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-102269 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
+| ![medium](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/applicableMediumSeverity.png)<br>  Medium | CVE-2026-101917 | Not Covered | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
+| ![critical (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableCritical.png)<br>Critical | CVE-2026-102268 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-48526 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.13.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-32597 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.12.0] |
 | ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2025-45768 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | - |
+| ![high (not applicable)](https://raw.githubusercontent.com/jfrog/frogbot/master/resources/v2/notApplicableHigh.png)<br>    High | CVE-2026-102267 | Not Applicable | pyjwt:1.7.1 | pyjwt 1.7.1 | [2.14.0] |
 
 </div>
 
@@ -198,19 +201,6 @@ function redosDetector(input_string, limit) {
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
-<details><summary><b>[ CVE-2026-13149 ] brace-expansion 1.1.15</b></summary>
-
-### Vulnerability Details
-|                 |                   |
-| --------------------- | :-----------------------------------: |
-| **Contextual Analysis:** | Not Applicable |
-| **Direct Dependencies:** | minimatch:3.0.4 |
-| **Impacted Dependency:** | brace-expansion:1.1.15 |
-| **Fixed Versions:** | [5.0.7] |
-| **CVSS V3:** | - |
-
-brace-expansion through 5.0.6 is vulnerable to denial of service. The expand() function exhibits exponential-time complexity in the number of consecutive non-expanding '{}' brace groups. An attacker who passes a crafted string to expand(), directly or transitively, can cause significant CPU consumption and event-loop blocking. The max option does not mitigate this, as it bounds the output size rather than the recursion work.<br></details>
-
 <details><summary><b>[ CVE-2022-29217 ] pyjwt 1.7.1</b></summary>
 
 ### Vulnerability Details
@@ -256,7 +246,7 @@ With -
 `jwt.decode(encoded_jwt, pub_key_bytes, algorithms=["ES256"])`
 <br></details>
 
-<details><summary><b>[ CVE-2026-48522 ] pyjwt 1.7.1</b></summary>
+<details><summary><b>[ XRAY-1076201 ] pyjwt 1.7.1</b></summary>
 
 ### Vulnerability Details
 |                 |                   |
@@ -264,12 +254,12 @@ With -
 | **Contextual Analysis:** | Not Covered |
 | **Direct Dependencies:** | pyjwt:1.7.1 |
 | **Impacted Dependency:** | pyjwt:1.7.1 |
-| **Fixed Versions:** | [2.13.0] |
-| **CVSS V3:** | 4.2 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 7.4 |
 
-PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, PyJWKClient passes its uri argument directly to urllib.request.urlopen() which uses Python stdlib's default OpenerDirector registering HTTPHandler, HTTPSHandler, FTPHandler, FileHandler, and DataHandler. There is currently no documented option to restrict which schemes PyJWKClient will fetch. If an application's jku URL ingestion path accepts attacker-influenced URLs (e.g., from JWT header, configuration file, OAuth flow parameter), the attacker can cause PyJWKClient to read arbitrary local files via file:// (SSRF on local filesystem), cause PyJWKClient to attempt FTP / data-URI fetches (broader SSRF surface), or forge tokens that PyJWT verifies as valid. The library does not directly return non-HTTP(S) URI contents to the attacker; the chained "plant a JWKS to forge tokens" scenario described in the original report requires additional application-layer flaws (attacker write access to a filesystem path, untrusted jku derivation) that this fix does not address. This vulnerability is fixed in 2.13.0.<br></details>
+PyJWT: HS256/384/512 verify accepts empty HMAC key via oct JWK (PyJWK/PyJWKClient) enabling token forgery<br></details>
 
-<details><summary><b>[ CVE-2026-48524 ] pyjwt 1.7.1</b></summary>
+<details><summary><b>[ CVE-2026-102270 ] pyjwt 1.7.1</b></summary>
 
 ### Vulnerability Details
 |                 |                   |
@@ -277,10 +267,49 @@ PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, PyJWKClient
 | **Contextual Analysis:** | Not Covered |
 | **Direct Dependencies:** | pyjwt:1.7.1 |
 | **Impacted Dependency:** | pyjwt:1.7.1 |
-| **Fixed Versions:** | [2.13.0] |
-| **CVSS V3:** | 3.7 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 4.9 |
 
-PyJWT is a JSON Web Token implementation in Python. Prior to 2.13.0, PyJWKClient.get_signing_key() forces a fresh HTTP request to the JWKS endpoint for every JWT with an unknown kid value, with no rate limiting. Since kid comes from the unverified token header, an attacker can trigger unlimited outbound requests. The vulnerability surfaces only when a JWKS fetch fails; an attacker can attempt to provoke that with sustained unknown-kid traffic, but the outcome depends on upstream JWKS-endpoint behavior (rate limiting, transient errors) which is beyond the attacker's control. This vulnerability is fixed in 2.13.0.<br></details>
+PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, PyJWT is_pem_format is affected because lazy PEM regular expression backtracks extensively. This occurs when a certificate-like input contains repeated BEGIN markers without a matching END marker. As a result, is_pem_format performs unbounded backtracking while searching for a PEM end marker. Consequently, an attacker can cause intensive CPU consumption. This issue is fixed in version 2.14.0.<br></details>
+
+<details><summary><b>[ CVE-2026-102269 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Covered |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 5.4 |
+
+PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, PyJWT signature segment is affected because signature segment decoding accepts characters outside the canonical Base64URL representation. This occurs when non-Base64URL characters are appended to a valid compact JWS signature segment. As a result, base64url_decode produces the same signature bytes for different serialized segments. Consequently, raw-token revocation checks can fail to recognize an equivalent modified token. This issue is fixed in version 2.14.0.<br></details>
+
+<details><summary><b>[ CVE-2026-101917 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Covered |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 5.3 |
+
+PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, PyJWT get_signing_key_from_jwt is affected because unknown kid misses force refreshes without a negative cache or minimum refresh interval. This occurs when unauthenticated tokens repeatedly use the same unknown kid or varying kid values absent from the cached JWKS. As a result, each cache miss causes PyJWKClient to refresh the JWKS. Consequently, attacker traffic can amplify outbound requests to the configured JWKS endpoint. This issue is fixed in version 2.14.0.<br></details>
+
+<details><summary><b>[ CVE-2026-102268 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 9.1 |
+
+PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, is_pem_format in jwt/utils.py is affected because is_pem_format does not recognize every PEM representation accepted by the cryptography loader. This occurs when an application mixes HMAC and asymmetric algorithms and supplies a mutated public-key PEM as raw key bytes. As a result, HMACAlgorithm.prepare_key treats the unrecognized asymmetric public key as an HMAC secret. Consequently, an attacker who knows the public key can forge authenticated HMAC tokens. This issue is fixed in version 2.14.0.<br></details>
 
 <details><summary><b>[ CVE-2026-48526 ] pyjwt 1.7.1</b></summary>
 
@@ -341,6 +370,19 @@ Using a key with a short length may lead to attackers successfully brute-forcing
 
 The vulnerability was disputed (and never fixed) since the maintainers claim that the key is chosen by the application that uses the library, and is responsible for choosing a sufficiently long key.
 <br></details>
+
+<details><summary><b>[ CVE-2026-102267 ] pyjwt 1.7.1</b></summary>
+
+### Vulnerability Details
+|                 |                   |
+| --------------------- | :-----------------------------------: |
+| **Contextual Analysis:** | Not Applicable |
+| **Direct Dependencies:** | pyjwt:1.7.1 |
+| **Impacted Dependency:** | pyjwt:1.7.1 |
+| **Fixed Versions:** | [2.14.0] |
+| **CVSS V3:** | 7.4 |
+
+PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, PyJWT PyJWKClient is affected because redirect destinations are not revalidated against the JWKS trust boundary. This occurs when a configured trusted JWKS endpoint returns an attacker-influenced redirect. As a result, PyJWKClient follows the redirect and consumes the redirected response as key material. Consequently, forwarded credentials may be disclosed or verification keys may be substituted. This issue is fixed in version 2.14.0.<br></details>
 
 
 ---

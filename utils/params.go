@@ -348,7 +348,7 @@ type Git struct {
 	CommitMessageTemplate         string   `yaml:"commitMessageTemplate,omitempty"`
 	PullRequestTitleTemplate      string   `yaml:"pullRequestTitleTemplate,omitempty"`
 	PullRequestCommentTitle       string   `yaml:"pullRequestCommentTitle,omitempty"`
-	PullRequestSecretComments     bool     `yaml:"pullRequestSecretComments,omitempty"`
+	AddSecretsComments            bool     `yaml:"pullRequestSecretComments,omitempty"`
 	AvoidExtraMessages            bool     `yaml:"avoidExtraMessages,omitempty"`
 	EmailAuthor                   string   `yaml:"emailAuthor,omitempty"`
 	AggregateFixes                bool     `yaml:"aggregateFixes,omitempty"`
@@ -388,6 +388,11 @@ func (g *Git) setDefaultsIfNeeded(gitParamsFromEnv *Git, commandName string) (er
 			g.EmailAuthor = frogbotAuthorEmail
 		}
 	}
+	if !g.AddSecretsComments {
+		if g.AddSecretsComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
+			return
+		}
+	}
 	if commandName == ScanPullRequest {
 		if err = g.extractScanPullRequestEnvParams(gitParamsFromEnv); err != nil {
 			return
@@ -425,11 +430,6 @@ func (g *Git) extractScanPullRequestEnvParams(gitParamsFromEnv *Git) (err error)
 	}
 	if g.PullRequestCommentTitle == "" {
 		g.PullRequestCommentTitle = getTrimmedEnv(PullRequestCommentTitleEnv)
-	}
-	if !g.PullRequestSecretComments {
-		if g.PullRequestSecretComments, err = getBoolEnv(PullRequestSecretCommentsEnv, false); err != nil {
-			return
-		}
 	}
 	if g.UseMostCommonAncestorAsTarget == nil {
 		envValue, err := getBoolEnv(UseMostCommonAncestorAsTargetEnv, true)
@@ -904,7 +904,7 @@ func getConfigProfileIfExistsAndValid(xrayVersion string, jfrogServer *coreconfi
 		}
 		// Attempt to get a config profile associated with the repo URL
 		log.Debug(fmt.Sprintf("Configuration profile was requested. Searching profile associated to repository '%s'", jfrogServer.Url))
-		if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey); err != nil || configProfile == nil {
+		if configProfile, err = xsc.GetConfigProfileByUrl(xrayVersion, jfrogServer, repoCloneUrl, projectKey, ""); err != nil || configProfile == nil {
 			return
 		}
 	}
