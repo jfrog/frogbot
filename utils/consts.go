@@ -80,6 +80,7 @@ const (
 	AllowedLicensesEnv                 = "JF_ALLOWED_LICENSES"
 	SkipAutoInstallEnv                 = "JF_SKIP_AUTO_INSTALL"
 	AllowPartialResultsEnv             = "JF_ALLOW_PARTIAL_RESULTS"
+	AllowUntrustedScanAllPrsEnv        = "JF_SCAN_ALL_PRS_ALLOW_UNTRUSTED"
 	WatchesDelimiter                   = ","
 	DisableJasEnv                      = "JF_DISABLE_ADVANCED_SECURITY"
 	// ChangedFilesModeEnvVar enables using GitContext changed files (scoped per target) as SAST scan roots.
