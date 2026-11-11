@@ -145,8 +145,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y mono-devel
-          # Mono keeps its own trust store, which may be stale and fail nuget.org TLS handshakes (CERTIFICATE_VERIFY_FAILED).
-          cert-sync --user /etc/ssl/certs/ca-certificates.crt
 
       - name: Install NuGet on Linux
         uses: nuget/setup-nuget@v2
