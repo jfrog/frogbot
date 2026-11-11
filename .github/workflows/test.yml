@@ -144,7 +144,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y mono-devel
+          sudo apt-get install -y mono-devel ca-certificates-mono
           # Mono keeps its own trust store, which may be stale and fail nuget.org TLS handshakes (CERTIFICATE_VERIFY_FAILED).
           cert-sync --user /etc/ssl/certs/ca-certificates.crt
 
