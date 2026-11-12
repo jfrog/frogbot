@@ -954,7 +954,7 @@ Reported by baeseungwon1010, with a working proof of concept and a proposed patc
 | --------------------- | :-----------------------------------: |
 | **Contextual Analysis:** | Not Applicable |
 | **CVSS V3:** | 7.5 |
-| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.0.8<br></details> |
+| **Dependency Path:** | <details><summary><b>minimatch: 3.0.4 (Direct)</b></summary>Fix Version: 3.1.3<br></details> |
 
 A vulnerability was found in the minimatch package. This flaw allows a Regular Expression Denial of Service (ReDoS) when calling the braceExpand function with specific arguments, resulting in a Denial of Service.<br></details>
 
