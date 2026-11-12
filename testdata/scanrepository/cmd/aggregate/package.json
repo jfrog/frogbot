@@ -11,6 +11,6 @@
   "dependencies": {
     "uuid": "^9.0.0",
     "minimist":"1.2.5",
-    "mpath": "0.7.0"
+    "mpath": "0.8.4"
   }
 }
