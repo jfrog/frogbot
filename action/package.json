@@ -41,7 +41,7 @@
         "@actions/github": "~5.1.1",
         "@actions/http-client": "~2.2.1",
         "@actions/tool-cache": "~2.0.1",
-        "simple-git": "^3.19.1"
+        "simple-git": "4.0.1"
     },
     "devDependencies": {
         "@types/jest": "^29.5.4",
