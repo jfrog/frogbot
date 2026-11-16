@@ -10,6 +10,6 @@
   "license": "ISC",
   "dependencies": {
     "mpath": "0.7.0",
-    "mongoose":"5.10.10"
+    "mongoose":"6.13.12"
   }
 }
