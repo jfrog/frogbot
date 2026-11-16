@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "uuid": "^9.0.0",
-    "minimist":"1.2.5",
+    "minimist":"1.2.6",
     "mpath": "0.7.0"
   }
 }
