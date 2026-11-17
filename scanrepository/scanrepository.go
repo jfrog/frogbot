@@ -11,8 +11,6 @@ import (
 
 	securitypkgupdaters "github.com/jfrog/jfrog-cli-security/remediation/sca/packageupdaters"
 
-	biutils "github.com/jfrog/build-info-go/utils"
-
 	"github.com/jfrog/froggit-go/vcsclient"
 	"github.com/jfrog/froggit-go/vcsutils"
 	"github.com/jfrog/gofrog/version"
@@ -447,7 +445,7 @@ func (sr *ScanRepositoryCmd) switchToTempWorkingDir() (tempWd string, restoreDir
 	if curDir, err = os.Getwd(); err != nil {
 		return
 	}
-	if err = biutils.CopyDir(curDir, tempWd, true, nil); err != nil {
+	if err = copyRepository(curDir, tempWd); err != nil {
 		return
 	}
 	// 'CD' into the temp working directory
