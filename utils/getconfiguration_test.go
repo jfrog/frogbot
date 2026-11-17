@@ -546,3 +546,46 @@ func createMockVcsClient(t *testing.T, repoOwner, repoName string, withError boo
 	}
 	return mockVcsClient
 }
+
+func TestCreateFrogbotDetailsReleasesRepo(t *testing.T) {
+	defer func() {
+		assert.NoError(t, SanitizeEnv())
+	}()
+	testCases := []struct {
+		name         string
+		profile      *services.ConfigProfile
+		envValue     string
+		expectedRepo string
+	}{
+		{
+			name:         "Profile only",
+			profile:      &services.ConfigProfile{GeneralConfig: services.GeneralConfig{ScannersDownloadPath: "profile-repo"}},
+			expectedRepo: "profile-repo",
+		},
+		{
+			name:         "Env var only",
+			profile:      &services.ConfigProfile{},
+			envValue:     "env-repo",
+			expectedRepo: "env-repo",
+		},
+		{
+			name:         "Both, profile takes priority",
+			profile:      &services.ConfigProfile{GeneralConfig: services.GeneralConfig{ScannersDownloadPath: "profile-repo"}},
+			envValue:     "env-repo",
+			expectedRepo: "profile-repo",
+		},
+		{
+			name:         "Neither",
+			profile:      &services.ConfigProfile{},
+			expectedRepo: "",
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			SetEnvAndAssert(t, map[string]string{jfrogReleasesRepoEnv: testCase.envValue})
+			repository := Repository{Params: Params{ConfigProfile: testCase.profile}}
+			frogbotDetails := createFrogbotDetails("", "", repository, nil, nil)
+			assert.Equal(t, testCase.expectedRepo, frogbotDetails.ReleasesRepo)
+		})
+	}
+}

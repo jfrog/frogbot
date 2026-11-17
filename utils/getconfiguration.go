@@ -181,9 +181,14 @@ func GetFrogbotDetails(commandName string) (frogbotDetails *FrogbotDetails, err 
 
 func createFrogbotDetails(xrayVersion string, xscVersion string, repository Repository, client vcsclient.VcsClient, jfrogServer *coreconfig.ServerDetails) *FrogbotDetails {
 	frogbotDetails := FrogbotDetails{XrayVersion: xrayVersion, XscVersion: xscVersion, Repository: repository, GitClient: client, ServerDetails: jfrogServer}
-	frogbotDetails.ReleasesRepo = os.Getenv(jfrogReleasesRepoEnv)
-	if frogbotDetails.ReleasesRepo == "" {
+	if repository.ConfigProfile != nil {
 		frogbotDetails.ReleasesRepo = repository.GeneralConfig.ScannersDownloadPath
+	}
+	envReleasesRepo := os.Getenv(jfrogReleasesRepoEnv)
+	if frogbotDetails.ReleasesRepo == "" {
+		frogbotDetails.ReleasesRepo = envReleasesRepo
+	} else if envReleasesRepo != "" && envReleasesRepo != frogbotDetails.ReleasesRepo {
+		log.Info(fmt.Sprintf("Both the Config Profile and the '%s' environment variable define a releases repository. Using the Config Profile value '%s' and ignoring '%s'", jfrogReleasesRepoEnv, frogbotDetails.ReleasesRepo, envReleasesRepo))
 	}
 	return &frogbotDetails
 }
