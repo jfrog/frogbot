@@ -135,6 +135,7 @@ func NewMavenPackageHandler(scanDetails *utils.ScanDetails) *MavenPackageHandler
 	depTreeParams := &java.DepTreeParams{
 		Server:                  scanDetails.ServerDetails,
 		DepsRepo:                scanDetails.DepsRepo,
+		UseWrapper:              scanDetails.UseWrapper != nil && *scanDetails.UseWrapper,
 		IsMavenDepTreeInstalled: true,
 	}
 	// The mvn-dep-tree plugin has already been installed during the audit dependency tree build phase,
