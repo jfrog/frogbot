@@ -292,6 +292,18 @@ func generateFrogbotSarifReport(extendedResults *results.SecurityCommandResults)
 }
 
 func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, branch string) (wd string, cleanup func() error, err error) {
+	return downloadRefToTempDir(repoOwner, repoName, branch, func(localPath string) error {
+		return client.DownloadRepository(context.Background(), repoOwner, repoName, branch, localPath)
+	})
+}
+
+func DownloadRepoCommitToTempDir(client vcsclient.VcsClient, repoOwner, repoName, commitSha string) (wd string, cleanup func() error, err error) {
+	return downloadRefToTempDir(repoOwner, repoName, commitSha, func(localPath string) error {
+		return client.DownloadRepositoryByCommit(context.Background(), repoOwner, repoName, commitSha, localPath)
+	})
+}
+
+func downloadRefToTempDir(repoOwner, repoName, ref string, download func(localPath string) error) (wd string, cleanup func() error, err error) {
 	wd, err = fileutils.CreateTempDir()
 	if err != nil {
 		return
@@ -299,9 +311,9 @@ func DownloadRepoToTempDir(client vcsclient.VcsClient, repoOwner, repoName, bran
 	cleanup = func() error {
 		return fileutils.RemoveTempDir(wd)
 	}
-	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, branch, wd))
-	if err = client.DownloadRepository(context.Background(), repoOwner, repoName, branch, wd); err != nil {
-		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, branch, err.Error())
+	log.Debug(fmt.Sprintf("Downloading <%s/%s/%s> to: '%s'", repoOwner, repoName, ref, wd))
+	if err = download(wd); err != nil {
+		err = fmt.Errorf("failed to download branch: <%s/%s/%s> with error: %s", repoOwner, repoName, ref, err.Error())
 		return
 	}
 	log.Debug("Repository download completed")

@@ -216,6 +216,43 @@ func verifyWorkflowContainsFrogbotEnvironment(client vcsclient.VcsClient) error 
 	return nil
 }
 
+func resolveTargetRef(scanDetails *utils.ScanDetails, target vcsclient.BranchInfo, sourceName string) string {
+	source := scanDetails.PullRequestDetails.Source
+	if !strings.EqualFold(source.Owner, target.Owner) || !strings.EqualFold(source.Repository, target.Repository) {
+		log.Warn(fmt.Sprintf("The pull request comes from a fork, where the merge base cannot be resolved against %s/%s. Scan results may include findings that were already fixed on %s. Rebasing %s onto %s avoids this.", target.Owner, target.Repository, target.Name, sourceName, target.Name))
+		return target.Name
+	}
+	mergeBase, err := scanDetails.Client().GetMergeBase(context.Background(), target.Owner, target.Repository, target.Name, sourceName)
+	if err == nil && mergeBase.Hash != "" {
+		log.Info(fmt.Sprintf("Comparing against merge base %s of %s and %s", mergeBase.Hash, target.Name, sourceName))
+		return mergeBase.Hash
+	}
+	if err == nil {
+		log.Warn(fmt.Sprintf("Resolving the merge base of %s and %s returned an empty commit, scanning the tip of %s instead. Scan results may include findings that were already fixed on %s.", target.Name, sourceName, target.Name, target.Name))
+		return target.Name
+	}
+	if errors.Is(err, vcsclient.ErrMergeBaseUnsupported) {
+		log.Warn(fmt.Sprintf("Merge base resolution is not yet supported for this git provider. Scan results may include findings that were already fixed on %s. Rebasing %s onto %s avoids this.", target.Name, sourceName, target.Name))
+	} else {
+		log.Warn(fmt.Sprintf("Failed to resolve the merge base of %s and %s, scanning the tip of %s instead. Scan results may include findings that were already fixed on %s. Error: %s", target.Name, sourceName, target.Name, target.Name, err.Error()))
+	}
+	return target.Name
+}
+
+type repoDownloader func(client vcsclient.VcsClient, owner, repository, ref string) (string, func() error, error)
+
+func downloadTargetAtRef(client vcsclient.VcsClient, target vcsclient.BranchInfo, mergeBaseSha string, downloadCommit, downloadBranch repoDownloader) (string, func() error, error) {
+	if mergeBaseSha == target.Name {
+		return downloadBranch(client, target.Owner, target.Repository, target.Name)
+	}
+	wd, cleanup, err := downloadCommit(client, target.Owner, target.Repository, mergeBaseSha)
+	if err == nil {
+		return wd, cleanup, nil
+	}
+	log.Warn(fmt.Sprintf("Failed to download %s at merge base %s, scanning the tip of %s instead. Scan results may include findings that were already fixed on %s. Error: %s", target.Name, mergeBaseSha, target.Name, target.Name, err.Error()))
+	return downloadBranch(client, target.Owner, target.Repository, target.Name)
+}
+
 func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.ScanDetails) (sourceBranchWd, targetBranchWd string, cleanup func() error, err error) {
 	cleanupSource := func() error { return nil }
 	cleanupTarget := func() error { return nil }
@@ -231,7 +268,8 @@ func downloadSourceAndTarget(repoConfig *utils.Repository, scanDetails *utils.Sc
 		return
 	}
 	target := repoConfig.Params.Git.PullRequestDetails.Target
-	if targetBranchWd, cleanupTarget, err = utils.DownloadRepoToTempDir(scanDetails.Client(), target.Owner, target.Repository, target.Name); err != nil {
+	targetRef := resolveTargetRef(scanDetails, target, scanDetails.PullRequestDetails.Source.Name)
+	if targetBranchWd, cleanupTarget, err = downloadTargetAtRef(scanDetails.Client(), target, targetRef, utils.DownloadRepoCommitToTempDir, utils.DownloadRepoToTempDir); err != nil {
 		err = fmt.Errorf("failed to download target branch code. Error: %s", err.Error())
 		return
 	}
